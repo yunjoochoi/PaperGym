@@ -1,6 +1,8 @@
 # PaperGym
 
-Cross-domain research-idea synthesis. The system samples ~500 published papers across 7 ML domains, distills each into 1–3 mechanism seeds via a tool-augmented agent (read / grep / bash inside a Docker sandbox), and on a user query paraphrases the query into each domain's vocabulary, retrieves the most relevant seeds per domain, and synthesizes a method proposal with explicit per-seed provenance.
+ML idea-synthesis systems typically retrieve prior work from the same subfield as the query. PaperGym evaluates a different stance: paraphrase the query into each of 7 ML domains, retrieve mechanism seeds grounded in each domain, and synthesize a method that explicitly cites which mechanism it borrowed from where.
+
+Each paper becomes an interactive environment: a tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores the paper, then distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
 
 ## Setup
 
