@@ -106,4 +106,3 @@ print(out.method, out.inspired_by)
 ## License
 
 Apache License 2.0. See [`LICENSE`](LICENSE) for details.
-# PaperGym

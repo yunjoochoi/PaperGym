@@ -8,9 +8,9 @@ scratch
 build/
 runs/
 
-# Experiment outputs 
+# Experiment outputs
 data/library_*/
-# data/events/
+data/events/
 data/events_*/
 
 *_experiment_result/
@@ -60,7 +60,6 @@ code-scan-action/dist/test.mp4
 logs/
 # data/eval/
 data/eval/_archive/
-# data/events/
 
 # Local data backups 
 **/_backup_*
