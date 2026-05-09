@@ -110,7 +110,7 @@ STAMM and GMRP method texts, attributed seeds, and per-axis scores are all in th
 | GMRP (condition A) method, novelty 4/5 | same | `A.method`, `A.novelty.score` |
 | STAMM-vs-GMRP pairwise novelty/validity | `data/eval/layer12_20260503T172939/pairwise.jsonl` | `(axis, x="C", y="A").winner` resolved via `condition_for_a/b` |
 | STAMM-vs-GMRP pairwise coherence | `data/eval/coherence_q23_CA/judgements.jsonl` | `winner` resolved via `condition_for_a/b` |
-| STAMM single-pass timing 81 s / $0.07 (paraphraser 29 s, synthesizer 45 s) | hand-measured single-pass run; not stored. Re-measure with `time` if needed. | — |
+| STAMM single-pass timing 74 s / $0.07 (paraphraser 29 s, synthesizer 45 s) | hand-measured single-pass run; not stored. Re-measure with `time` if needed. | — |
 
 ```bash
 # C-vs-A pairwise coherence on Q23 (single judgment)

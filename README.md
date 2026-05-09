@@ -8,13 +8,7 @@ Each paper becomes an interactive environment: a tool-augmented agent (read / gr
 
 ## Setup
 
-Install [uv](https://github.com/astral-sh/uv) if you don't have it:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Then set up the project environment:
+Set up the project environment:
 
 ```bash
 uv venv .venv --python 3.11
