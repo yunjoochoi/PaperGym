@@ -29,6 +29,8 @@ The script runs Stages 2, 3, and the novelty iteration loop. The Stage 1 *no-too
 
 ### Bootstrap
 
+A pre-built library ships at [`data/library/`](data/library/) (1,167 seeds across 446 papers). Skip the rest of this section if you just want to test idea synthesis based on the pre-built library.
+
 One-time library build from arxiv:
 
 ```bash

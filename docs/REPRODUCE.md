@@ -1,10 +1,10 @@
 # Reproducing the paper
 
-This document maps every quantitative claim, table, and figure in the paper to the script that produced it and the data file it was read from. Use it together with [`scripts/reproduce_paper.sh`](../scripts/reproduce_paper.sh), which runs every step in order.
+Each paper number maps to the script behind it and the file it was read from. [`scripts/reproduce_paper.sh`](../scripts/reproduce_paper.sh) runs every step in order.
 
-All commands assume `cwd = repo root` and the env vars `OPENAI_API_KEY` and the credentials needed for `openai/bedrock.anthropic.claude-sonnet-4-6` are set (see [README](../README.md#setup)).
+Run all commands from the repo root with `OPENAI_API_KEY` and Bedrock credentials set ([README setup](../README.md#setup)).
 
-The library at `data/library/` and the queries at `data/queries.yaml` are inputs for every Stage 2/3 evaluation; build the library yourself via the pipeline (see README) or use the released snapshot.
+Stage 2/3 read from [`data/library/`](../data/library/) and [`data/queries.yaml`](../data/queries.yaml). The released library ships with the repo; rebuild it via [Bootstrap](../README.md#bootstrap) if needed.
 
 ## Conventions
 
@@ -14,7 +14,7 @@ The library at `data/library/` and the queries at `data/queries.yaml` are inputs
 
 ## Stage 1 — Tool-augmented seed extraction (Section 3.2)
 
-The A (direct, no-tool) extraction baseline lives in the [PaperGym_notool](https://github.com/yunjoochoi/PaperGym_notool) companion repo; the rubric judges below run in this repo and score both libraries.
+The A condition (no-tool extraction baseline) lives in [PaperGym_notool](https://github.com/yunjoochoi/PaperGym_notool); the judges below run here and score both libraries.
 
 | Paper claim | Script | Output file | Field |
 |---|---|---|---|
@@ -54,7 +54,7 @@ uv run python scripts/retrieval_eval.py \
 
 ## Stage 3 — Method synthesis (Section 3.4)
 
-The Stage 3 results all chain off a single ideation run; pass that run's `evaluations.jsonl` to the four downstream judges.
+Stage 3 chains off one ideation run — the four downstream judges all read its `evaluations.jsonl`.
 
 | Paper claim | Script | Output file | Field |
 |---|---|---|---|
@@ -102,7 +102,7 @@ uv run python scripts/inspired_by_grounding_eval.py \
 
 ## Appendix A — Q23 walkthrough (STAMM)
 
-The walkthrough method texts (STAMM/GMRP), attributed seeds, and novelty/validity scores all come from the canonical Stage 3 ideation run's Q23 record. Pairwise verdicts are read from the same layer12 / coherence dirs as the main benchmark, filtered to Q23.
+STAMM and GMRP method texts, attributed seeds, and per-axis scores all live in the canonical Stage 3 ideation run's Q23 record. Pairwise verdicts are the Q23 rows of the main `layer12` and `coherence` files.
 
 | Paper claim | Source | Field (filter `query_id == "Q23"`) |
 |---|---|---|
