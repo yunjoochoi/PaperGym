@@ -1,0 +1,100 @@
+{
+  "pairwise": {
+    "C-vs-A__novelty": {
+      "n": 30,
+      "C_win": 18,
+      "A_win": 12,
+      "tie": 0,
+      "C_win_rate": 0.6,
+      "A_win_rate": 0.4,
+      "tie_rate": 0.0
+    },
+    "C-vs-A__validity": {
+      "n": 30,
+      "C_win": 6,
+      "A_win": 15,
+      "tie": 9,
+      "C_win_rate": 0.2,
+      "A_win_rate": 0.5,
+      "tie_rate": 0.3
+    },
+    "C-vs-D__novelty": {
+      "n": 30,
+      "C_win": 14,
+      "D_win": 16,
+      "tie": 0,
+      "C_win_rate": 0.467,
+      "D_win_rate": 0.533,
+      "tie_rate": 0.0
+    },
+    "C-vs-D__validity": {
+      "n": 30,
+      "C_win": 12,
+      "D_win": 8,
+      "tie": 10,
+      "C_win_rate": 0.4,
+      "D_win_rate": 0.267,
+      "tie_rate": 0.333
+    },
+    "C-vs-B__novelty": {
+      "n": 30,
+      "C_win": 20,
+      "B_win": 9,
+      "tie": 1,
+      "C_win_rate": 0.667,
+      "B_win_rate": 0.3,
+      "tie_rate": 0.033
+    },
+    "C-vs-B__validity": {
+      "n": 30,
+      "C_win": 9,
+      "B_win": 8,
+      "tie": 13,
+      "C_win_rate": 0.3,
+      "B_win_rate": 0.267,
+      "tie_rate": 0.433
+    }
+  },
+  "specificity": {
+    "A": {
+      "n": 30,
+      "mean": 4.4,
+      "median": 4.0,
+      "stdev": 0.498,
+      "hist": {
+        "4": 18,
+        "5": 12
+      }
+    },
+    "B": {
+      "n": 30,
+      "mean": 4.4,
+      "median": 4.0,
+      "stdev": 0.498,
+      "hist": {
+        "4": 18,
+        "5": 12
+      }
+    },
+    "C": {
+      "n": 30,
+      "mean": 4.267,
+      "median": 4.0,
+      "stdev": 0.45,
+      "hist": {
+        "4": 22,
+        "5": 8
+      }
+    },
+    "D": {
+      "n": 30,
+      "mean": 4.4,
+      "median": 4.0,
+      "stdev": 0.498,
+      "hist": {
+        "4": 18,
+        "5": 12
+      }
+    }
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "n_problems": 30,
+  "n_successful": 30,
+  "novelty_threshold": 4,
+  "max_rounds": 10,
+  "judge_max_rounds": 10,
+  "c_mean_rounds": 1.07,
+  "d_mean_rounds": 1.13,
+  "c_convergence_rate": 1.0,
+  "d_convergence_rate": 1.0,
+  "c_mean_final_score": 4.1,
+  "d_mean_final_score": 4.1,
+  "c_mean_cost_usd": 0.4738,
+  "d_mean_cost_usd": 0.4794,
+  "c_total_cost_usd": 14.21,
+  "d_total_cost_usd": 14.38,
+  "pairwise_total_cost_usd": 0.93,
+  "c_round_score_dist": [
+    {
+      "round": 1,
+      "n_reached": 30,
+      "mean_score": 3.97,
+      "median_score": 4.0
+    },
+    {
+      "round": 2,
+      "n_reached": 2,
+      "mean_score": 5.0,
+      "median_score": 5.0
+    }
+  ],
+  "d_round_score_dist": [
+    {
+      "round": 1,
+      "n_reached": 30,
+      "mean_score": 3.87,
+      "median_score": 4.0
+    },
+    {
+      "round": 2,
+      "n_reached": 4,
+      "mean_score": 4.75,
+      "median_score": 5.0
+    }
+  ],
+  "c_convergence_round": {
+    "n_converged": 30,
+    "histogram": {
+      "1": 28,
+      "2": 2
+    },
+    "mean": 1.07,
+    "median": 1.0,
+    "stdev": 0.25
+  },
+  "d_convergence_round": {
+    "n_converged": 30,
+    "histogram": {
+      "1": 26,
+      "2": 4
+    },
+    "mean": 1.13,
+    "median": 1.0,
+    "stdev": 0.35
+  },
+  "c_domain_coverage": {
+    "mean": 3.87,
+    "median": 4.0,
+    "stdev": 1.2,
+    "min": 2,
+    "max": 6
+  },
+  "d_domain_coverage": {
+    "mean": 3.33,
+    "median": 3.0,
+    "stdev": 1.45,
+    "min": 1,
+    "max": 6
+  },
+  "c_wall_clock": {
+    "mean_s": 188.0,
+    "median_s": 175.2,
+    "stdev_s": 46.1,
+    "min_s": 120.7,
+    "max_s": 334.1
+  },
+  "d_wall_clock": {
+    "mean_s": 166.9,
+    "median_s": 136.6,
+    "stdev_s": 83.4,
+    "min_s": 106.8,
+    "max_s": 527.5
+  },
+  "pairwise_novelty": {
+    "n": 30,
+    "C_wins": 15,
+    "D_wins": 15,
+    "ties": 0,
+    "C_win_rate": 0.5,
+    "D_win_rate": 0.5,
+    "tie_rate": 0.0
+  },
+  "pairwise_validity": {
+    "n": 30,
+    "C_wins": 12,
+    "D_wins": 9,
+    "ties": 9,
+    "C_win_rate": 0.4,
+    "D_win_rate": 0.3,
+    "tie_rate": 0.3
+  },
+  "pairwise_coherence": {
+    "n": 30,
+    "C_wins": 14,
+    "D_wins": 16,
+    "ties": 0,
+    "C_win_rate": 0.467,
+    "D_win_rate": 0.533,
+    "tie_rate": 0.0
+  },
+  "total_wall_clock_s": 11454.43,
+  "judge_total_tokens": {
+    "prompt": 7938698,
+    "completion": 105597
+  },
+  "gen_total_tokens": {
+    "prompt": 392474,
+    "completion": 363481
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "query_id": "Q19",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Test-time distributions diverge from training data along axes\nthe model never saw; how can we make models robust to such\nshifts without observing the target distribution at training?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Robust-Without-Target (RWT), a two-stage recipe that combines training-time shift-agnostic regularization with a test-time adapter and safety wrapper. At training, we (a) replace deterministic data dropout/reweighting with a probabilistic, influence-bounded sampler that caps the gradient of per-example sampling probabilities; and (b) add a multiresolution auxiliary head to regularize features across granularities. Concretely, we compute per-example influence signals on a held-out split and sample with a linear/sigmoid function whose slope σ bounds sensitivity; this mimics distributionally robust training within a χ²-ball around the empirical distribution while avoiding overconfidence on the validation mix. In parallel, we train a light auxiliary prediction head at a coarser or alternative resolution (e.g., class clusters, attribute tags, or subword/character analogs), applying a weighted multi-task loss to stabilize semantics across unseen axes.\n\nNext, we meta-learn a test-time adaptation operator across synthetic shifts, without access to the true target distribution. We define a set of plausible shift generators (e.g., style/texture perturbations, resolution changes, occlusion/masking, label-imbalance resampling) and construct inner–outer loops: an inner loop performs a few test-time steps using unsupervised/self-supervised objectives (entropy minimization, consistency across augmentations, and agreement between main and auxiliary heads); the outer loop optimizes the base model so that post-adaptation performance on held-out views improves. This yields a MAML-like adapter that can quickly specialize to novel conditions using only the incoming test stream.\n\nAt inference, we attach a training-free, non-parametric error-compensation memory. The system stores a rolling buffer of recent test representations, base predictions, and any available outcomes; when labels are unavailable or delayed, it stores proxy nonconformity scores (e.g., softmax margin, disagreement across augmentations/heads). For each new input, we retrieve similar states by attention over the buffer and estimate a residual bias to add to the base prediction, with a temperature and clamp to keep corrections bounded. The buffer is refreshed online, enabling self-correction even under rapid drift.\n\nFinally, we wrap predictions with an online-calibrated conformal safety layer. We score each output with a monotone, model-derived nonconformity (e.g., 1 − max softmax or margin) and maintain a threshold κ updated with a decaying-step-size rule to target 1−α coverage. Below κ we return a point prediction; above κ we either return a small set (top-k covering set) or abstain, depending on the application. This provides coverage guarantees and graceful degradation under unforeseen shifts. The full system requires no target-domain samples at training: robustness comes from influence-bounded sampling and multiresolution regularization, quick specialization is delivered by the meta-learned adapter, rapid local bias correction comes from the error memory, and reliability is enforced by online conformal calibration.",
+        "rationale": "Unknown, out-of-support shifts can break models along axes unseen in training. RWT addresses this in layered fashion: (1) bounded-gradient probabilistic sampling reduces the model’s sensitivity to any one training mix and improves worst-case risk within a principled uncertainty set, while multiresolution multitask losses pull features toward semantics that persist across scales, reducing overfit to spurious axes; (2) a meta-learned adapter trains the model to improve after a small, unsupervised adaptation step on synthetic, diverse perturbations, enabling quick specialization at deployment without target-domain pre-exposure; (3) a non-parametric error memory adds fast, training-free local corrections that follow the current stream, even with weak or delayed supervision; and (4) conformal calibration converts raw scores into coverage-controlled decisions, ensuring reliability despite residual mismatch.\n\nBecause no single mechanism fully protects against unseen axes, the combination is key: influence-bounded training and multiresolution regularization make the base model broadly stable; the adapter and memory handle rapid or structural drifts at test time; and conformal thresholds bound risk when uncertainty spikes. Crucially, none of these components require observing the true target distribution during training.",
+        "inspired_by": [
+          {
+            "seed_id": "baa2fa7d385b",
+            "domain": "IR_REC",
+            "borrowed_aspect": "probabilistic sampling with bounded gradients for distributional robustness"
+          },
+          {
+            "seed_id": "ec79896a1fe8",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "MAML-like meta-learning of fast adaptation steps"
+          },
+          {
+            "seed_id": "66876933302f",
+            "domain": "IR_REC",
+            "borrowed_aspect": "training-free non-parametric error compensation memory with attention"
+          },
+          {
+            "seed_id": "3065495cf523",
+            "domain": "RL",
+            "borrowed_aspect": "online threshold update for conformal coverage control"
+          },
+          {
+            "seed_id": "26af209a8743",
+            "domain": "SPEECH",
+            "borrowed_aspect": "multiresolution multitask regularization to stabilize representations"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed RWT method combines four distinct mechanisms: (1) influence-bounded probabilistic sampling for DRO-style training, (2) multiresolution multitask auxiliary head regularization, (3) MAML-like meta-learned test-time adaptation across synthetic shifts without target domain access, and (4) a non-parametric error-compensation memory buffer plus online conformal calibration. Searches found no paper combining all four of these mechanisms together for distribution shift robustness. Individual components exist in isolation: influence-based sampling (seed paper 1912.01321), multiresolution multitask learning (multiresolution ASR paper 2004.14840), MAML-style meta-learning for adaptation (1909.12906), ReLoop2-style error memory (2306.08808), and online conformal prediction (CCPO 2511.11828). However, no search surfaced any paper that jointly applies influence-bounded training + multiresolution regularization + meta-learned TTA + error memory + conformal calibration for the problem of robustness to unseen distribution shifts without target domain access. The combination of four mechanism families with no surfaced joint application matches the Score 4 anchor, though the specific named design choice of \"influence-bounded gradient-capped probabilistic sampler\" combined with the full pipeline pushes toward a 4-5 boundary. Given the tie-breaking rule defaulting to the lower score, this is a solid 4.\n\nPrior works:\n  - Less Is Better: Unweighted Data Subsampling via Influence Function (2019): influence-based sampling for training robustness, directly overlaps with component (1)\n  - ReLoop2: Building Self-Adaptive Recommendation Models via Responsive Error Compensation Loop (2023): non-parametric error memory buffer for test-time correction, directly overlaps with component (4a)\n  - Conformal Constrained Policy Optimization (2511.11828, 2025): online conformal calibration with decaying-step-size threshold update, overlaps with component (4b)\n  - Meta Reinforcement Learning for Sim-to-real Domain Adaptation (1909.12906, 2019): MAML-like inner-outer loop adaptation across synthetic shifts, overlaps with component (3)\n  - Multiresolution and Multimodal Speech Recognition with Transformers (2004.14840, 2020): multiresolution multitask auxiliary head regularization, overlaps with component (2)",
+        "prior_works": [
+          "Less Is Better: Unweighted Data Subsampling via Influence Function (2019): influence-based sampling for training robustness, directly overlaps with component (1)",
+          "ReLoop2: Building Self-Adaptive Recommendation Models via Responsive Error Compensation Loop (2023): non-parametric error memory buffer for test-time correction, directly overlaps with component (4a)",
+          "Conformal Constrained Policy Optimization (2511.11828, 2025): online conformal calibration with decaying-step-size threshold update, overlaps with component (4b)",
+          "Meta Reinforcement Learning for Sim-to-real Domain Adaptation (1909.12906, 2019): MAML-like inner-outer loop adaptation across synthetic shifts, overlaps with component (3)",
+          "Multiresolution and Multimodal Speech Recognition with Transformers (2004.14840, 2020): multiresolution multitask auxiliary head regularization, overlaps with component (2)"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Robust-Without-Target (RWT), a two-stage recipe that combines training-time shift-agnostic regularization with a test-time adapter and safety wrapper. At training, we (a) replace deterministic data dropout/reweighting with a probabilistic, influence-bounded sampler that caps the gradient of per-example sampling probabilities; and (b) add a multiresolution auxiliary head to regularize features across granularities. Concretely, we compute per-example influence signals on a held-out split and sample with a linear/sigmoid function whose slope σ bounds sensitivity; this mimics distributionally robust training within a χ²-ball around the empirical distribution while avoiding overconfidence on the validation mix. In parallel, we train a light auxiliary prediction head at a coarser or alternative resolution (e.g., class clusters, attribute tags, or subword/character analogs), applying a weighted multi-task loss to stabilize semantics across unseen axes.\n\nNext, we meta-learn a test-time adaptation operator across synthetic shifts, without access to the true target distribution. We define a set of plausible shift generators (e.g., style/texture perturbations, resolution changes, occlusion/masking, label-imbalance resampling) and construct inner–outer loops: an inner loop performs a few test-time steps using unsupervised/self-supervised objectives (entropy minimization, consistency across augmentations, and agreement between main and auxiliary heads); the outer loop optimizes the base model so that post-adaptation performance on held-out views improves. This yields a MAML-like adapter that can quickly specialize to novel conditions using only the incoming test stream.\n\nAt inference, we attach a training-free, non-parametric error-compensation memory. The system stores a rolling buffer of recent test representations, base predictions, and any available outcomes; when labels are unavailable or delayed, it stores proxy nonconformity scores (e.g., softmax margin, disagreement across augmentations/heads). For each new input, we retrieve similar states by attention over the buffer and estimate a residual bias to add to the base prediction, with a temperature and clamp to keep corrections bounded. The buffer is refreshed online, enabling self-correction even under rapid drift.\n\nFinally, we wrap predictions with an online-calibrated conformal safety layer. We score each output with a monotone, model-derived nonconformity (e.g., 1 − max softmax or margin) and maintain a threshold κ updated with a decaying-step-size rule to target 1−α coverage. Below κ we return a point prediction; above κ we either return a small set (top-k covering set) or abstain, depending on the application. This provides coverage guarantees and graceful degradation under unforeseen shifts. The full system requires no target-domain samples at training: robustness comes from influence-bounded sampling and multiresolution regularization, quick specialization is delivered by the meta-learned adapter, rapid local bias correction comes from the error memory, and reliability is enforced by online conformal calibration.",
+    "final_rationale": "Unknown, out-of-support shifts can break models along axes unseen in training. RWT addresses this in layered fashion: (1) bounded-gradient probabilistic sampling reduces the model’s sensitivity to any one training mix and improves worst-case risk within a principled uncertainty set, while multiresolution multitask losses pull features toward semantics that persist across scales, reducing overfit to spurious axes; (2) a meta-learned adapter trains the model to improve after a small, unsupervised adaptation step on synthetic, diverse perturbations, enabling quick specialization at deployment without target-domain pre-exposure; (3) a non-parametric error memory adds fast, training-free local corrections that follow the current stream, even with weak or delayed supervision; and (4) conformal calibration converts raw scores into coverage-controlled decisions, ensuring reliability despite residual mismatch.\n\nBecause no single mechanism fully protects against unseen axes, the combination is key: influence-bounded training and multiresolution regularization make the base model broadly stable; the adapter and memory handle rapid or structural drifts at test time; and conformal thresholds bound risk when uncertainty spikes. Crucially, none of these components require observing the true target distribution during training.",
+    "final_inspired_by": [
+      {
+        "seed_id": "baa2fa7d385b",
+        "domain": "IR_REC",
+        "borrowed_aspect": "probabilistic sampling with bounded gradients for distributional robustness"
+      },
+      {
+        "seed_id": "ec79896a1fe8",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "MAML-like meta-learning of fast adaptation steps"
+      },
+      {
+        "seed_id": "66876933302f",
+        "domain": "IR_REC",
+        "borrowed_aspect": "training-free non-parametric error compensation memory with attention"
+      },
+      {
+        "seed_id": "3065495cf523",
+        "domain": "RL",
+        "borrowed_aspect": "online threshold update for conformal coverage control"
+      },
+      {
+        "seed_id": "26af209a8743",
+        "domain": "SPEECH",
+        "borrowed_aspect": "multiresolution multitask regularization to stabilize representations"
+      }
+    ],
+    "wall_clock_s": 135.39,
+    "cost": {
+      "gen_prompt_tokens": 6910,
+      "gen_completion_tokens": 6135,
+      "judge_prompt_tokens": 127421,
+      "judge_completion_tokens": 1119,
+      "gen_cost_usd": 0.07,
+      "judge_cost_usd": 0.399,
+      "total_cost_usd": 0.469
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Disentangle–Separate–Adapt (DiSeA), a training and deployment recipe that forces the model to rely on label-causal features and equips it with a lightweight, unsupervised adapter for on-the-fly robustness. During supervised training on the source data, we expose the backbone to a bank of synthetic interventions that target plausible nuisance axes (e.g., style, background, color, compression, mild geometric or temporal perturbations). We train with a factorized representation z = [z_shared, z_nuis] where the predictor consumes only z_shared. A domain-adversarial head and information bottleneck discourage nuisance information in z_shared, while separate, augmentation-dependent priors over z_nuis capture systematic variation induced by each synthetic domain.\n\nTo stabilize reliance on z_shared and quantify uncertainty, we insert a prototype-based discriminative layer before the classifier. This layer learns a bank of prototypes and encourages sharp, well-separated clusters for class-relevant structure; a small auxiliary head maps the prototype activations to a calibrated confidence. We add a cross-augmentation consistency loss on predictions from different synthetic views of the same example, and a regularizer that minimizes the mutual information between z_shared and augmentation identity while maximizing it for z_nuis, aligning with the factorized design.\n\nTo better decouple content from nuisance without target data, we add a mix-and-separate auxiliary task: we create pseudo-composites by combining the content of one sample with the nuisance attributes of another (e.g., background/style swaps for images, timbre/reverb swaps for audio, style/paraphrase swaps for text) and train a small separation branch that, given the composite, predicts content and nuisance embeddings consistent with those of the original sources. This forces the shared path to carry label-relevant signal that remains stable under recombination, improving invariance to novel, unseen axes at test time.\n\nAt deployment, we keep the backbone frozen and attach a tiny input- or feature-space adapter (prompt/tuner) that updates online without labels. We perform entropy-minimization and consistency updates only on samples flagged as uncertain by the prototype confidence, using a momentum EMA with uncertainty-weighted step sizes to avoid drift. A safety gate reuses the uncertainty to control adaptation rate, snapshot and rollback the adapter when confidence drops, and abstain or escalate for extreme out-of-support inputs. Because the adapter is small and the update is unsupervised, the system can react to novel shifts it never saw during training while preserving the invariant backbone.",
+        "rationale": "Generalization to axes never seen at training fails when predictors unintentionally bind to nuisance features. DiSeA tackles this by (i) explicitly factorizing representations into shared and nuisance channels with augmentation-dependent priors and adversarial decoupling, pushing the classifier to depend only on label-causal structure; (ii) enforcing prediction consistency across synthetic interventions while encouraging z_nuis to carry augmentation identity, which makes z_shared maximally invariant; and (iii) using a mix-and-separate auxiliary task to practice counterfactual recomposition, strengthening the model’s ability to ignore nuisance even for combinations absent from the source.\n\nBecause the target distribution is unavailable during training, we rely solely on synthetic interventions derived from the source and on-the-fly, label-free adaptation at test time. The uncertainty-aware prompt/adapter provides a low-risk mechanism to make small, reversible adjustments in response to real shifts, with confidence gating to prevent catastrophic drift. Together, these components yield robustness to previously unseen shift axes without needing target samples during training.",
+        "inspired_by": [
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared vs domain-specific latent with domain-dependent priors"
+          },
+          {
+            "seed_id": "f41ac7143cfe",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "mix-and-separate auxiliary task for disentanglement"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based deterministic uncertainty head"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA updates for lightweight prompts/adapters"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "DiSeA combines multiple known mechanisms: (1) disentangled representation with domain-adversarial training and information bottleneck for domain generalization — well-established individually and in pairs; (2) prototype-based discriminative layers with uncertainty estimation — present in LDU (2022) and related work; (3) test-time adaptation with entropy minimization and EMA — well-established (TENT, CoTTA, etc.); (4) augmentation-dependent priors over nuisance factors — present in \"Learning Predictive Models From Observation and Interaction\" (seed 14); (5) mix-and-separate auxiliary task for content/nuisance disentanglement — present in the binaural audio paper (seed 13) and related audio-visual work. However, the specific combination of ALL these components together — particularly the mix-and-separate auxiliary task applied to general domain generalization (not just audio), combined with uncertainty-gated test-time adapter with snapshot/rollback safety mechanism, augmentation-dependent nuisance priors, and prototype-based confidence gating — has no direct published end-to-end match surfaced by searches. The safety gate with snapshot/rollback and uncertainty-weighted step sizes for the adapter is a named design choice not found in any search result. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing specific named design choices not in the surfaced literature, though individual components are known.\n\nPrior works:\n  - Disentangled Prompt Representation for Domain Generalization (2024): disentangled invariant/domain-specific features + prototype learning for domain generalization\n  - Cross-Domain Sentiment Analysis via Disentangled Representation and Prototypical Learning (2025): disentangled representation + prototypical learning for domain generalization\n  - Latent Discriminant Deterministic Uncertainty (LDU, 2022): prototype-based discriminative layer with auxiliary confidence head for uncertainty estimation\n  - Cloud-Device Collaborative Adaptation (VPLU, 2022): visual prompt + uncertainty-aware EMA for continual test-time adaptation with adversarial alignment\n  - Protected Test-Time Adaptation via Online Entropy Matching (2024): safety-aware test-time adaptation with drift prevention\n  - Visually Informed Binaural Audio Generation without Binaural Audios (2021): mix-and-separate auxiliary task for content/nuisance disentanglement\n  - Learning Predictive Models From Observation and Interaction (2019): factorized z_shared/z_domain with domain-dependent priors",
+        "prior_works": [
+          "Disentangled Prompt Representation for Domain Generalization (2024): disentangled invariant/domain-specific features + prototype learning for domain generalization",
+          "Cross-Domain Sentiment Analysis via Disentangled Representation and Prototypical Learning (2025): disentangled representation + prototypical learning for domain generalization",
+          "Latent Discriminant Deterministic Uncertainty (LDU, 2022): prototype-based discriminative layer with auxiliary confidence head for uncertainty estimation",
+          "Cloud-Device Collaborative Adaptation (VPLU, 2022): visual prompt + uncertainty-aware EMA for continual test-time adaptation with adversarial alignment",
+          "Protected Test-Time Adaptation via Online Entropy Matching (2024): safety-aware test-time adaptation with drift prevention",
+          "Visually Informed Binaural Audio Generation without Binaural Audios (2021): mix-and-separate auxiliary task for content/nuisance disentanglement",
+          "Learning Predictive Models From Observation and Interaction (2019): factorized z_shared/z_domain with domain-dependent priors"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Disentangle–Separate–Adapt (DiSeA), a training and deployment recipe that forces the model to rely on label-causal features and equips it with a lightweight, unsupervised adapter for on-the-fly robustness. During supervised training on the source data, we expose the backbone to a bank of synthetic interventions that target plausible nuisance axes (e.g., style, background, color, compression, mild geometric or temporal perturbations). We train with a factorized representation z = [z_shared, z_nuis] where the predictor consumes only z_shared. A domain-adversarial head and information bottleneck discourage nuisance information in z_shared, while separate, augmentation-dependent priors over z_nuis capture systematic variation induced by each synthetic domain.\n\nTo stabilize reliance on z_shared and quantify uncertainty, we insert a prototype-based discriminative layer before the classifier. This layer learns a bank of prototypes and encourages sharp, well-separated clusters for class-relevant structure; a small auxiliary head maps the prototype activations to a calibrated confidence. We add a cross-augmentation consistency loss on predictions from different synthetic views of the same example, and a regularizer that minimizes the mutual information between z_shared and augmentation identity while maximizing it for z_nuis, aligning with the factorized design.\n\nTo better decouple content from nuisance without target data, we add a mix-and-separate auxiliary task: we create pseudo-composites by combining the content of one sample with the nuisance attributes of another (e.g., background/style swaps for images, timbre/reverb swaps for audio, style/paraphrase swaps for text) and train a small separation branch that, given the composite, predicts content and nuisance embeddings consistent with those of the original sources. This forces the shared path to carry label-relevant signal that remains stable under recombination, improving invariance to novel, unseen axes at test time.\n\nAt deployment, we keep the backbone frozen and attach a tiny input- or feature-space adapter (prompt/tuner) that updates online without labels. We perform entropy-minimization and consistency updates only on samples flagged as uncertain by the prototype confidence, using a momentum EMA with uncertainty-weighted step sizes to avoid drift. A safety gate reuses the uncertainty to control adaptation rate, snapshot and rollback the adapter when confidence drops, and abstain or escalate for extreme out-of-support inputs. Because the adapter is small and the update is unsupervised, the system can react to novel shifts it never saw during training while preserving the invariant backbone.",
+    "final_rationale": "Generalization to axes never seen at training fails when predictors unintentionally bind to nuisance features. DiSeA tackles this by (i) explicitly factorizing representations into shared and nuisance channels with augmentation-dependent priors and adversarial decoupling, pushing the classifier to depend only on label-causal structure; (ii) enforcing prediction consistency across synthetic interventions while encouraging z_nuis to carry augmentation identity, which makes z_shared maximally invariant; and (iii) using a mix-and-separate auxiliary task to practice counterfactual recomposition, strengthening the model’s ability to ignore nuisance even for combinations absent from the source.\n\nBecause the target distribution is unavailable during training, we rely solely on synthetic interventions derived from the source and on-the-fly, label-free adaptation at test time. The uncertainty-aware prompt/adapter provides a low-risk mechanism to make small, reversible adjustments in response to real shifts, with confidence gating to prevent catastrophic drift. Together, these components yield robustness to previously unseen shift axes without needing target samples during training.",
+    "final_inspired_by": [
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared vs domain-specific latent with domain-dependent priors"
+      },
+      {
+        "seed_id": "f41ac7143cfe",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "mix-and-separate auxiliary task for disentanglement"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based deterministic uncertainty head"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA updates for lightweight prompts/adapters"
+      }
+    ],
+    "wall_clock_s": 125.52,
+    "cost": {
+      "gen_prompt_tokens": 4800,
+      "gen_completion_tokens": 3359,
+      "judge_prompt_tokens": 127815,
+      "judge_completion_tokens": 1252,
+      "gen_cost_usd": 0.0396,
+      "judge_cost_usd": 0.4022,
+      "total_cost_usd": 0.4418
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the influence-bounded probabilistic sampler with capped gradient sensitivity combined with a meta-learned (MAML-like) test-time adaptation operator trained across synthetic shifts, plus an error-compensation memory buffer — but each of these components (DRO-style training, MAML-based TTA, conformal prediction, memory-augmented inference) exists as a well-established technique in prior literature. The combination is competent but largely assembles known pieces. Method B's strongest novel element is the \"mix-and-separate\" auxiliary task: creating pseudo-composites by swapping nuisance attributes across samples and training a separation branch to recover original content/nuisance embeddings. This specific self-supervised pretext task for disentanglement — forcing the shared path to remain stable under cross-sample nuisance recombination — is a more original mechanism not straightforwardly surfaced in prior domain generalization or disentanglement literature. The factorized representation with augmentation-dependent priors over z_nuis combined with this mix-and-separate task represents a more distinctive and harder-to-find combination than Method A's ensemble of established techniques."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is that test-time distributions shift along axes the model never saw during training, and the challenge is achieving robustness without observing the target distribution. Method A addresses this through influence-bounded sampling (DRO-style), multiresolution regularization, meta-learned test-time adaptation across synthetic shifts, and online conformal calibration. However, the core mechanism for handling *unseen* axes is somewhat indirect — the meta-learning loop uses synthetic shifts, but the connection to truly unseen axes is not tightly traced. Method B more directly engages the failure mode by explicitly disentangling label-causal features (z_shared) from nuisance features (z_nuis), using a domain-adversarial head and information bottleneck to prevent nuisance information from contaminating the predictive path. The mix-and-separate auxiliary task specifically forces z_shared to carry only label-relevant signal stable under recombination across novel nuisance axes — this is a more direct causal pathway from \"unseen shift axes\" to \"model relies only on invariant features.\" Both methods use unsupervised test-time adaptation, but Method B's training-time disentanglement more directly addresses the core failure mode of shifts along axes never seen, by structurally preventing the model from relying on those axes in the first place."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's core coherence weakness is the \"mix-and-separate\" auxiliary task, which requires combining content from one sample with nuisance attributes of another (e.g., background/style swaps). This presupposes the ability to isolate and recombine nuisance attributes in a controlled way before the disentanglement is learned — a circular dependency that is not resolved in the description. Additionally, the interaction between the domain-adversarial head, information bottleneck, mutual information regularizer, prototype layer, and online adapter creates a complex system where the training objectives could conflict in ways that are not addressed. However, the overall pipeline has a logical flow from training-time disentanglement to deployment-time adaptation.\n\nMethod B's most serious coherence weakness is the non-parametric error-compensation memory that estimates a \"residual bias\" from stored representations and proxy nonconformity scores when labels are unavailable. The mechanism for computing a meaningful residual correction without ground-truth labels is underspecified — proxy scores like softmax margin do not provide directional bias estimates, so the correction step lacks a clear mathematical grounding. The MAML-like meta-learning stage is coherent on its own, and the conformal safety layer is standard. The influence-bounded sampler is somewhat underspecified but plausible. Overall, the memory-based bias correction is a significant gap.\n\nBoth methods have coherence weaknesses, but Method A's circular dependency in the mix-and-separate task is somewhat mitigated by the fact that the separation is learned jointly (the network learns to produce consistent embeddings, not that perfect separation is assumed upfront). Method B's residual bias correction from label-free proxy scores is a more fundamental logical gap — it claims directional correction without a mechanism to determine correction direction."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5232,
+    "judge_completion_tokens": 958,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0301,
+    "total_cost_usd": 0.0301
+  }
+}

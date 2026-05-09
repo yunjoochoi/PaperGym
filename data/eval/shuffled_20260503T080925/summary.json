@@ -1,0 +1,20 @@
+{
+  "A": {
+    "n": 85,
+    "true_mean": 4.824,
+    "shuffled_mean": 1,
+    "drop_mean": 3.824,
+    "drop_stdev": 0.383,
+    "shuffled_lt_true_count": 85,
+    "shuffled_lt_true_pct": 100.0
+  },
+  "C": {
+    "n": 82,
+    "true_mean": 4.829,
+    "shuffled_mean": 1,
+    "drop_mean": 3.829,
+    "drop_stdev": 0.41,
+    "shuffled_lt_true_count": 82,
+    "shuffled_lt_true_pct": 100.0
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "query_id": "Q21",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Deep models are overconfident even when wrong, making\ndownstream decisions unreliable; how can we calibrate\npredicted probabilities to reflect actual likelihood,\nespecially under distribution shift?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose a three-layer calibration stack that converts raw model scores into shift-robust, coverage-controlled probabilities. Layer 1 learns a post-hoc recalibrator that is explicitly regularized to be smooth and trained with a distributionally robust objective, so it does not overfit a single validation set and remains stable under moderate covariate shift. Layer 2 computes instance-wise confidences by decomposing uncertainty into (a) predictive uncertainty from stochastic predictions and (b) fidelity, i.e., how strongly the model prefers the predicted class over plausible alternatives across perturbations; these are combined into per-class probabilities that better track actual correctness. Layer 3 wraps the calibrated probabilities with an online conformal controller that maintains target coverage (e.g., 1−α top-set coverage) under evolving test distributions by adapting a single threshold on-the-fly and performing a final batch recalibration.\n\nShift-robust post-hoc recalibration (Layer 1): Fit a lightweight calibrator g(·) on a held-out set using vector/Dirichlet scaling or a small MLP that maps logits to calibrated class probabilities. Constrain g to be gradient-bounded (e.g., parameterize its last layer with a temperature and sigmoid-limited weights, and add a Jacobian-norm penalty) to keep its sensitivity small. Train g with a robust objective that minimizes worst-case expected calibration loss over a χ²-divergence ball around the (optionally reweighted) calibration distribution. In practice, alternate between (i) adversarial reweighting of calibration samples within the χ² radius and (ii) updating g with clipped/penalized gradients to keep the effective Lipschitz constant low. If unlabeled target data are available, learn density ratios and importance-weight the calibration loss so that the robust objective centers on the target covariates.\n\nUncertainty–fidelity composition (Layer 2): For an input x, generate K stochastic predictions via test-time augmentation, MC dropout, or a small ensemble. Compute normalized predictive entropy Ĥ(x) from the mean softmax. Measure fidelity F_c(x) for each class c as the average top-2 logit margin across the K passes, with a softmax to map margins to [0,1] and temperature tuned on calibration data. Define the per-class calibrated score as s_c(x) = (1 − Ĥ(x)) · F_c(x), then renormalize s over classes to obtain probabilities. When logits are unavailable (e.g., black-box models), approximate F_c via the empirical frequency and consistency of class c across samples, and use normalized sample entropy for (1 − Ĥ). This multiplicative decomposition downweights confident predictions on intrinsically ambiguous inputs and upweights stable, preference-consistent ones.\n\nCoverage control via online conformal calibration (Layer 3): On a split calibration set, compute nonconformity scores A(x, y) = 1 − p_cal(x)[y] using the Layer-1+2 probabilities. Set an initial threshold κ as the (1−α)(n+1)/n quantile (optionally using density-ratio weights to address covariate shift). At test time, output either (a) a probability vector together with a set-valued prediction S(x) = {c : 1 − p_cal(x)[c] ≤ κ} that enjoys 1−α marginal coverage, or (b) a scalar confidence compatible with S by ensuring the true label is in the top-set with probability ≥ 1−α. Update κ online with a decaying step size toward the target coverage based on recent empirical coverage, and periodically perform a batch recalibration on the latest labeled slice. This preserves finite-sample coverage while adapting to drift without retraining the base model.\n\nPractical notes: Train the robust calibrator once per model per domain family; use small K (e.g., 5–10) for Layer 2 to control latency. Evaluate with NLL and ECE (including class- and difficulty-conditional ECE), and verify coverage of S(x) on rolling windows. For safety-critical use, trigger abstention when S(x) is large or when entropy remains high despite recalibration.",
+        "rationale": "Overconfidence stems from a mismatch between raw scores and true likelihoods, and it worsens under shift when a recalibrator overfits a single validation distribution. A gradient-bounded recalibrator trained with a χ²-ball robust objective reduces sensitivity to small reweightings of the calibration set, making its mapping stable across nearby test distributions. This directly targets the mechanism by which temperature/Platt scaling can otherwise become brittle out of domain.\n\nInstance-wise uncertainty–fidelity composition improves probability quality by separating aleatoric uncertainty (captured by predictive entropy) from the model’s preference strength for a class (captured by margins/consistency across perturbations). Their product naturally downweights predictions that are either unstable or intrinsically ambiguous, yielding probabilities that better correlate with correctness.\n\nFinally, conformal coverage provides finite-sample guarantees on set-valued predictions independent of score calibration details, and an online threshold update tracks nonstationarity. Together, these layers yield calibrated probabilities that remain meaningful under distribution shift and offer a controllable safety net when the shift is too large for precise scalar calibration.",
+        "inspired_by": [
+          {
+            "seed_id": "baa2fa7d385b",
+            "domain": "IR_REC",
+            "borrowed_aspect": "bounded-gradient robustness within a χ²-divergence ball"
+          },
+          {
+            "seed_id": "9419d76f50db",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "uncertainty–fidelity decomposition for confidence calibration"
+          },
+          {
+            "seed_id": "3065495cf523",
+            "domain": "RL",
+            "borrowed_aspect": "online conformal thresholding to maintain target coverage"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines three distinct layers: (1) a distributionally robust post-hoc recalibrator with χ²-divergence ball and gradient-bounded (Lipschitz) constraints, (2) an uncertainty-fidelity decomposition using predictive entropy × top-2 logit margin across stochastic passes, and (3) an online conformal threshold controller with batch recalibration. Searches found: papers on conformal prediction under distribution shift (but not combined with robust calibration + uncertainty-fidelity decomposition); the UF Calibration paper (seed [LLM_NLP]) which directly inspires Layer 2 but applies it to LLMs for MCQA; papers on online/adaptive conformal prediction (ACI, CAP, etc.) for time series; and the CCPO paper combining conformal + online threshold updates. No search surfaced a paper that combines all three layers — distributionally robust calibration with χ²-ball + Lipschitz constraints, entropy-fidelity multiplicative decomposition, and online conformal coverage control — as a unified calibration stack for classification under distribution shift. The UF Calibration paper covers Layer 2's core idea for LLMs, and online conformal prediction covers Layer 3, but the specific combination of all three for general classification calibration under shift, with the χ²-robust + gradient-bounded Layer 1, is not found as a joint published method. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with one named design choice (gradient-bounded χ²-robust recalibrator) not found in the literature as described.\n\nPrior works:\n  - Calibrating the Confidence of Large Language Models by Eliciting Fidelity (2024): Directly covers the uncertainty-fidelity multiplicative decomposition (Layer 2) for LLM calibration, but not for general classification or combined with robust calibration + conformal layers.\n  - Doubly robust calibration of prediction sets under covariate shift (2022): Covers importance-weighted conformal calibration under covariate shift, related to Layer 3 but not the full stack.\n  - Conformal Constrained Policy Optimization (CCPO) (2025): Online conformal threshold update with decaying step size and batch recalibration, closely related to Layer 3's mechanism.\n  - Error-quantified Conformal Inference for Time Series (2025): Online adaptive conformal threshold updates for coverage under distribution shift, related to Layer 3.\n  - WQLCP: Weighted Adaptive Conformal Prediction (2025): Importance-weighted conformal prediction under distribution shift, related to Layer 3.",
+        "prior_works": [
+          "Calibrating the Confidence of Large Language Models by Eliciting Fidelity (2024): Directly covers the uncertainty-fidelity multiplicative decomposition (Layer 2) for LLM calibration, but not for general classification or combined with robust calibration + conformal layers.",
+          "Doubly robust calibration of prediction sets under covariate shift (2022): Covers importance-weighted conformal calibration under covariate shift, related to Layer 3 but not the full stack.",
+          "Conformal Constrained Policy Optimization (CCPO) (2025): Online conformal threshold update with decaying step size and batch recalibration, closely related to Layer 3's mechanism.",
+          "Error-quantified Conformal Inference for Time Series (2025): Online adaptive conformal threshold updates for coverage under distribution shift, related to Layer 3.",
+          "WQLCP: Weighted Adaptive Conformal Prediction (2025): Importance-weighted conformal prediction under distribution shift, related to Layer 3."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose a three-layer calibration stack that converts raw model scores into shift-robust, coverage-controlled probabilities. Layer 1 learns a post-hoc recalibrator that is explicitly regularized to be smooth and trained with a distributionally robust objective, so it does not overfit a single validation set and remains stable under moderate covariate shift. Layer 2 computes instance-wise confidences by decomposing uncertainty into (a) predictive uncertainty from stochastic predictions and (b) fidelity, i.e., how strongly the model prefers the predicted class over plausible alternatives across perturbations; these are combined into per-class probabilities that better track actual correctness. Layer 3 wraps the calibrated probabilities with an online conformal controller that maintains target coverage (e.g., 1−α top-set coverage) under evolving test distributions by adapting a single threshold on-the-fly and performing a final batch recalibration.\n\nShift-robust post-hoc recalibration (Layer 1): Fit a lightweight calibrator g(·) on a held-out set using vector/Dirichlet scaling or a small MLP that maps logits to calibrated class probabilities. Constrain g to be gradient-bounded (e.g., parameterize its last layer with a temperature and sigmoid-limited weights, and add a Jacobian-norm penalty) to keep its sensitivity small. Train g with a robust objective that minimizes worst-case expected calibration loss over a χ²-divergence ball around the (optionally reweighted) calibration distribution. In practice, alternate between (i) adversarial reweighting of calibration samples within the χ² radius and (ii) updating g with clipped/penalized gradients to keep the effective Lipschitz constant low. If unlabeled target data are available, learn density ratios and importance-weight the calibration loss so that the robust objective centers on the target covariates.\n\nUncertainty–fidelity composition (Layer 2): For an input x, generate K stochastic predictions via test-time augmentation, MC dropout, or a small ensemble. Compute normalized predictive entropy Ĥ(x) from the mean softmax. Measure fidelity F_c(x) for each class c as the average top-2 logit margin across the K passes, with a softmax to map margins to [0,1] and temperature tuned on calibration data. Define the per-class calibrated score as s_c(x) = (1 − Ĥ(x)) · F_c(x), then renormalize s over classes to obtain probabilities. When logits are unavailable (e.g., black-box models), approximate F_c via the empirical frequency and consistency of class c across samples, and use normalized sample entropy for (1 − Ĥ). This multiplicative decomposition downweights confident predictions on intrinsically ambiguous inputs and upweights stable, preference-consistent ones.\n\nCoverage control via online conformal calibration (Layer 3): On a split calibration set, compute nonconformity scores A(x, y) = 1 − p_cal(x)[y] using the Layer-1+2 probabilities. Set an initial threshold κ as the (1−α)(n+1)/n quantile (optionally using density-ratio weights to address covariate shift). At test time, output either (a) a probability vector together with a set-valued prediction S(x) = {c : 1 − p_cal(x)[c] ≤ κ} that enjoys 1−α marginal coverage, or (b) a scalar confidence compatible with S by ensuring the true label is in the top-set with probability ≥ 1−α. Update κ online with a decaying step size toward the target coverage based on recent empirical coverage, and periodically perform a batch recalibration on the latest labeled slice. This preserves finite-sample coverage while adapting to drift without retraining the base model.\n\nPractical notes: Train the robust calibrator once per model per domain family; use small K (e.g., 5–10) for Layer 2 to control latency. Evaluate with NLL and ECE (including class- and difficulty-conditional ECE), and verify coverage of S(x) on rolling windows. For safety-critical use, trigger abstention when S(x) is large or when entropy remains high despite recalibration.",
+    "final_rationale": "Overconfidence stems from a mismatch between raw scores and true likelihoods, and it worsens under shift when a recalibrator overfits a single validation distribution. A gradient-bounded recalibrator trained with a χ²-ball robust objective reduces sensitivity to small reweightings of the calibration set, making its mapping stable across nearby test distributions. This directly targets the mechanism by which temperature/Platt scaling can otherwise become brittle out of domain.\n\nInstance-wise uncertainty–fidelity composition improves probability quality by separating aleatoric uncertainty (captured by predictive entropy) from the model’s preference strength for a class (captured by margins/consistency across perturbations). Their product naturally downweights predictions that are either unstable or intrinsically ambiguous, yielding probabilities that better correlate with correctness.\n\nFinally, conformal coverage provides finite-sample guarantees on set-valued predictions independent of score calibration details, and an online threshold update tracks nonstationarity. Together, these layers yield calibrated probabilities that remain meaningful under distribution shift and offer a controllable safety net when the shift is too large for precise scalar calibration.",
+    "final_inspired_by": [
+      {
+        "seed_id": "baa2fa7d385b",
+        "domain": "IR_REC",
+        "borrowed_aspect": "bounded-gradient robustness within a χ²-divergence ball"
+      },
+      {
+        "seed_id": "9419d76f50db",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "uncertainty–fidelity decomposition for confidence calibration"
+      },
+      {
+        "seed_id": "3065495cf523",
+        "domain": "RL",
+        "borrowed_aspect": "online conformal thresholding to maintain target coverage"
+      }
+    ],
+    "wall_clock_s": 168.64,
+    "cost": {
+      "gen_prompt_tokens": 7398,
+      "gen_completion_tokens": 6204,
+      "judge_prompt_tokens": 133729,
+      "judge_completion_tokens": 1168,
+      "gen_cost_usd": 0.0713,
+      "judge_cost_usd": 0.4187,
+      "total_cost_usd": 0.49
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose SCOPE-Cal: a shift-aware calibration pipeline that combines a deterministic uncertainty head, an online adaptive calibrator, and a lightweight conformal layer for risk control. At inference time, the base model produces logits for class probabilities and a companion uncertainty score. The scores are first mapped through a post-hoc calibrator trained offline, then dynamically adjusted online to track distribution shifts. For high-stakes use, we optionally return conformal prediction sets that preserve target coverage even as the data drifts.\n\nOffline, train the task model as usual, then freeze it and attach a prototype-based uncertainty head at the pre-logit latent layer. This head learns a small set of prototypes and outputs a single-pass confidence score in [0,1] indicating how typical the example is with respect to learned class-conditional structure. In parallel, fit a standard multiclass post-hoc calibrator on in-distribution validation data (e.g., vector temperature scaling or a low-rank matrix/bias map) by minimizing NLL; this yields a static mapping g0(z) from logits to calibrated probabilities that is optimal for the source domain.\n\nOnline, maintain a tiny stateful calibrator g_t parameterized by a few variables (e.g., global temperature T, optional per-class biases) initialized from g0. Update g_t whenever small batches of labels arrive using a Kalman-filter-like step: treat batch-wise miscalibration statistics (e.g., NLL residuals, reliability within probability bins) as noisy observations of the optimal parameter change and adjust T and biases accordingly. Estimate the observation and process noise with exponential moving averages so the update rate adapts to label scarcity and stochasticity. Weight each example’s contribution by its uncertainty score, giving larger updates for higher-uncertainty samples that are more indicative of shift. When labels are temporarily unavailable, apply a safe, ranking-preserving softening p' = normalize(p^(1 + λ·u)) that reduces confidence proportional to uncertainty u, with λ tuned on source data and adjusted upward if shift detectors flag drift.\n\nFor coverage guarantees under shift, run a lightweight, rolling weighted conformal layer on top of g_t. Maintain a small buffer of the most recent labeled examples and compute nonconformity scores (e.g., −log calibrated probability of the true class). Partition the buffer into uncertainty bins and compute per-bin quantile thresholds with optional importance weights from a domain classifier (to partially correct covariate shift). At prediction time, in addition to calibrated probabilities, return a prediction set containing all labels whose nonconformity is below the per-bin threshold for the test point’s uncertainty bin; this preserves approximate coverage overall and within uncertainty strata while keeping sets small on in-distribution inputs.",
+        "rationale": "Modern deep models are overconfident because fixed post-hoc calibrators are optimized for the training distribution and do not adapt when the data drifts. SCOPE-Cal addresses this by (1) learning a deterministic uncertainty score that detects atypical inputs with a single forward pass; (2) using that score to focus online calibration updates on the most shift-informative examples and to safely soften probabilities when labels are sparse; and (3) adaptively tracking the best calibration parameters with a Kalman-style update that is robust to noisy, intermittent supervision. This combination preserves excellent in-distribution calibration while remaining responsive under distribution shift.\n\nFinally, the optional conformal layer adds distribution-agnostic risk control: even if probabilities degrade temporarily during a sharp shift, prediction sets maintain target coverage, and conditioning on uncertainty bins helps keep sets tight where the model is confident and expand them only where warranted. The result is reliable probabilities for downstream decision-making, with an explicit mechanism to handle and report uncertainty under shift.",
+        "inspired_by": [
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based deterministic uncertainty head"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA updating"
+          },
+          {
+            "seed_id": "663d598bb0b9",
+            "domain": "CV",
+            "borrowed_aspect": "Kalman-style adaptive parameter updates with online noise estimation"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal no single published paper that combines all three components of SCOPE-Cal: (1) a prototype-based deterministic uncertainty head (like LDU/VOLTA) at the pre-logit layer, (2) a Kalman-filter-style online temperature/bias update weighted by per-sample uncertainty scores, and (3) a rolling weighted conformal layer with uncertainty-bin-stratified thresholds for coverage under shift. Individual components are well-known: LDU-style prototype uncertainty heads exist (Mukhoti et al. 2023), post-hoc calibration under label/covariate shift is studied (Podkopaev & Ramdas 2021), online/test-time calibration exists (UL-TTA, Tent variants), and weighted conformal prediction under shift exists (WQLCP, pseudo-calibrated CP). However, no surfaced paper jointly applies the Kalman-filter-style sequential update of calibration parameters weighted by a prototype uncertainty score, combined with uncertainty-bin-stratified rolling conformal sets, as a unified pipeline for classification calibration under distribution shift. The combination of mechanism families (deterministic uncertainty head + Kalman-style online calibration weighting + stratified conformal layer) has no direct published joint application found in searches, matching the Score 4 anchor.\n\nPrior works:\n  - Latent Discriminant Deterministic Uncertainty / LDU (Mukhoti et al. 2023): prototype-based deterministic uncertainty head at pre-logit layer — directly overlaps with SCOPE-Cal's uncertainty head component.\n  - Distribution-free uncertainty quantification for classification under label shift (Podkopaev & Ramdas, UAI 2021): reweighted conformal prediction and calibration under distribution shift — overlaps with conformal layer component.\n  - WQLCP: Weighted Adaptive Conformal Prediction for Robust UQ Under Distribution Shifts (CVPRW 2025): importance-weighted conformal prediction under shift — overlaps with weighted conformal layer.\n  - UL-TTA: Ultra-Light Test-Time Adaptation for VLMs (2025): online Bayesian updates of temperature and class priors under shift — overlaps with online calibration component.\n  - KOALA: Kalman Optimization Algorithm with Loss Adaptivity (2021): Kalman-filter-style parameter updates with EMA noise estimation — overlaps with Kalman-style update mechanism.\n  - Coverage Guarantees for Pseudo-Calibrated Conformal Prediction under Distribution Shift (2026): conformal prediction with classifier uncertainty under covariate shift — overlaps with conformal layer.",
+        "prior_works": [
+          "Latent Discriminant Deterministic Uncertainty / LDU (Mukhoti et al. 2023): prototype-based deterministic uncertainty head at pre-logit layer — directly overlaps with SCOPE-Cal's uncertainty head component.",
+          "Distribution-free uncertainty quantification for classification under label shift (Podkopaev & Ramdas, UAI 2021): reweighted conformal prediction and calibration under distribution shift — overlaps with conformal layer component.",
+          "WQLCP: Weighted Adaptive Conformal Prediction for Robust UQ Under Distribution Shifts (CVPRW 2025): importance-weighted conformal prediction under shift — overlaps with weighted conformal layer.",
+          "UL-TTA: Ultra-Light Test-Time Adaptation for VLMs (2025): online Bayesian updates of temperature and class priors under shift — overlaps with online calibration component.",
+          "KOALA: Kalman Optimization Algorithm with Loss Adaptivity (2021): Kalman-filter-style parameter updates with EMA noise estimation — overlaps with Kalman-style update mechanism.",
+          "Coverage Guarantees for Pseudo-Calibrated Conformal Prediction under Distribution Shift (2026): conformal prediction with classifier uncertainty under covariate shift — overlaps with conformal layer."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose SCOPE-Cal: a shift-aware calibration pipeline that combines a deterministic uncertainty head, an online adaptive calibrator, and a lightweight conformal layer for risk control. At inference time, the base model produces logits for class probabilities and a companion uncertainty score. The scores are first mapped through a post-hoc calibrator trained offline, then dynamically adjusted online to track distribution shifts. For high-stakes use, we optionally return conformal prediction sets that preserve target coverage even as the data drifts.\n\nOffline, train the task model as usual, then freeze it and attach a prototype-based uncertainty head at the pre-logit latent layer. This head learns a small set of prototypes and outputs a single-pass confidence score in [0,1] indicating how typical the example is with respect to learned class-conditional structure. In parallel, fit a standard multiclass post-hoc calibrator on in-distribution validation data (e.g., vector temperature scaling or a low-rank matrix/bias map) by minimizing NLL; this yields a static mapping g0(z) from logits to calibrated probabilities that is optimal for the source domain.\n\nOnline, maintain a tiny stateful calibrator g_t parameterized by a few variables (e.g., global temperature T, optional per-class biases) initialized from g0. Update g_t whenever small batches of labels arrive using a Kalman-filter-like step: treat batch-wise miscalibration statistics (e.g., NLL residuals, reliability within probability bins) as noisy observations of the optimal parameter change and adjust T and biases accordingly. Estimate the observation and process noise with exponential moving averages so the update rate adapts to label scarcity and stochasticity. Weight each example’s contribution by its uncertainty score, giving larger updates for higher-uncertainty samples that are more indicative of shift. When labels are temporarily unavailable, apply a safe, ranking-preserving softening p' = normalize(p^(1 + λ·u)) that reduces confidence proportional to uncertainty u, with λ tuned on source data and adjusted upward if shift detectors flag drift.\n\nFor coverage guarantees under shift, run a lightweight, rolling weighted conformal layer on top of g_t. Maintain a small buffer of the most recent labeled examples and compute nonconformity scores (e.g., −log calibrated probability of the true class). Partition the buffer into uncertainty bins and compute per-bin quantile thresholds with optional importance weights from a domain classifier (to partially correct covariate shift). At prediction time, in addition to calibrated probabilities, return a prediction set containing all labels whose nonconformity is below the per-bin threshold for the test point’s uncertainty bin; this preserves approximate coverage overall and within uncertainty strata while keeping sets small on in-distribution inputs.",
+    "final_rationale": "Modern deep models are overconfident because fixed post-hoc calibrators are optimized for the training distribution and do not adapt when the data drifts. SCOPE-Cal addresses this by (1) learning a deterministic uncertainty score that detects atypical inputs with a single forward pass; (2) using that score to focus online calibration updates on the most shift-informative examples and to safely soften probabilities when labels are sparse; and (3) adaptively tracking the best calibration parameters with a Kalman-style update that is robust to noisy, intermittent supervision. This combination preserves excellent in-distribution calibration while remaining responsive under distribution shift.\n\nFinally, the optional conformal layer adds distribution-agnostic risk control: even if probabilities degrade temporarily during a sharp shift, prediction sets maintain target coverage, and conditioning on uncertainty bins helps keep sets tight where the model is confident and expand them only where warranted. The result is reliable probabilities for downstream decision-making, with an explicit mechanism to handle and report uncertainty under shift.",
+    "final_inspired_by": [
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based deterministic uncertainty head"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA updating"
+      },
+      {
+        "seed_id": "663d598bb0b9",
+        "domain": "CV",
+        "borrowed_aspect": "Kalman-style adaptive parameter updates with online noise estimation"
+      }
+    ],
+    "wall_clock_s": 133.1,
+    "cost": {
+      "gen_prompt_tokens": 4801,
+      "gen_completion_tokens": 3473,
+      "judge_prompt_tokens": 169597,
+      "judge_completion_tokens": 1091,
+      "gen_cost_usd": 0.0407,
+      "judge_cost_usd": 0.5252,
+      "total_cost_usd": 0.5659
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the \"uncertainty–fidelity composition\" (Layer 2), which introduces a multiplicative decomposition combining predictive entropy with a \"fidelity\" score (top-2 logit margin stability across stochastic passes) to produce per-class calibrated probabilities. This named mechanism—fidelity as a distinct signal from uncertainty—is a non-trivial framing not commonly found in calibration literature. Method B's strongest novel element is the Kalman-filter-like online update for the calibrator parameters, treating miscalibration statistics as noisy observations and weighting updates by uncertainty scores. While Kalman filtering has been applied in online learning contexts, its specific application here to calibrator parameter adaptation with uncertainty-weighted contributions is moderately novel. However, the prototype-based uncertainty head and per-bin conformal thresholds are relatively established ideas. Comparing the two: Method A's fidelity-entropy multiplicative decomposition as a named calibration mechanism is a more distinctly original framing than Method B's Kalman-filter adaptation, which is a more incremental application of an existing technique to a known problem."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is overconfidence in deep models, particularly under distribution shift, requiring calibrated probabilities that reflect actual likelihood. Both methods address this directly through post-hoc calibration, uncertainty quantification, and conformal coverage guarantees. Method A engages the distribution shift problem through a distributionally robust objective with χ²-divergence balls, importance weighting via density ratios, and an online conformal controller that adapts thresholds to evolving distributions. Method B engages it through a Kalman-filter-like online update of calibration parameters, uncertainty-weighted updates prioritizing shift-indicative samples, and a rolling weighted conformal layer with importance weights from a domain classifier. Both trace a clear causal pathway from overconfidence under shift to specific mechanism steps. However, Method A's Layer 1 directly optimizes a worst-case calibration loss over a divergence ball (directly targeting the shift-robustness failure mode at training time), while Method B's offline calibrator is trained on in-distribution data and only adapts online when labels arrive, with a fallback softening heuristic when labels are unavailable. Method A's mechanisms more directly and comprehensively address the calibration-under-shift failure mode at each layer, whereas Method B's core calibrator is initially source-domain-optimal and relies more heavily on online correction."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's most serious coherence weakness is in Layer 2, where the uncertainty-fidelity composition multiplies (1 − Ĥ(x)) by F_c(x) and renormalizes. This creates a tension: the renormalization step means the decomposition doesn't actually preserve calibration properties established in Layer 1 — it overwrites the carefully calibrated probabilities from Layer 1 with a new scoring function whose calibration properties are undefined. The three layers are described as a \"stack,\" but Layer 2 effectively discards Layer 1's output and replaces it with a heuristic combination, making the layered architecture internally inconsistent. Method B is more coherent overall: the offline calibrator g0 feeds into the online g_t as initialization, the Kalman-filter-like update is a well-defined mechanism, the uncertainty head integrates naturally with the weighting scheme, and the conformal layer sits cleanly on top of g_t. The one mild weakness in Method B is the label-free softening step p' = normalize(p^(1 + λ·u)), which is a heuristic without clear calibration guarantees, but it is presented as a fallback and doesn't contradict the rest of the pipeline. Overall, Method B's components connect more consistently without internal contradictions."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6318,
+    "judge_completion_tokens": 855,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0318,
+    "total_cost_usd": 0.0318
+  }
+}

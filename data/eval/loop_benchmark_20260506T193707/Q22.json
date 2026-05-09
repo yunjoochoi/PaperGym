@@ -1,0 +1,218 @@
+{
+  "query_id": "Q22",
+  "natural_domain": "MULTIMODAL",
+  "query_text": "Aligned text-image pairs are scarce in some domains while\nunimodal data is abundant; how can we learn cross-modal\nrepresentations via contrastive objectives that exploit the\nabundant unimodal data?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose UniX-CL, a semi-supervised cross-modal contrastive framework that turns abundant unimodal images and texts into supervisory signal via teacher-guided listwise distillation, semantic-controlled counterfactuals, and a distributional alignment regularizer. UniX-CL uses two lightweight student encoders (image and text) with modality-specific projectors into a shared embedding space. A strong, frozen vision–language teacher (e.g., a CLIP-like model) provides cross-modal rankings over large, unpaired corpora. Training interleaves three data streams: scarce paired (image, text), unpaired images, and unpaired texts.\n\nFirst, we bootstrap strong unimodal representations. For images, we train the student with instance-level contrastive learning on augmented views and produce k “views” per image using learnable viewer tokens that yield multiple embeddings per sample; a max-aggregation over these embeddings preserves ANN-friendly retrieval while capturing diverse semantics. For text, we combine SimCSE-style augmentation with semantic-controlled edits to create positive (meaning-preserving) and hard-negative (meaning-altering) pairs; this toughens the text encoder without needing image matches.\n\nSecond, we convert unpaired corpora into cross-modal supervision with teacher-guided listwise distillation. For each unpaired image, we use the frozen teacher to retrieve and rank M candidate texts from the unpaired text pool; symmetrically, texts retrieve images. The student is trained to reproduce these orderings with a listwise/pairwise RankNet-style objective built on its cosine scores over the same candidate sets. This listwise signal is stronger than single positive–negative pairs and remains well-defined without numeric teacher scores. As training progresses, we mine pseudo-positives by keeping top-1 or mutual top-K neighbors with high teacher–student agreement and use them in a multi-positive InfoNCE with in-batch negatives and soft weights from the teacher.\n\nThird, we add a factual–counterfactual contrastive objective to exploit unimodal augmentations for cross-modal alignment. For each real or pseudo-positive (image, text), we generate meaning-preserving textual edits (e.g., tense/voice changes, function-word deletions) that should keep similarity high, and counterfactual edits that flip key attributes or objects and must reduce similarity. On the vision side, we compute teacher-guided saliency; masking background yields factual image views that should maintain similarity, while masking salient regions forms counterfactuals that should lower it. We enforce margin-separated similarities across these variants, sharpening the student’s sensitivity to truly grounding content.\n\nFinally, we stabilize the joint space with a copula-based dependency regularizer. Over batches of matched real and pseudo-positives, we model the joint of image/text embeddings via a parametric copula (e.g., Gaussian copula) atop flexible marginals. Maximizing the copula likelihood alongside contrastive losses encourages the student to capture higher-order cross-modal dependencies beyond cosine similarity, improving robustness when pair supervision is thin. Training alternates mini-batches from the three streams and linearly ramps up pseudo-positive weight as teacher–student NDCG improves. At inference, we index all viewer embeddings per image and use max similarity to a text query (and vice versa), preserving first-stage retrieval efficiency.",
+        "rationale": "Scarce paired data limits classical contrastive alignment, but abundant unimodal corpora can be turned into cross-modal supervision if we can (i) produce reliable cross-modal orderings, (ii) generate hard positives/negatives that target grounding, and (iii) prevent collapse to superficial correlations. Teacher-guided listwise distillation supplies rich relative preferences over large candidate sets without requiring ground-truth pairs, letting the student learn from unpaired images and texts at scale. Multi-view embeddings expand each sample’s semantic coverage, reducing missed matches under weak pairing.\n\nSemantic-controlled textual edits and saliency-driven visual masks provide factual and counterfactual variants that inject precise, alignment-aware contrastive signals from unimodal data, improving grounding sensitivity. A copula regularizer complements similarity losses by explicitly fitting cross-modal dependence structure, yielding a better-posed joint space under limited direct supervision. Together, these components transform unpaired data into effective cross-modal training signals while preserving efficiency for retrieval and transfer.",
+        "inspired_by": [
+          {
+            "seed_id": "cdb65a898b67",
+            "domain": "IR_REC",
+            "borrowed_aspect": "listwise ranking distillation to supervise embeddings"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-view embeddings with viewer tokens and max pooling"
+          },
+          {
+            "seed_id": "7cfe138b96d7",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "semantic-controlled text perturbations for hard positives/negatives"
+          },
+          {
+            "seed_id": "cc8944ac8c5a",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "factual versus counterfactual masking as contrastive signal"
+          },
+          {
+            "seed_id": "7141b87a75c3",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "copula-based joint dependency regularization"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed UniX-CL combines five distinct mechanisms: (1) teacher-guided listwise/RankNet distillation from a frozen VLM over unpaired corpora for cross-modal supervision, (2) multi-view viewer-token embeddings with max-aggregation (from MVR/CAMVR in IR), (3) SimCSE + semantic-controlled counterfactual text augmentation, (4) factual-counterfactual saliency-driven visual masking for grounding, and (5) a copula-based distributional alignment regularizer. Searches surfaced: CM2 (copula cross-modal alignment, seed #5), VLMixer (unpaired VLP via cross-modal CutMix + contrastive), MVR/CAMVR (viewer tokens for dense retrieval), FIRST (RankNet listwise distillation from reranker orderings for retrieval), and \"Counterfactual Contrastive Learning for Weakly-Supervised Vision-Language Grounding.\" No single paper combines all five mechanisms, and critically, the specific combination of frozen-teacher listwise ranking distillation over large unpaired corpora + copula regularizer + factual/counterfactual saliency masking for cross-modal alignment has not been surfaced. Individual components exist in prior work but their joint application to the semi-supervised cross-modal alignment problem is novel. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms found separately.\n\nPrior works:\n  - Cross-Modal Alignment via Variational Copula Modelling / CM2 (2024): Uses parametric copula to model cross-modal joint distribution for multimodal alignment — directly overlaps with the copula regularizer component.\n  - VLMixer: Unpaired Vision-Language Pre-training via Cross-Modal CutMix (2022): Addresses unpaired VLP with contrastive learning — overlaps with the semi-supervised unpaired cross-modal learning problem framing.\n  - Multi-View Document Representation Learning for Open-Domain Dense Retrieval / MVR (2022): Introduces viewer tokens with max-pooling for multi-view document embeddings — directly overlaps with the multi-view image embedding component.\n  - FIRST: Faster Improved Listwise Reranking with Single Token Decoding (2024): Uses RankNet listwise loss over reranker orderings for retrieval distillation — overlaps with the listwise ranking distillation objective.\n  - Counterfactual Contrastive Learning for Weakly-Supervised Vision-Language Grounding (2020): Uses counterfactual contrastive objectives for vision-language grounding — overlaps with the factual/counterfactual contrastive component.",
+        "prior_works": [
+          "Cross-Modal Alignment via Variational Copula Modelling / CM2 (2024): Uses parametric copula to model cross-modal joint distribution for multimodal alignment — directly overlaps with the copula regularizer component.",
+          "VLMixer: Unpaired Vision-Language Pre-training via Cross-Modal CutMix (2022): Addresses unpaired VLP with contrastive learning — overlaps with the semi-supervised unpaired cross-modal learning problem framing.",
+          "Multi-View Document Representation Learning for Open-Domain Dense Retrieval / MVR (2022): Introduces viewer tokens with max-pooling for multi-view document embeddings — directly overlaps with the multi-view image embedding component.",
+          "FIRST: Faster Improved Listwise Reranking with Single Token Decoding (2024): Uses RankNet listwise loss over reranker orderings for retrieval distillation — overlaps with the listwise ranking distillation objective.",
+          "Counterfactual Contrastive Learning for Weakly-Supervised Vision-Language Grounding (2020): Uses counterfactual contrastive objectives for vision-language grounding — overlaps with the factual/counterfactual contrastive component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose UniX-CL, a semi-supervised cross-modal contrastive framework that turns abundant unimodal images and texts into supervisory signal via teacher-guided listwise distillation, semantic-controlled counterfactuals, and a distributional alignment regularizer. UniX-CL uses two lightweight student encoders (image and text) with modality-specific projectors into a shared embedding space. A strong, frozen vision–language teacher (e.g., a CLIP-like model) provides cross-modal rankings over large, unpaired corpora. Training interleaves three data streams: scarce paired (image, text), unpaired images, and unpaired texts.\n\nFirst, we bootstrap strong unimodal representations. For images, we train the student with instance-level contrastive learning on augmented views and produce k “views” per image using learnable viewer tokens that yield multiple embeddings per sample; a max-aggregation over these embeddings preserves ANN-friendly retrieval while capturing diverse semantics. For text, we combine SimCSE-style augmentation with semantic-controlled edits to create positive (meaning-preserving) and hard-negative (meaning-altering) pairs; this toughens the text encoder without needing image matches.\n\nSecond, we convert unpaired corpora into cross-modal supervision with teacher-guided listwise distillation. For each unpaired image, we use the frozen teacher to retrieve and rank M candidate texts from the unpaired text pool; symmetrically, texts retrieve images. The student is trained to reproduce these orderings with a listwise/pairwise RankNet-style objective built on its cosine scores over the same candidate sets. This listwise signal is stronger than single positive–negative pairs and remains well-defined without numeric teacher scores. As training progresses, we mine pseudo-positives by keeping top-1 or mutual top-K neighbors with high teacher–student agreement and use them in a multi-positive InfoNCE with in-batch negatives and soft weights from the teacher.\n\nThird, we add a factual–counterfactual contrastive objective to exploit unimodal augmentations for cross-modal alignment. For each real or pseudo-positive (image, text), we generate meaning-preserving textual edits (e.g., tense/voice changes, function-word deletions) that should keep similarity high, and counterfactual edits that flip key attributes or objects and must reduce similarity. On the vision side, we compute teacher-guided saliency; masking background yields factual image views that should maintain similarity, while masking salient regions forms counterfactuals that should lower it. We enforce margin-separated similarities across these variants, sharpening the student’s sensitivity to truly grounding content.\n\nFinally, we stabilize the joint space with a copula-based dependency regularizer. Over batches of matched real and pseudo-positives, we model the joint of image/text embeddings via a parametric copula (e.g., Gaussian copula) atop flexible marginals. Maximizing the copula likelihood alongside contrastive losses encourages the student to capture higher-order cross-modal dependencies beyond cosine similarity, improving robustness when pair supervision is thin. Training alternates mini-batches from the three streams and linearly ramps up pseudo-positive weight as teacher–student NDCG improves. At inference, we index all viewer embeddings per image and use max similarity to a text query (and vice versa), preserving first-stage retrieval efficiency.",
+    "final_rationale": "Scarce paired data limits classical contrastive alignment, but abundant unimodal corpora can be turned into cross-modal supervision if we can (i) produce reliable cross-modal orderings, (ii) generate hard positives/negatives that target grounding, and (iii) prevent collapse to superficial correlations. Teacher-guided listwise distillation supplies rich relative preferences over large candidate sets without requiring ground-truth pairs, letting the student learn from unpaired images and texts at scale. Multi-view embeddings expand each sample’s semantic coverage, reducing missed matches under weak pairing.\n\nSemantic-controlled textual edits and saliency-driven visual masks provide factual and counterfactual variants that inject precise, alignment-aware contrastive signals from unimodal data, improving grounding sensitivity. A copula regularizer complements similarity losses by explicitly fitting cross-modal dependence structure, yielding a better-posed joint space under limited direct supervision. Together, these components transform unpaired data into effective cross-modal training signals while preserving efficiency for retrieval and transfer.",
+    "final_inspired_by": [
+      {
+        "seed_id": "cdb65a898b67",
+        "domain": "IR_REC",
+        "borrowed_aspect": "listwise ranking distillation to supervise embeddings"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-view embeddings with viewer tokens and max pooling"
+      },
+      {
+        "seed_id": "7cfe138b96d7",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "semantic-controlled text perturbations for hard positives/negatives"
+      },
+      {
+        "seed_id": "cc8944ac8c5a",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "factual versus counterfactual masking as contrastive signal"
+      },
+      {
+        "seed_id": "7141b87a75c3",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "copula-based joint dependency regularization"
+      }
+    ],
+    "wall_clock_s": 176.11,
+    "cost": {
+      "gen_prompt_tokens": 7230,
+      "gen_completion_tokens": 7834,
+      "judge_prompt_tokens": 139882,
+      "judge_completion_tokens": 1239,
+      "gen_cost_usd": 0.0874,
+      "judge_cost_usd": 0.4382,
+      "total_cost_usd": 0.5256
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose UniX-Align, a semi-supervised contrastive framework that learns cross-modal image–text representations by leveraging abundant unimodal corpora and a small set of aligned pairs. Two modality-specific encoders are first pretrained with strong unimodal self-supervision (e.g., image contrastive learning and sentence-level contrastive learning) and then connected via a shared semantic prototype bank. Each encoder projects samples to a common embedding and outputs a soft assignment over K shared prototypes; the modality-specific projection heads remain distinct, while the prototype bank is shared to anchor a joint semantic space. A lightweight confidence head attached to the prototype layer provides per-sample uncertainty used to weight noisy supervision signals.\n\nTo turn unimodal data into useful cross-modal supervision, we mine pseudo pairs with two complementary channels. First, we build a cross-modal pivot space using visual taggers for images and keyword/entity extraction for text, and connect samples with high tag-overlap; a general-domain teacher (e.g., CLIP) provides soft similarity scores as additional weak signals, but these are down-weighted by the confidence head and an uncertainty-guided EMA schedule so that only stable pseudo links accumulate influence over time. Second, we construct set-level training tuples by sampling small groups of images and texts that share coarse tags. We then apply a permutation-invariant, set-to-set contrastive objective that encourages correct within-set assignments to score higher than mismatched ones, together with an auxiliary “mix-and-separate” prediction that asks the model to recover which text in the set is most responsible for each image (and vice versa). This disambiguates associations without requiring exact instance-level labels upfront.\n\nTraining follows a coarse-to-fine curriculum. We begin by aligning prototype distributions at the cluster level: separately cluster unimodal embeddings, link clusters via tag overlap and teacher scores, and minimize cross-modal divergence between their prototype assignments while preserving high-entropy, diverse usage of prototypes. As pseudo pairs stabilize, we transition to instance-level contrastive training on high-confidence matches, interleaving: (a) supervised InfoNCE on the scarce true pairs, (b) confidence-weighted InfoNCE on pseudo pairs, (c) the set-to-set mix-and-separate loss, and (d) a structure-preserving term that encourages local neighborhood consistency across modalities so that unimodal proximity is reflected cross-modally. A memory bank maintains embeddings and tag metadata to refresh pseudo neighbors periodically; pseudo-pair weights are updated with an uncertainty-aware EMA so noisy links decay while consistent links grow.\n\nAt convergence, both encoders and the shared prototype bank define an aligned space suitable for retrieval and transfer. Inference uses standard cosine similarity between image and text embeddings, with optional prototype-temperature calibration learned during training to improve zero-shot retrieval in the low-pair regime.",
+        "rationale": "The core challenge is to exploit plentiful unimodal data without reliable alignment. UniX-Align converts unimodal corpora into usable cross-modal signals in two ways: (1) prototype-anchored alignment that ties both modalities to a common semantic scaffold learned at scale from unimodal pretraining, and (2) pseudo supervision that is robust to noise through set-level mix-and-separate objectives, confidence weighting, and an uncertainty-guided EMA curriculum. This lets the model learn which image features go with which textual concepts even when exact pairings are sparse.\n\nSet-to-set training leverages weak co-occurrence and topical similarity to create contrastive pressure without requiring instance-level pairs, while the confidence-weighted EMA and prototype-based uncertainty mitigate confirmation bias from imperfect teachers and noisy taggers. The curriculum from cluster-level to instance-level alignment further reduces brittleness: the model first learns broad cross-modal semantics before committing to fine-grained matches, improving stability and final retrieval performance under scarce paired supervision.",
+        "inspired_by": [
+          {
+            "seed_id": "f41ac7143cfe",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "mix-and-separate auxiliary objective to disambiguate associations without full supervision"
+          },
+          {
+            "seed_id": "0b42617a036f",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "pseudo pair augmentation principle to compensate for scarce true pairs"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA updating to stabilize pseudo-label training"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared versus domain-specific latent factoring to align modalities through a common space"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based latent layer with a deterministic uncertainty head"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal that the closest published work is SPAL (Semi-supervised Prototype Semantic Association Learning, SIGIR 2024), which shares the use of shared semantic prototypes and pseudo-label guided contrastive learning for semi-supervised cross-modal retrieval. However, UniX-Align introduces several distinct mechanisms not found in SPAL or any other surfaced paper: (1) a tag-overlap pivot space for pseudo-pair mining combined with a general-domain teacher with confidence-weighted down-weighting; (2) a set-to-set permutation-invariant contrastive objective with a \"mix-and-separate\" prediction head for disambiguating associations without instance-level labels; (3) an uncertainty-guided EMA curriculum that transitions from cluster-level prototype distribution alignment to instance-level contrastive training; and (4) a structure-preserving neighborhood consistency term across modalities. No surfaced paper combines these mechanism families for this problem, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application, introducing named design choices (set-to-set mix-and-separate, uncertainty-guided EMA curriculum, tag-overlap pivot space) not present in the literature as a combined system.\n\nPrior works:\n  - Semi-supervised Prototype Semantic Association Learning (SPAL, SIGIR 2024): uses shared semantic prototypes and pseudo-label guided contrastive learning for semi-supervised cross-modal retrieval — overlaps with prototype bank and pseudo-pair contrastive training components.\n  - CPCL: Cross-Modal Prototypical Contrastive Learning (2024): uses prototype memory and cross-modal contrastive learning for weakly supervised text-image retrieval — overlaps with prototype-anchored alignment.\n  - Rethink Pair-Wise Self-Supervised Cross-Modal Retrieval (RCL, ICASSP 2023): uses prototype contrastive learning and pseudo-labels for cross-modal retrieval — overlaps with prototype contrastive and pseudo-label components.\n  - Visually Informed Binaural Audio Generation without Binaural Audios (2104.06162): uses mix-and-separate as an auxiliary training objective for audio-visual learning — overlaps with the mix-and-separate concept but for a different problem.",
+        "prior_works": [
+          "Semi-supervised Prototype Semantic Association Learning (SPAL, SIGIR 2024): uses shared semantic prototypes and pseudo-label guided contrastive learning for semi-supervised cross-modal retrieval — overlaps with prototype bank and pseudo-pair contrastive training components.",
+          "CPCL: Cross-Modal Prototypical Contrastive Learning (2024): uses prototype memory and cross-modal contrastive learning for weakly supervised text-image retrieval — overlaps with prototype-anchored alignment.",
+          "Rethink Pair-Wise Self-Supervised Cross-Modal Retrieval (RCL, ICASSP 2023): uses prototype contrastive learning and pseudo-labels for cross-modal retrieval — overlaps with prototype contrastive and pseudo-label components.",
+          "Visually Informed Binaural Audio Generation without Binaural Audios (2104.06162): uses mix-and-separate as an auxiliary training objective for audio-visual learning — overlaps with the mix-and-separate concept but for a different problem."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose UniX-Align, a semi-supervised contrastive framework that learns cross-modal image–text representations by leveraging abundant unimodal corpora and a small set of aligned pairs. Two modality-specific encoders are first pretrained with strong unimodal self-supervision (e.g., image contrastive learning and sentence-level contrastive learning) and then connected via a shared semantic prototype bank. Each encoder projects samples to a common embedding and outputs a soft assignment over K shared prototypes; the modality-specific projection heads remain distinct, while the prototype bank is shared to anchor a joint semantic space. A lightweight confidence head attached to the prototype layer provides per-sample uncertainty used to weight noisy supervision signals.\n\nTo turn unimodal data into useful cross-modal supervision, we mine pseudo pairs with two complementary channels. First, we build a cross-modal pivot space using visual taggers for images and keyword/entity extraction for text, and connect samples with high tag-overlap; a general-domain teacher (e.g., CLIP) provides soft similarity scores as additional weak signals, but these are down-weighted by the confidence head and an uncertainty-guided EMA schedule so that only stable pseudo links accumulate influence over time. Second, we construct set-level training tuples by sampling small groups of images and texts that share coarse tags. We then apply a permutation-invariant, set-to-set contrastive objective that encourages correct within-set assignments to score higher than mismatched ones, together with an auxiliary “mix-and-separate” prediction that asks the model to recover which text in the set is most responsible for each image (and vice versa). This disambiguates associations without requiring exact instance-level labels upfront.\n\nTraining follows a coarse-to-fine curriculum. We begin by aligning prototype distributions at the cluster level: separately cluster unimodal embeddings, link clusters via tag overlap and teacher scores, and minimize cross-modal divergence between their prototype assignments while preserving high-entropy, diverse usage of prototypes. As pseudo pairs stabilize, we transition to instance-level contrastive training on high-confidence matches, interleaving: (a) supervised InfoNCE on the scarce true pairs, (b) confidence-weighted InfoNCE on pseudo pairs, (c) the set-to-set mix-and-separate loss, and (d) a structure-preserving term that encourages local neighborhood consistency across modalities so that unimodal proximity is reflected cross-modally. A memory bank maintains embeddings and tag metadata to refresh pseudo neighbors periodically; pseudo-pair weights are updated with an uncertainty-aware EMA so noisy links decay while consistent links grow.\n\nAt convergence, both encoders and the shared prototype bank define an aligned space suitable for retrieval and transfer. Inference uses standard cosine similarity between image and text embeddings, with optional prototype-temperature calibration learned during training to improve zero-shot retrieval in the low-pair regime.",
+    "final_rationale": "The core challenge is to exploit plentiful unimodal data without reliable alignment. UniX-Align converts unimodal corpora into usable cross-modal signals in two ways: (1) prototype-anchored alignment that ties both modalities to a common semantic scaffold learned at scale from unimodal pretraining, and (2) pseudo supervision that is robust to noise through set-level mix-and-separate objectives, confidence weighting, and an uncertainty-guided EMA curriculum. This lets the model learn which image features go with which textual concepts even when exact pairings are sparse.\n\nSet-to-set training leverages weak co-occurrence and topical similarity to create contrastive pressure without requiring instance-level pairs, while the confidence-weighted EMA and prototype-based uncertainty mitigate confirmation bias from imperfect teachers and noisy taggers. The curriculum from cluster-level to instance-level alignment further reduces brittleness: the model first learns broad cross-modal semantics before committing to fine-grained matches, improving stability and final retrieval performance under scarce paired supervision.",
+    "final_inspired_by": [
+      {
+        "seed_id": "f41ac7143cfe",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "mix-and-separate auxiliary objective to disambiguate associations without full supervision"
+      },
+      {
+        "seed_id": "0b42617a036f",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "pseudo pair augmentation principle to compensate for scarce true pairs"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA updating to stabilize pseudo-label training"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared versus domain-specific latent factoring to align modalities through a common space"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based latent layer with a deterministic uncertainty head"
+      }
+    ],
+    "wall_clock_s": 108.74,
+    "cost": {
+      "gen_prompt_tokens": 4806,
+      "gen_completion_tokens": 3657,
+      "judge_prompt_tokens": 89328,
+      "judge_completion_tokens": 1062,
+      "gen_cost_usd": 0.0426,
+      "judge_cost_usd": 0.2839,
+      "total_cost_usd": 0.3265
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of teacher-guided listwise distillation over unpaired corpora (ranking candidate texts/images via a frozen teacher and training students to reproduce orderings with RankNet-style objectives) with a copula-based dependency regularizer for cross-modal alignment. The listwise distillation over unpaired data is a relatively distinctive mechanism, though teacher distillation for pseudo-labeling is broadly known. Method B's strongest novel element is the shared semantic prototype bank with per-sample confidence heads and the set-to-set \"mix-and-separate\" contrastive objective, which asks the model to recover which text in a set is most responsible for each image. The mix-and-separate set-level disambiguation objective is a more clearly original framing not commonly seen in cross-modal contrastive learning literature, as it reframes the alignment problem as a within-set assignment recovery task rather than instance-level matching. Compared to Method A's listwise distillation (which has precedent in ranking-based knowledge distillation), Method B's set-to-set mix-and-separate mechanism represents a more distinctly novel combination for this problem."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is the scarcity of aligned text-image pairs, requiring a mechanism that directly converts abundant unimodal data into cross-modal supervisory signal. Method A addresses this by using a frozen teacher model to retrieve and rank candidate cross-modal matches from unpaired corpora, creating listwise distillation objectives that directly bridge the two modalities without requiring ground-truth pairs—this is a traceable causal pathway from the problem (no paired data) to the solution (teacher-ranked pseudo-pairs used in cross-modal ranking loss). Method B addresses the same failure mode through tag-overlap pivot spaces, prototype banks, and set-level contrastive objectives, which also convert unimodal data into cross-modal supervision, but the mechanism relies more on peripheral signals (tag overlap, cluster-level alignment) that are less directly tied to cross-modal representation learning. Both methods engage the failure mode, but Method A's teacher-guided listwise distillation more directly and explicitly converts unpaired unimodal data into cross-modal ranking supervision, with a clearer causal chain from the problem to the specific training objective."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A has several coherence concerns. The \"learnable viewer tokens\" producing multiple embeddings per image with max-aggregation is an unusual mechanism that is not well-defined in terms of how these tokens are trained or integrated with the contrastive objective. The copula-based dependency regularizer is a significant addition that requires estimating a parametric copula over high-dimensional embeddings in mini-batches, which is technically challenging and the method does not explain how the copula parameters are estimated or how this interacts with the contrastive losses in a stable way. The factual-counterfactual objective requires both teacher-guided saliency masking and semantic text edits, adding complexity that depends on multiple external components working correctly together. Overall, Method A stacks many mechanisms without fully specifying how they interact or are implemented.\n\nMethod B is more internally consistent. The prototype bank shared across modalities provides a clear architectural anchor for cross-modal alignment. The coarse-to-fine curriculum (cluster-level then instance-level) is a well-defined training progression. The confidence head weighting pseudo pairs, the EMA schedule, and the memory bank are all standard components with clear roles. The set-to-set contrastive objective with mix-and-separate prediction is somewhat complex but is described with enough specificity to be implementable. The main potential weakness is that the \"mix-and-separate\" prediction task is not fully specified mechanically, but this is a minor gap compared to Method A's multiple underspecified components."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5706,
+    "judge_completion_tokens": 842,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0297,
+    "total_cost_usd": 0.0297
+  }
+}

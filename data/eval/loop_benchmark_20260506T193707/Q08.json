@@ -1,0 +1,298 @@
+{
+  "query_id": "Q08",
+  "natural_domain": "CV",
+  "query_text": "Object detectors fail on rare classes with few or no labeled\ninstances; how can we detect and localize long-tail or novel\nobjects without per-class supervision?\n",
+  "c_loop": {
+    "rounds": 2,
+    "converged": true,
+    "final_score": 5,
+    "round_scores": [
+      3,
+      5
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose OV-RAD: an open-vocabulary region-align-and-detect pipeline that learns to localize and name objects without per-class box supervision. OV-RAD marries two components: (1) a word–region aligner pre-trained on image–caption pairs that grounds noun phrases to proposals through contrastive learning, and (2) a DETR-style query detector that predicts class-agnostic boxes and scores them by similarity to arbitrary text embeddings at inference. The vision backbone is a self-supervised ViT (e.g., DINO) to improve generalization under scarce labels. The text side is a Transformer encoder that embeds phrases, attributes, and compositional prompts into a shared space with image regions and boxes.\n\nPre-training proceeds under a unified formulation across three supervision sources. For raw web pairs, we parse noun phrases from captions, generate K proposals per image, and perform 1-to-1 max-similarity set alignment between phrases and proposals, optimizing a text-to-region contrastive loss. We focus contrast on text-relevant regions by selecting proposals with high similarity to any concept in the local batch. To strengthen fusion and boundary precision, we add cross-modal pretext tasks: masked language modeling conditioned on regions and masked region classification conditioned on text, projecting 5-D box geometry into the shared encoder so the model learns location-aware alignments. When grounding links are available (e.g., segmentations associated with phrases/questions), we supervise cross-attention maps to point to the correct evidence, transferring fine localization to the aligner.\n\nWe then train the detector as an open-vocabulary, set-prediction model. A Transformer decoder with N object queries predicts boxes via Hungarian matching using geometric costs; instead of a fixed softmax over classes, each query’s box token is scored by cosine similarity to text embeddings for an open phrase bank. We explicitly model negatives: unmatched proposals/queries are pushed away from all phrases (background) and we sample hard negative phrases from the same image/batch, which sharpens decision boundaries and reduces collapse to head concepts. Training alternates batches from detection-style data (seen classes) and web pairs, forming a flywheel between localization and recognition while avoiding reliance on per-class box labels for tail/novel classes.\n\nAt inference, OV-RAD supports two modes. For prompted detection, users provide a few descriptors (“red modular connector”, “two-wheeled transporter”) or high-level categories; we expand these with a question-guided captioner and compute relevance maps from cross-attention to sample high-signal patches, yielding diverse, phrase-specific cues. The detector computes similarity between query boxes and all phrase embeddings and returns boxes with novelty-aware calibration (temperature-scaled cosine, energy-based background thresholding). For unprompted discovery, we output class-agnostic boxes ranked by objectness, cluster their region embeddings over the dataset to propose new categories, and optionally backfill names by nearest-phrase retrieval or post-hoc human labeling. A lightweight self-training loop on target images refines box localization using high-confidence pseudo groundings without per-class labels.",
+        "rationale": "The core failure on long-tail and novel objects stems from reliance on per-class box supervision and closed-vocabulary classifiers. By learning fine-grained word–region alignment directly from image–text pairs and scoring detections by similarity to arbitrary phrases, OV-RAD decouples localization from fixed labels and inherits open-vocabulary recognition. A set-prediction detector eliminates NMS heuristics and produces non-duplicated boxes that can be matched to text post-hoc, while explicit background/hard-negative training calibrates against head-class bias and tightens boundaries.\n\nQuestion-guided patch selection and caption expansion reduce search over the image and phrase space, improving recall on rare concepts with minimal or no examples. Using a DINO-style backbone and cross-modal geometry-aware pretext tasks further regularizes the model under scarce labels, while alternating training on detection-style and web data bootstraps localization without per-class supervision. Together, these choices enable detection and localization of long-tail and novel objects, with or without user-provided names.",
+        "inspired_by": [
+          {
+            "seed_id": "37f118fcc30e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "word–region 1-to-1 alignment and contrastive pre-training from captions with proposal selection"
+          },
+          {
+            "seed_id": "a89ca7315ce7",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "single-stream cross-modal encoder with masked language/region tasks and geometry-aware fusion"
+          },
+          {
+            "seed_id": "28d600cc6cc3",
+            "domain": "CV",
+            "borrowed_aspect": "DETR-style query decoder with Hungarian matching for end-to-end box prediction"
+          },
+          {
+            "seed_id": "d54cefc9ff77",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "cross-attention gradient relevance for phrase-guided patch selection and caption expansion"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "supervised attention using linked segmentations-to-text to ground evidence"
+          },
+          {
+            "seed_id": "5f44070a8baf",
+            "domain": "CV",
+            "borrowed_aspect": "use of DINO-based encoders for robust generalization in scarce-data regimes"
+          }
+        ],
+        "novelty_score": 3,
+        "novelty_reasoning": "OV-RAD combines several known mechanisms: (1) word-region contrastive alignment from image-caption pairs (DetCLIPv2 covers this almost exactly, including max-similarity 1-to-1 set alignment, text-to-region contrastive loss, alternating training flywheel); (2) DETR-style set prediction with text-embedding cosine similarity scoring (OWL-ViT, GLIP); (3) cross-modal pretext tasks like MLM + masked region classification (Unicoder-VL, FIBER); (4) DINO backbone for open-vocabulary detection (RO-ViT, CLIPSelf); (5) hard negative training (DoGA, GLIP). The proposed method is essentially a combination of DetCLIPv2's word-region alignment + OWL-ViT/GLIP's DETR-style open-vocab detection + Unicoder-VL's cross-modal pretext tasks + question-guided patch selection (Plug-and-Play VQA) + energy-based background thresholding + self-training loop. While no single paper covers all of these together, DetCLIPv2 already covers the core training formulation very closely, and the remaining components (DETR decoder, MLM/MRC pretext, DINO backbone, hard negatives) are all well-established combinations in the open-vocabulary detection literature. The question-guided captioner + cross-attention patch sampling for prompted detection is somewhat novel, but the overall system is a combination of known mechanisms with prior published joint application to this exact problem family. This matches the Score 3 anchor — combining 2-3 known mechanisms with prior published joint application to this problem family — though it leans toward 3-4 given the energy-based calibration and unprompted discovery components not being surfaced together. Defaulting to the lower score per tie-breaking rules.\n\nPrior works:\n  - DetCLIPv2: Scalable Open-Vocabulary Object Detection Pre-training via Word-Region Alignment (2023): covers the core word-region contrastive alignment from image-caption pairs, max-similarity set alignment, alternating training flywheel — nearly identical to OV-RAD's pre-training formulation.\n  - Grounded Language-Image Pre-training / GLIP (2022): unifies detection and phrase grounding with contrastive alignment, self-training on web pairs, hard negative training for open-vocabulary detection.\n  - Simple Open-Vocabulary Object Detection with Vision Transformers / OWL-ViT (2022): DETR-style ViT detector with text-embedding cosine similarity scoring for open-vocabulary inference.\n  - Unicoder-VL (2019): cross-modal pre-training with masked language modeling + masked object classification conditioned on regions, projecting 5-D box geometry into shared encoder — directly matches OV-RAD's pretext tasks.\n  - Region-Aware Pretraining for Open-Vocabulary Object Detection with Vision Transformers / RO-ViT (2023): ViT backbone with contrastive pretraining for open-vocabulary detection, bridging image-level and region-level representations.\n  - Plug-and-Play VQA (2022): question-guided cross-attention patch sampling for diverse, query-relevant caption generation — matches OV-RAD's prompted detection mode.",
+        "prior_works": [
+          "DetCLIPv2: Scalable Open-Vocabulary Object Detection Pre-training via Word-Region Alignment (2023): covers the core word-region contrastive alignment from image-caption pairs, max-similarity set alignment, alternating training flywheel — nearly identical to OV-RAD's pre-training formulation.",
+          "Grounded Language-Image Pre-training / GLIP (2022): unifies detection and phrase grounding with contrastive alignment, self-training on web pairs, hard negative training for open-vocabulary detection.",
+          "Simple Open-Vocabulary Object Detection with Vision Transformers / OWL-ViT (2022): DETR-style ViT detector with text-embedding cosine similarity scoring for open-vocabulary inference.",
+          "Unicoder-VL (2019): cross-modal pre-training with masked language modeling + masked object classification conditioned on regions, projecting 5-D box geometry into shared encoder — directly matches OV-RAD's pretext tasks.",
+          "Region-Aware Pretraining for Open-Vocabulary Object Detection with Vision Transformers / RO-ViT (2023): ViT backbone with contrastive pretraining for open-vocabulary detection, bridging image-level and region-level representations.",
+          "Plug-and-Play VQA (2022): question-guided cross-attention patch sampling for diverse, query-relevant caption generation — matches OV-RAD's prompted detection mode."
+        ],
+        "feedback_used": null
+      },
+      {
+        "round_num": 2,
+        "method": "We propose ReLENT: Region-level Entailment and Novel Term Expansion for open-vocabulary object discovery. ReLENT decouples objectness from naming and replaces cosine-similarity classification with a triadic, region-level vision–language NLI head trained under weak and structured supervision. A class-agnostic set-prediction detector first proposes K regions using a ViT backbone with a DETR-style decoder trained only for objectness and box regression. Each region feature r and a candidate phrase p are fed to a cross-attentional NLI head that outputs entail/contradict/unknown probabilities. To regularize semantic granularity without per-class boxes, the NLI head is multi-resolution: alongside the fine phrase decision, it jointly predicts hypernym categories and attribute tokens derived from lexical resources, with consistency constraints between levels.\n\nSupervision is constructed from image–text corpora without per-class boxes by combining multiple weak signals. From captions, we extract noun/attribute phrases via SRL and form image-level entailment labels; we generate counterfactual negatives by semantically controlled perturbations (e.g., role-swaps, attribute flips) that remain fluent but are false for the image. We train the NLI head with multiple-instance learning: for entailed phrases, at least one region must entail; for negatives, all regions should contradict. To sharpen boundaries and reduce spurious matches, we adopt token-by-token negative supervision: for each region, we sample many non-evidential tokens and phrases and explicitly teach the model to assign the ‘contradict’ label, while BIO-style masking around high-heat patches enforces tighter spatial support. Where available, we transfer grounding from QA-linked segmentation data by converting linked segmentations into positive region–phrase entail examples and hard negatives from non-linked but nearby segments; this anchors the MIL objective with sparse, precise supervision. A multi-resolution auxiliary loss enforces that if a fine phrase entails a region, its hypernyms and key attributes also entail, providing structured regularization across label granularities.\n\nTo name long-tail and novel objects, ReLENT performs retrieval-augmented vocabulary expansion on-the-fly. Given an image (and optionally high-confidence coarse hypernyms from the NLI head), we build a text query from pooled region descriptors and retrieve a diverse set of candidate phrases and definitions from a large FAISS index of noun/attribute strings and KB synsets. Each candidate’s retrieval score is discretized into confidence bins and embedded as an additional signal in the text encoder, allowing the NLI head to contextually modulate its decisions by source reliability. The retrieved candidates are then scored by the region-level NLI head to produce entailment maps; for phrases that entail without mapping to any known taxonomy, we output them directly or assemble descriptive names by composing top-entailed attributes.\n\nTo actively surface novel concepts with minimal passes, we maintain a small ensemble of phrase-proposer policies (particles) that, conditioned on current region features and NLI posteriors, each selects a batch of next phrases to test from the index. The particles are trained with a Bayesian objective to maximize expected information gain—i.e., reduction in uncertainty over region–phrase entailment—regularized to a broad prior so they explore different semantic neighborhoods. We approximate this posterior over policies with SVGD, where policy gradients push particles toward high-gain strategies while a kernel repulsion term preserves diversity. At inference, ReLENT alternates between (1) proposing regions, (2) retrieving and proposing phrases, (3) evaluating with the NLI head, and (4) updating a per-image belief state until a budget is reached. The final detections are boxes whose fine phrases entail and whose hypernym and attribute heads are consistent; when no name cleanly entails, we return attribute-rich descriptions and mark them as novel.",
+        "rationale": "ReLENT avoids per-class box supervision and the well-trodden word–region cosine classification by reframing open-vocabulary detection as region-level entailment with structured weak supervision and retrieval. The MIL-trained NLI head uses only image-level captions plus counterfactual negatives and sparse QA-grounded anchors to learn to localize textual evidence, which naturally transfers to unseen categories. Retrieval-augmented term expansion equips the model with a dynamic, image-conditional vocabulary far beyond any fixed label set, while embedding retrieval confidence stabilizes decisions under noise. The multi-resolution heads regularize semantics via hypernyms and attributes, improving generalization on long-tail classes where fine labels are rare but coarse categories and attributes are common.\n\nThe active, SVGD-based phrase proposer maximizes information gain over the NLI outputs and maintains diverse querying strategies, allowing the system to discover and name novel objects efficiently without exhaustive scoring of a massive vocabulary. Token-by-token negative supervision and sparse QA-grounding improve boundary fidelity and reduce over-acceptance—key failure modes when labels are scarce—yielding a detector that can detect and localize rare or novel objects through entailment rather than per-class supervision.",
+        "inspired_by": [
+          {
+            "seed_id": "2ef6546b676c",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "semantic-controlled counterfactual generation for hard negatives"
+          },
+          {
+            "seed_id": "c434a41590b3",
+            "domain": "SPEECH",
+            "borrowed_aspect": "retrieval-augmented candidate discovery from a large external index"
+          },
+          {
+            "seed_id": "1905468c9d3f",
+            "domain": "SPEECH",
+            "borrowed_aspect": "confidence embeddings to integrate auxiliary reliability scores"
+          },
+          {
+            "seed_id": "84d4986c174e",
+            "domain": "RL",
+            "borrowed_aspect": "SVGD particle optimization for diverse policy ensemble"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "QA-linked region supervision to anchor attention and grounding"
+          },
+          {
+            "seed_id": "26af209a8743",
+            "domain": "SPEECH",
+            "borrowed_aspect": "multiresolution multitask learning to couple coarse and fine outputs"
+          },
+          {
+            "seed_id": "d8c45e351c88",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "explicit negative-instance labeling to sharpen boundaries"
+          },
+          {
+            "seed_id": "28d600cc6cc3",
+            "domain": "CV",
+            "borrowed_aspect": "set-prediction with non-parametric queries for class-agnostic objectness"
+          },
+          {
+            "seed_id": "5f44070a8baf",
+            "domain": "CV",
+            "borrowed_aspect": "use of DINO-style encoders for strong features in scarce-data regimes"
+          }
+        ],
+        "novelty_score": 5,
+        "novelty_reasoning": "The searches reveal that while individual components of ReLENT exist in prior work (MIL-based weak supervision for open-vocabulary detection as in WSOVOD, region-level VL alignment as in RegionCLIP and DetCLIPv2, attribute-based open-vocabulary detection), no paper combines all of: (1) a triadic NLI head (entail/contradict/unknown) for region-phrase classification replacing cosine similarity, (2) MIL training with counterfactual semantic role perturbation negatives, (3) multi-resolution hypernym/attribute consistency constraints, (4) retrieval-augmented vocabulary expansion with confidence-binned embeddings, and (5) SVGD-based active phrase proposer ensemble maximizing information gain. The SVGD particle ensemble for information-gain-driven phrase querying in detection is entirely unsurfaced. The NLI framing for region-level detection is not found in any search result. This combination is well beyond a surface variant and introduces multiple named mechanisms not jointly applied to this problem.\n\nPrior works:\n  - WSOVOD (2023): Weakly supervised open-vocabulary detection using MIL with image-level captions and region-level VL alignment — overlaps with MIL weak supervision component but uses cosine similarity, not NLI.\n  - RegionCLIP (2021): Region-level language-image pretraining for open-vocabulary detection — overlaps with region-phrase alignment but uses contrastive/cosine matching, not NLI triadic head.\n  - DetCLIPv2 (2023): Word-region alignment from captions for open-vocabulary detection — overlaps with caption-based weak supervision but no NLI, no SVGD proposer, no retrieval expansion.\n  - OvarNet (2023): Open-vocabulary object detection with attribute recognition — overlaps with attribute-based multi-resolution supervision but no NLI head, no SVGD, no retrieval expansion.\n  - Gold Seeker (2018): SVGD-based policy ensemble for information gain in vision-language goal-oriented tasks — overlaps with SVGD phrase proposer mechanism but applied to VQA navigation, not detection.",
+        "prior_works": [
+          "WSOVOD (2023): Weakly supervised open-vocabulary detection using MIL with image-level captions and region-level VL alignment — overlaps with MIL weak supervision component but uses cosine similarity, not NLI.",
+          "RegionCLIP (2021): Region-level language-image pretraining for open-vocabulary detection — overlaps with region-phrase alignment but uses contrastive/cosine matching, not NLI triadic head.",
+          "DetCLIPv2 (2023): Word-region alignment from captions for open-vocabulary detection — overlaps with caption-based weak supervision but no NLI, no SVGD proposer, no retrieval expansion.",
+          "OvarNet (2023): Open-vocabulary object detection with attribute recognition — overlaps with attribute-based multi-resolution supervision but no NLI head, no SVGD, no retrieval expansion.",
+          "Gold Seeker (2018): SVGD-based policy ensemble for information gain in vision-language goal-oriented tasks — overlaps with SVGD phrase proposer mechanism but applied to VQA navigation, not detection."
+        ],
+        "feedback_used": "Your previous synthesis received a novelty score of 3/5 from a held-out novelty judge that ran a Semantic Scholar search.\n\nThe judge surfaced the following prior work that substantively covers your proposed mechanisms:\n  - DetCLIPv2: Scalable Open-Vocabulary Object Detection Pre-training via Word-Region Alignment (2023): covers the core word-region contrastive alignment from image-caption pairs, max-similarity set alignment, alternating training flywheel — nearly identical to OV-RAD's pre-training formulation.\n  - Grounded Language-Image Pre-training / GLIP (2022): unifies detection and phrase grounding with contrastive alignment, self-training on web pairs, hard negative training for open-vocabulary detection.\n  - Simple Open-Vocabulary Object Detection with Vision Transformers / OWL-ViT (2022): DETR-style ViT detector with text-embedding cosine similarity scoring for open-vocabulary inference.\n  - Unicoder-VL (2019): cross-modal pre-training with masked language modeling + masked object classification conditioned on regions, projecting 5-D box geometry into shared encoder — directly matches OV-RAD's pretext tasks.\n  - Region-Aware Pretraining for Open-Vocabulary Object Detection with Vision Transformers / RO-ViT (2023): ViT backbone with contrastive pretraining for open-vocabulary detection, bridging image-level and region-level representations.\n  - Plug-and-Play VQA (2022): question-guided cross-attention patch sampling for diverse, query-relevant caption generation — matches OV-RAD's prompted detection mode.\n\nJudge's reasoning: OV-RAD combines several known mechanisms: (1) word-region contrastive alignment from image-caption pairs (DetCLIPv2 covers this almost exactly, including max-similarity 1-to-1 set alignment, text-to-region contrastive loss, alternating training flywheel); (2) DETR-style set prediction with text-embedding cosine similarity scoring (OWL-ViT, GLIP); (3) cross-modal pretext tasks like MLM + masked region classification (Unicoder-VL, FIBER); (4) DINO backbone for open-vocabulary detection (RO-ViT, CLIPSelf); (5) hard negative training (DoGA, GLIP). The proposed method is essentially a combination of DetCLIPv2's word-region alignment + OWL-ViT/GLIP's DETR-style open-vocab detection + Unicoder-VL's cross-modal pretext tasks + question-guided patch selection (Plug-and-Play VQA) + energy-based background thresholding + self-training loop. While no single paper covers all of these together, DetCLIPv2 already covers the core training formulation very closely, and the remaining components (DETR decoder, MLM/MRC pretext, DINO backbone, hard negatives) are all well-established combinations in the open-vocabulary detection literature. The question-guided captioner + cross-attention patch sampling for prompted detection is somewhat novel, but the overall system is a combination of known mechanisms with prior published joint application to this exact problem family. This matches the Score 3 anchor — combining 2-3 known mechanisms with prior published joint application to this problem family — though it leans toward 3-4 given the energy-based calibration and unprompted discovery components not being surfaced together. Defaulting to the lower score per tie-breaking rules.\n\nPrior works:\n  - DetCLIPv2: Scalable Open-Vocabulary Object Detection Pre-training via Word-Region Alignment (2023): covers the core word-region contrastive alignment from image-caption pairs, max-similarity set alignment, alternating training flywheel — nearly identical to OV-RAD's pre-training formulation.\n  - Grounded Language-Image Pre-training / GLIP (2022): unifies detection and phrase grounding with contrastive alignment, self-training on web pairs, hard negative training for open-vocabulary detection.\n  - Simple Open-Vocabulary Object Detection with Vision Transformers / OWL-ViT (2022): DETR-style ViT detector with text-embedding cosine similarity scoring for open-vocabulary inference.\n  - Unicoder-VL (2019): cross-modal pre-training with masked language modeling + masked object classification conditioned on regions, projecting 5-D box geometry into shared encoder — directly matches OV-RAD's pretext tasks.\n  - Region-Aware Pretraining for Open-Vocabulary Object Detection with Vision Transformers / RO-ViT (2023): ViT backbone with contrastive pretraining for open-vocabulary detection, bridging image-level and region-level representations.\n  - Plug-and-Play VQA (2022): question-guided cross-attention patch sampling for diverse, query-relevant caption generation — matches OV-RAD's prompted detection mode.\n\nPlease synthesize a substantially more novel method for the same research problem. You may use the same retrieved seeds in non-obvious ways, or introduce new mechanism families absent from the surfaced literature. The goal is a method whose mechanism combination is not already established."
+      }
+    ],
+    "final_method": "We propose ReLENT: Region-level Entailment and Novel Term Expansion for open-vocabulary object discovery. ReLENT decouples objectness from naming and replaces cosine-similarity classification with a triadic, region-level vision–language NLI head trained under weak and structured supervision. A class-agnostic set-prediction detector first proposes K regions using a ViT backbone with a DETR-style decoder trained only for objectness and box regression. Each region feature r and a candidate phrase p are fed to a cross-attentional NLI head that outputs entail/contradict/unknown probabilities. To regularize semantic granularity without per-class boxes, the NLI head is multi-resolution: alongside the fine phrase decision, it jointly predicts hypernym categories and attribute tokens derived from lexical resources, with consistency constraints between levels.\n\nSupervision is constructed from image–text corpora without per-class boxes by combining multiple weak signals. From captions, we extract noun/attribute phrases via SRL and form image-level entailment labels; we generate counterfactual negatives by semantically controlled perturbations (e.g., role-swaps, attribute flips) that remain fluent but are false for the image. We train the NLI head with multiple-instance learning: for entailed phrases, at least one region must entail; for negatives, all regions should contradict. To sharpen boundaries and reduce spurious matches, we adopt token-by-token negative supervision: for each region, we sample many non-evidential tokens and phrases and explicitly teach the model to assign the ‘contradict’ label, while BIO-style masking around high-heat patches enforces tighter spatial support. Where available, we transfer grounding from QA-linked segmentation data by converting linked segmentations into positive region–phrase entail examples and hard negatives from non-linked but nearby segments; this anchors the MIL objective with sparse, precise supervision. A multi-resolution auxiliary loss enforces that if a fine phrase entails a region, its hypernyms and key attributes also entail, providing structured regularization across label granularities.\n\nTo name long-tail and novel objects, ReLENT performs retrieval-augmented vocabulary expansion on-the-fly. Given an image (and optionally high-confidence coarse hypernyms from the NLI head), we build a text query from pooled region descriptors and retrieve a diverse set of candidate phrases and definitions from a large FAISS index of noun/attribute strings and KB synsets. Each candidate’s retrieval score is discretized into confidence bins and embedded as an additional signal in the text encoder, allowing the NLI head to contextually modulate its decisions by source reliability. The retrieved candidates are then scored by the region-level NLI head to produce entailment maps; for phrases that entail without mapping to any known taxonomy, we output them directly or assemble descriptive names by composing top-entailed attributes.\n\nTo actively surface novel concepts with minimal passes, we maintain a small ensemble of phrase-proposer policies (particles) that, conditioned on current region features and NLI posteriors, each selects a batch of next phrases to test from the index. The particles are trained with a Bayesian objective to maximize expected information gain—i.e., reduction in uncertainty over region–phrase entailment—regularized to a broad prior so they explore different semantic neighborhoods. We approximate this posterior over policies with SVGD, where policy gradients push particles toward high-gain strategies while a kernel repulsion term preserves diversity. At inference, ReLENT alternates between (1) proposing regions, (2) retrieving and proposing phrases, (3) evaluating with the NLI head, and (4) updating a per-image belief state until a budget is reached. The final detections are boxes whose fine phrases entail and whose hypernym and attribute heads are consistent; when no name cleanly entails, we return attribute-rich descriptions and mark them as novel.",
+    "final_rationale": "ReLENT avoids per-class box supervision and the well-trodden word–region cosine classification by reframing open-vocabulary detection as region-level entailment with structured weak supervision and retrieval. The MIL-trained NLI head uses only image-level captions plus counterfactual negatives and sparse QA-grounded anchors to learn to localize textual evidence, which naturally transfers to unseen categories. Retrieval-augmented term expansion equips the model with a dynamic, image-conditional vocabulary far beyond any fixed label set, while embedding retrieval confidence stabilizes decisions under noise. The multi-resolution heads regularize semantics via hypernyms and attributes, improving generalization on long-tail classes where fine labels are rare but coarse categories and attributes are common.\n\nThe active, SVGD-based phrase proposer maximizes information gain over the NLI outputs and maintains diverse querying strategies, allowing the system to discover and name novel objects efficiently without exhaustive scoring of a massive vocabulary. Token-by-token negative supervision and sparse QA-grounding improve boundary fidelity and reduce over-acceptance—key failure modes when labels are scarce—yielding a detector that can detect and localize rare or novel objects through entailment rather than per-class supervision.",
+    "final_inspired_by": [
+      {
+        "seed_id": "2ef6546b676c",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "semantic-controlled counterfactual generation for hard negatives"
+      },
+      {
+        "seed_id": "c434a41590b3",
+        "domain": "SPEECH",
+        "borrowed_aspect": "retrieval-augmented candidate discovery from a large external index"
+      },
+      {
+        "seed_id": "1905468c9d3f",
+        "domain": "SPEECH",
+        "borrowed_aspect": "confidence embeddings to integrate auxiliary reliability scores"
+      },
+      {
+        "seed_id": "84d4986c174e",
+        "domain": "RL",
+        "borrowed_aspect": "SVGD particle optimization for diverse policy ensemble"
+      },
+      {
+        "seed_id": "7f79d5d52bbc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "QA-linked region supervision to anchor attention and grounding"
+      },
+      {
+        "seed_id": "26af209a8743",
+        "domain": "SPEECH",
+        "borrowed_aspect": "multiresolution multitask learning to couple coarse and fine outputs"
+      },
+      {
+        "seed_id": "d8c45e351c88",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "explicit negative-instance labeling to sharpen boundaries"
+      },
+      {
+        "seed_id": "28d600cc6cc3",
+        "domain": "CV",
+        "borrowed_aspect": "set-prediction with non-parametric queries for class-agnostic objectness"
+      },
+      {
+        "seed_id": "5f44070a8baf",
+        "domain": "CV",
+        "borrowed_aspect": "use of DINO-style encoders for strong features in scarce-data regimes"
+      }
+    ],
+    "wall_clock_s": 334.09,
+    "cost": {
+      "gen_prompt_tokens": 13388,
+      "gen_completion_tokens": 12036,
+      "judge_prompt_tokens": 243610,
+      "judge_completion_tokens": 2388,
+      "gen_cost_usd": 0.1371,
+      "judge_cost_usd": 0.7667,
+      "total_cost_usd": 0.9037
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose OPEN-PRO (Open-world Prototype- and pROmpt-adapted detector), a two-branch detector that localizes objects class-agnostically and assigns semantics without per-class supervision by combining (i) a class-agnostic localization head trained from self-supervised objectness, (ii) a prototype-driven semantic head with single-pass uncertainty for open-set handling, and (iii) an uncertainty-guided, visual-prompt adaptation loop for continual domain shift and long-tail discovery. The backbone is shared, but the neck and heads are specialized: one head optimizes geometry/objectness, the other learns a discriminative latent space with prototypes and an uncertainty readout. At inference, OPEN-PRO outputs high-recall boxes for all objects; regions that align with existing prototypes are labeled accordingly, while high-objectness but high-uncertainty regions are flagged as novel and still localized.\n\nStage A (bootstrap objectness and geometry): Train a class-agnostic detector (e.g., RPN/center-based head) to maximize recall using self-supervised region discovery and invariance, without per-class labels. Use proposal mining from saliency/edges and view-invariant contrastive learning on cropped regions to form positives, with background regions as negatives; optimize localization (IoU/L1/GIoU) and an objectness score. This yields a strong “thingness” prior and well-calibrated boxes independent of class supervision.\n\nStage B (semantic prototypes with uncertainty): Attach a latent discriminant module before the classification logits that maps each region feature to a prototype-similarity vector via a bank of trainable prototypes. Train the semantic head with an instance-discrimination/NCA-style objective so that discovered regions form tight clusters around prototypes, while an auxiliary uncertainty head regresses confidence directly from the discriminant embedding. This single-pass uncertainty gates learning and inference: if a region is high-objectness but far from all prototypes (low max-similarity/high uncertainty), it is treated as unknown; otherwise, it is softly assigned to its nearest prototype. To prevent entanglement between geometry and semantics, split the region representation into two latents: a shared, class-agnostic geometry/objectness channel that only feeds the localization head, and a class-specific semantic channel regularized by a separate prior that feeds the prototype head.\n\nStage C (novel-class discovery without labels): Run OPEN-PRO on unlabeled images, select regions with high objectness and high uncertainty, and cluster them (e.g., agglomerative/DBSCAN in the discriminant space) to propose pseudo-classes. Instantiate new prototypes at cluster centroids and fine-tune the semantic head using uncertainty-weighted pseudo-labels: confident cluster members contribute more, outliers are down-weighted or ignored. Merge or split prototypes based on inter-prototype similarity and stability across epochs. This loop grows a prototype vocabulary for novel classes entirely from unlabeled data while maintaining high-recall localization. If a few labeled exemplars arrive later, they simply seed or refine corresponding prototypes without altering the objectness head.\n\nStage D (uncertainty-guided prompt adaptation for long-tail shift): Insert lightweight, pixel-level visual prompts at the backbone input to adapt features to new domains/classes on the fly. Maintain an EMA teacher of the full model; on streaming unlabeled data, update only the prompts (and optionally the semantic prototypes) using teacher pseudo-boxes and prototype assignments, with update magnitudes modulated by sample uncertainty (larger updates for uncertain samples where adaptation is most needed). This keeps bandwidth/compute low and mitigates catastrophic forgetting. During inference, report: (1) localized detections aligned to existing prototypes (known or previously discovered) and (2) localized “novel object” findings where uncertainty remains high despite strong objectness, enabling immediate deployment in open-world settings without per-class supervision.",
+        "rationale": "Long-tail and novel classes are hard because per-class supervision is missing precisely where we need it. OPEN-PRO addresses this by decoupling localization from semantics: a class-agnostic objectness/geometry head ensures we still localize any object, while a prototype-based semantic head equipped with single-pass uncertainty flags when a region is far from all known prototypes. This turns the absence of labels into a discovery signal: high-objectness, high-uncertainty regions become candidates for new classes and are organized via clustering into pseudo-classes that continually expand the model’s vocabulary without needing annotations.\n\nRare classes also correlate with domain shift (new appearances, contexts). Lightweight visual prompts adapted with an uncertainty-guided EMA let the backbone absorb new low-level statistics and features most where the model is unsure, improving recall and stability under continual change while avoiding full-model drift. Factorizing the representation into class-agnostic and class-specific channels prevents the localization skill from being perturbed by evolving semantics. Together, these components detect and localize novel or long-tail objects immediately, then self-organize them into stable prototypes over time—without per-class supervision and with graceful integration of any eventual few-shot labels.",
+        "inspired_by": [
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based latent discriminant embedding with single-pass uncertainty"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided prompt updates and pseudo-label knowledge transfer"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared versus domain-specific latent factorization with separate priors"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "component-specialized detector design across backbone, neck, and heads"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed OPEN-PRO method combines four mechanisms: (1) self-supervised class-agnostic localization head, (2) LDU-style prototype semantic head with single-pass uncertainty (directly inspired by LDU 2022), (3) uncertainty-guided clustering for novel class discovery (similar to PANDAS 2024), and (4) uncertainty-guided visual prompt adaptation with EMA teacher for continual domain shift (directly matching U-VPA/Cloud-Device 2022). Each individual component has clear prior work: PANDAS covers prototype-based novel class discovery in detection; LDU covers the discriminant prototype uncertainty head; U-VPA covers uncertainty-guided visual prompt adaptation with EMA. However, no single paper combines all four stages — particularly the joint pipeline of decoupled class-agnostic localization + LDU-style prototype uncertainty + novel class clustering discovery + uncertainty-guided visual prompt adaptation for long-tail open-world detection. The combination of mechanisms (2)+(3)+(4) with the explicit geometry/semantics factorization and the full four-stage pipeline is not surfaced as a joint application. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with searches returning prior work on individual mechanisms but not their combination as proposed.\n\nPrior works:\n  - PANDAS: Prototype-based Novel Class Discovery and Detection (2024): prototype-based novel class discovery and detection from unlabeled data with distance-based classifier — covers Stage C\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): prototype similarity-based single-pass uncertainty with DM layer and auxiliary confidence head — covers Stage B uncertainty mechanism\n  - Cloud-Device Collaborative Adaptation / U-VPA (2022): uncertainty-guided visual prompt learning with EMA teacher-student for continual domain shift in detection — covers Stage D\n  - Tail-Calibrated Transformer Autoencoding with Prototype-Guided Mining / TAPM (2025): prototype-guided mining with uncertainty-aware soft-labeling for open-world long-tail detection — partial overlap with Stages B and C\n  - Open-World Objectness Modeling Unifies Novel Object Detection / OWOBJ (2025): class-agnostic objectness modeling for open-world detection — partial overlap with Stage A",
+        "prior_works": [
+          "PANDAS: Prototype-based Novel Class Discovery and Detection (2024): prototype-based novel class discovery and detection from unlabeled data with distance-based classifier — covers Stage C",
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): prototype similarity-based single-pass uncertainty with DM layer and auxiliary confidence head — covers Stage B uncertainty mechanism",
+          "Cloud-Device Collaborative Adaptation / U-VPA (2022): uncertainty-guided visual prompt learning with EMA teacher-student for continual domain shift in detection — covers Stage D",
+          "Tail-Calibrated Transformer Autoencoding with Prototype-Guided Mining / TAPM (2025): prototype-guided mining with uncertainty-aware soft-labeling for open-world long-tail detection — partial overlap with Stages B and C",
+          "Open-World Objectness Modeling Unifies Novel Object Detection / OWOBJ (2025): class-agnostic objectness modeling for open-world detection — partial overlap with Stage A"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose OPEN-PRO (Open-world Prototype- and pROmpt-adapted detector), a two-branch detector that localizes objects class-agnostically and assigns semantics without per-class supervision by combining (i) a class-agnostic localization head trained from self-supervised objectness, (ii) a prototype-driven semantic head with single-pass uncertainty for open-set handling, and (iii) an uncertainty-guided, visual-prompt adaptation loop for continual domain shift and long-tail discovery. The backbone is shared, but the neck and heads are specialized: one head optimizes geometry/objectness, the other learns a discriminative latent space with prototypes and an uncertainty readout. At inference, OPEN-PRO outputs high-recall boxes for all objects; regions that align with existing prototypes are labeled accordingly, while high-objectness but high-uncertainty regions are flagged as novel and still localized.\n\nStage A (bootstrap objectness and geometry): Train a class-agnostic detector (e.g., RPN/center-based head) to maximize recall using self-supervised region discovery and invariance, without per-class labels. Use proposal mining from saliency/edges and view-invariant contrastive learning on cropped regions to form positives, with background regions as negatives; optimize localization (IoU/L1/GIoU) and an objectness score. This yields a strong “thingness” prior and well-calibrated boxes independent of class supervision.\n\nStage B (semantic prototypes with uncertainty): Attach a latent discriminant module before the classification logits that maps each region feature to a prototype-similarity vector via a bank of trainable prototypes. Train the semantic head with an instance-discrimination/NCA-style objective so that discovered regions form tight clusters around prototypes, while an auxiliary uncertainty head regresses confidence directly from the discriminant embedding. This single-pass uncertainty gates learning and inference: if a region is high-objectness but far from all prototypes (low max-similarity/high uncertainty), it is treated as unknown; otherwise, it is softly assigned to its nearest prototype. To prevent entanglement between geometry and semantics, split the region representation into two latents: a shared, class-agnostic geometry/objectness channel that only feeds the localization head, and a class-specific semantic channel regularized by a separate prior that feeds the prototype head.\n\nStage C (novel-class discovery without labels): Run OPEN-PRO on unlabeled images, select regions with high objectness and high uncertainty, and cluster them (e.g., agglomerative/DBSCAN in the discriminant space) to propose pseudo-classes. Instantiate new prototypes at cluster centroids and fine-tune the semantic head using uncertainty-weighted pseudo-labels: confident cluster members contribute more, outliers are down-weighted or ignored. Merge or split prototypes based on inter-prototype similarity and stability across epochs. This loop grows a prototype vocabulary for novel classes entirely from unlabeled data while maintaining high-recall localization. If a few labeled exemplars arrive later, they simply seed or refine corresponding prototypes without altering the objectness head.\n\nStage D (uncertainty-guided prompt adaptation for long-tail shift): Insert lightweight, pixel-level visual prompts at the backbone input to adapt features to new domains/classes on the fly. Maintain an EMA teacher of the full model; on streaming unlabeled data, update only the prompts (and optionally the semantic prototypes) using teacher pseudo-boxes and prototype assignments, with update magnitudes modulated by sample uncertainty (larger updates for uncertain samples where adaptation is most needed). This keeps bandwidth/compute low and mitigates catastrophic forgetting. During inference, report: (1) localized detections aligned to existing prototypes (known or previously discovered) and (2) localized “novel object” findings where uncertainty remains high despite strong objectness, enabling immediate deployment in open-world settings without per-class supervision.",
+    "final_rationale": "Long-tail and novel classes are hard because per-class supervision is missing precisely where we need it. OPEN-PRO addresses this by decoupling localization from semantics: a class-agnostic objectness/geometry head ensures we still localize any object, while a prototype-based semantic head equipped with single-pass uncertainty flags when a region is far from all known prototypes. This turns the absence of labels into a discovery signal: high-objectness, high-uncertainty regions become candidates for new classes and are organized via clustering into pseudo-classes that continually expand the model’s vocabulary without needing annotations.\n\nRare classes also correlate with domain shift (new appearances, contexts). Lightweight visual prompts adapted with an uncertainty-guided EMA let the backbone absorb new low-level statistics and features most where the model is unsure, improving recall and stability under continual change while avoiding full-model drift. Factorizing the representation into class-agnostic and class-specific channels prevents the localization skill from being perturbed by evolving semantics. Together, these components detect and localize novel or long-tail objects immediately, then self-organize them into stable prototypes over time—without per-class supervision and with graceful integration of any eventual few-shot labels.",
+    "final_inspired_by": [
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based latent discriminant embedding with single-pass uncertainty"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided prompt updates and pseudo-label knowledge transfer"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared versus domain-specific latent factorization with separate priors"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "component-specialized detector design across backbone, neck, and heads"
+      }
+    ],
+    "wall_clock_s": 136.44,
+    "cost": {
+      "gen_prompt_tokens": 4797,
+      "gen_completion_tokens": 4379,
+      "judge_prompt_tokens": 103580,
+      "judge_completion_tokens": 1121,
+      "gen_cost_usd": 0.0498,
+      "judge_cost_usd": 0.3276,
+      "total_cost_usd": 0.3773
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the triadic region-level vision-language NLI head applied to object detection, combined with retrieval-augmented vocabulary expansion using SVGD-based ensemble phrase-proposer policies that maximize expected information gain. The NLI framing for region-phrase matching (entail/contradict/unknown) with multi-resolution hypernym consistency and counterfactual negative generation is a genuinely unusual combination not commonly seen in open-vocabulary detection literature. Method B combines well-established components: class-agnostic RPN/center-based detection, prototype banks with uncertainty estimation, pseudo-label clustering for novel class discovery, and visual prompt tuning with EMA teachers. Each of these elements individually has clear precedents in open-world detection, open-set recognition, and continual learning literature, and their combination, while competent, does not introduce a clearly novel mechanism. Method A's NLI-based region classification with SVGD particle-based phrase proposal policies is harder to find in prior literature and represents a more original framing of the problem."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is detecting and localizing rare/novel objects without per-class supervision. Method A directly addresses this by (a) training a class-agnostic localization head without per-class labels, (b) using prototype-based semantics with uncertainty to flag high-objectness but unknown regions, and (c) clustering uncertain regions to discover novel classes from unlabeled data — each stage has a traceable causal pathway from the problem to the mechanism. Method B also engages the failure mode through open-vocabulary NLI-based region naming and retrieval-augmented vocabulary expansion, but its mechanism is more focused on naming/grounding novel objects via language rather than directly addressing the localization of objects with no supervision. Method B's reliance on image-text corpora and NLI supervision still requires some form of textual supervision for novel classes, making the pathway to \"no per-class supervision\" less direct. Method A's class-agnostic objectness training and uncertainty-driven novel class discovery more directly resolve the core failure mode of detecting and localizing objects without any per-class supervision."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A is a multi-stage pipeline with clearly defined components: a class-agnostic localization head, a prototype-based semantic head with uncertainty, a clustering-based novel class discovery loop, and a prompt-based adaptation stage. The steps are sequentially dependent in a logical way, and each component has a well-understood analog in existing ML practice. The main coherence concern is the claim that uncertainty-guided prompt updates should be \"larger for uncertain samples where adaptation is most needed\" — this is actually the opposite of standard practice (uncertain samples are noisier pseudo-labels), but this is a relatively minor inconsistency rather than a fundamental flaw. Overall the pipeline is implementable without inventing new components.\n\nMethod B introduces a triadic NLI head for region-phrase entailment, which is a coherent framing, but then adds a particle-based phrase proposer trained with SVGD to maximize expected information gain over region-phrase entailment posteriors. This component requires maintaining an ensemble of phrase-proposer policies, approximating a posterior over policies, and running SVGD at inference time — all while alternating between region proposal, retrieval, NLI evaluation, and belief-state updates in a multi-step loop per image. The SVGD-based active phrase selection is a significant coherence weakness: it introduces a complex Bayesian inference procedure whose inputs (the posterior over policies) are not clearly defined or computable from the stated components, and it is unclear how this integrates with the rest of the pipeline without substantial additional design work. This is a more serious flaw than anything in Method A."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6660,
+    "judge_completion_tokens": 839,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0326,
+    "total_cost_usd": 0.0326
+  }
+}

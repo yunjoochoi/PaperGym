@@ -1,0 +1,189 @@
+{
+  "query_id": "Q27",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Models forget previously learned skills when fine-tuned on new\ntasks; how can we update a model with new data without\ncatastrophic forgetting and without retaining all prior data?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Freeze-and-Residual with Anchor Distillation (FRAD)\n\n1) Freeze the base, add small residuals, and snapshot a teacher. Copy the current model M0 as a frozen teacher and keep it for reference. In the student, freeze all base weights and insert lightweight residual adaptation modules R (e.g., LoRA/adapters after feed‑forward blocks and a TaskRes-style residual on the task head). Zero‑initialize R so behavior initially matches M0. Add a simple gate g(x) that can bypass R at inference for inputs that look like prior domains (estimated by a domain discriminator or teacher–student agreement score).\n\n2) Build a data‑free “anchor” distribution that approximates prior knowledge without storing old data. For language models, sample prompts from public corpora and from M0 itself (nucleus/top‑k) to form unlabeled anchors; for vision or other modalities, use broad unlabeled web data or synthesize pseudo‑inputs via feature inversion so their intermediate activations match stored teacher statistics. Instead of retaining raw historical data, maintain a tiny summary memory per layer: a set of activation centroids and low‑rank bases (from online PCA over teacher features on anchors). Optionally keep a few synthetic pseudo‑exemplars generated to match these centroids; discard any real prior examples.\n\n3) Train with alternating preservation and acquisition steps, updating only R (and optionally layer norms). On new task batches Dnew, optimize the standard task loss Lnew (e.g., cross‑entropy or next‑token loss). On anchor batches A, preserve prior behavior via multi‑level distillation: minimize KL(pM0(y|x) || pM(y|x)) at the output and match intermediate features to the stored centroids/bases (e.g., L2 on projected activations). Add a small L2/orthogonality penalty that keeps R low‑norm and discourages changes along directions of high teacher sensitivity. Alternate A and Dnew mini‑batches (or mix with a tunable ratio ρ), using temperature‑scaled KL on anchors to stabilize training.\n\n4) Route at inference and adapt online. Use g(x) to disable residuals on inputs likely from old domains (ensuring exact preservation) and enable R on new‑domain inputs. In streaming settings, refine R from an error buffer built from mispredicted queries, while sampling anchors in parallel to maintain stability. Follow a mixture schedule that ensures diversity across in‑distribution and OOD clusters when drawing anchors and updates, and track retention and adaptation with a small held‑out probe of anchors synthesized on the fly (no private data retained).",
+        "rationale": "Freezing the base model stops destructive overwrites that cause catastrophic forgetting; confining changes to small residual modules learns new behaviors additively. Anchoring the student to a frozen teacher through KL and feature‑level distillation on unlabeled/synthetic inputs preserves prior functions without needing to store original training data. Alternating optimization over new‑task and anchor batches stabilizes learning under distribution shift, while a lightweight inference gate ensures backward compatibility by bypassing residuals on legacy inputs.\n\nThe summary memory (centroids/PCA) and pseudo‑exemplars capture sufficient statistics of prior representations, enabling data‑free preservation. In streaming deployments, drawing updates from error streams and balanced anchor sampling maintains performance under non‑stationarity while providing clear retention/adaptation metrics.",
+        "inspired_by": [
+          {
+            "seed_id": "2a3b74b0e08b",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "lightweight adapters with selective teacher–student KL and alternating batches"
+          },
+          {
+            "seed_id": "ab9d6aba2c05",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "residual tuning on frozen classifier to preserve prior knowledge"
+          },
+          {
+            "seed_id": "e9d8af23662b",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "continual refinement on error streams and balanced OOD sampling/metrics"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "Searches surfaced several related works but none that match FRAD end-to-end. The closest individual components appear in: (1) LoRA/adapter-based continual learning with distillation (DRDF-LoRA, DESIRE, LoRA–), (2) data-free continual learning via feature inversion and Gaussian feature modeling (PMI paper, 2025), (3) centroid-based distillation for continual learning (DMCR/DRR), (4) adapter routing at inference (CLARE), and (5) error-buffer streaming updates (CMR). However, no single paper combines all of: frozen base + zero-initialized residual adapters + frozen teacher snapshot + data-free anchor generation via activation centroids/PCA/feature inversion + KL+feature-level distillation on unlabeled anchors + inference gate to bypass residuals for old-domain inputs + online error-buffer streaming. The inference gating mechanism (bypassing residuals based on domain discriminator/teacher-student agreement) combined with data-free anchor distillation using stored activation statistics is a non-trivial combination not found jointly in any surfaced paper. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing named design choices (the inference bypass gate + activation centroid/PCA memory + alternating anchor distillation) not present together in the literature.\n\nPrior works:\n  - DRDF-LoRA (2025): LoRA-based continual learning with behavioral distillation, but uses task-boundary-free routing without frozen teacher or data-free anchors\n  - DESIRE (2024): LoRA-based rehearsal-free continual learning with post-processing knowledge consolidation, no inference gating or activation centroid memory\n  - Model Inversion with Layer-Specific Modeling and Alignment for Data-Free Continual Learning (2025): feature inversion + Gaussian feature modeling for data-free CL, but no LoRA/adapter freezing or inference gate\n  - CLARE (2026): adapter routing at inference for continual learning in VLAs, but uses autoencoder routing and exemplar-free expansion without frozen teacher KL distillation or activation centroid memory\n  - On Continual Model Refinement in Out-of-Distribution Data Streams (2205.02014): error-stream based continual refinement framework, but no frozen adapter + distillation + inference gate combination",
+        "prior_works": [
+          "DRDF-LoRA (2025): LoRA-based continual learning with behavioral distillation, but uses task-boundary-free routing without frozen teacher or data-free anchors",
+          "DESIRE (2024): LoRA-based rehearsal-free continual learning with post-processing knowledge consolidation, no inference gating or activation centroid memory",
+          "Model Inversion with Layer-Specific Modeling and Alignment for Data-Free Continual Learning (2025): feature inversion + Gaussian feature modeling for data-free CL, but no LoRA/adapter freezing or inference gate",
+          "CLARE (2026): adapter routing at inference for continual learning in VLAs, but uses autoencoder routing and exemplar-free expansion without frozen teacher KL distillation or activation centroid memory",
+          "On Continual Model Refinement in Out-of-Distribution Data Streams (2205.02014): error-stream based continual refinement framework, but no frozen adapter + distillation + inference gate combination"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Freeze-and-Residual with Anchor Distillation (FRAD)\n\n1) Freeze the base, add small residuals, and snapshot a teacher. Copy the current model M0 as a frozen teacher and keep it for reference. In the student, freeze all base weights and insert lightweight residual adaptation modules R (e.g., LoRA/adapters after feed‑forward blocks and a TaskRes-style residual on the task head). Zero‑initialize R so behavior initially matches M0. Add a simple gate g(x) that can bypass R at inference for inputs that look like prior domains (estimated by a domain discriminator or teacher–student agreement score).\n\n2) Build a data‑free “anchor” distribution that approximates prior knowledge without storing old data. For language models, sample prompts from public corpora and from M0 itself (nucleus/top‑k) to form unlabeled anchors; for vision or other modalities, use broad unlabeled web data or synthesize pseudo‑inputs via feature inversion so their intermediate activations match stored teacher statistics. Instead of retaining raw historical data, maintain a tiny summary memory per layer: a set of activation centroids and low‑rank bases (from online PCA over teacher features on anchors). Optionally keep a few synthetic pseudo‑exemplars generated to match these centroids; discard any real prior examples.\n\n3) Train with alternating preservation and acquisition steps, updating only R (and optionally layer norms). On new task batches Dnew, optimize the standard task loss Lnew (e.g., cross‑entropy or next‑token loss). On anchor batches A, preserve prior behavior via multi‑level distillation: minimize KL(pM0(y|x) || pM(y|x)) at the output and match intermediate features to the stored centroids/bases (e.g., L2 on projected activations). Add a small L2/orthogonality penalty that keeps R low‑norm and discourages changes along directions of high teacher sensitivity. Alternate A and Dnew mini‑batches (or mix with a tunable ratio ρ), using temperature‑scaled KL on anchors to stabilize training.\n\n4) Route at inference and adapt online. Use g(x) to disable residuals on inputs likely from old domains (ensuring exact preservation) and enable R on new‑domain inputs. In streaming settings, refine R from an error buffer built from mispredicted queries, while sampling anchors in parallel to maintain stability. Follow a mixture schedule that ensures diversity across in‑distribution and OOD clusters when drawing anchors and updates, and track retention and adaptation with a small held‑out probe of anchors synthesized on the fly (no private data retained).",
+    "final_rationale": "Freezing the base model stops destructive overwrites that cause catastrophic forgetting; confining changes to small residual modules learns new behaviors additively. Anchoring the student to a frozen teacher through KL and feature‑level distillation on unlabeled/synthetic inputs preserves prior functions without needing to store original training data. Alternating optimization over new‑task and anchor batches stabilizes learning under distribution shift, while a lightweight inference gate ensures backward compatibility by bypassing residuals on legacy inputs.\n\nThe summary memory (centroids/PCA) and pseudo‑exemplars capture sufficient statistics of prior representations, enabling data‑free preservation. In streaming deployments, drawing updates from error streams and balanced anchor sampling maintains performance under non‑stationarity while providing clear retention/adaptation metrics.",
+    "final_inspired_by": [
+      {
+        "seed_id": "2a3b74b0e08b",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "lightweight adapters with selective teacher–student KL and alternating batches"
+      },
+      {
+        "seed_id": "ab9d6aba2c05",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "residual tuning on frozen classifier to preserve prior knowledge"
+      },
+      {
+        "seed_id": "e9d8af23662b",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "continual refinement on error streams and balanced OOD sampling/metrics"
+      }
+    ],
+    "wall_clock_s": 150.53,
+    "cost": {
+      "gen_prompt_tokens": 7167,
+      "gen_completion_tokens": 5561,
+      "judge_prompt_tokens": 114180,
+      "judge_completion_tokens": 1336,
+      "gen_cost_usd": 0.0646,
+      "judge_cost_usd": 0.3626,
+      "total_cost_usd": 0.4271
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Uncertainty-Guided Parameter-Isolated Adaptation (UPIA), a rehearsal-light continual learning recipe that updates a model with new data while preserving prior skills. The backbone is kept stable and augmented with a bank of lightweight, task-specific modules (adapters/LoRA for weights or prefix/visual prompts for inputs). A small routing head operates in the pre-logit latent space to choose which module(s) to engage per input. For each new task, we instantiate a fresh module and train it on the new data while freezing the backbone and previously learned modules.\n\nTraining a new module proceeds with two coupled objectives: task learning and functional preservation. Task learning optimizes the new head and its adapter/prompt using uncertainty-weighted gradients: examples and parameters with higher predictive or estimation uncertainty receive stronger updates, while confident regions are updated conservatively. Functional preservation uses self-distillation from a frozen reference model (backbone plus previously learned router/modules) evaluated on the same new-task inputs—no past data are stored. We match both logits and intermediate features so that representations used by old tasks remain stable where the new data overlaps them, and we regularize the backbone via a small, diagonal importance map accumulated online to prevent drift on parameters identified as critical for past tasks.\n\nTo route inputs and to decide when and how strongly to update, we attach a discriminative latent head with a set of trainable prototypes per task. At inference, cosine similarities to task prototypes drive a soft routing distribution over modules; a deterministic confidence score flags out-of-domain inputs, in which case the router backs off to the shared backbone or a mixture of experts. During training on a new task, the same prototypes provide a fast uncertainty signal to upweight difficult cases and to trigger expansion (adding a new module) rather than overwriting shared features when the model is uncertain.\n\nPeriodically, we compact and consolidate. Using the online importance map and cosine alignment between adapter-induced updates and backbone gradients, we selectively merge low-interference subspaces of mature adapters back into the backbone via low-rank fusion, then prune seldom-used modules. We retain only tiny, non-data artifacts per past task: the diagonal importance map and a handful of latent prototypes for routing/distillation—no raw examples. To further stabilize under distribution shift without rehearsal, we add a lightweight feature-alignment head (adversarial discriminator on shared features) so the new module learns domain-invariant representations compatible with the frozen teacher.\n\nThis end-to-end procedure yields bounded memory growth (small adapters/prompts + prototypes + importance stats), rehearsal-free preservation via on-the-fly self-distillation on current inputs, and adaptive optimization that concentrates change where the model is uncertain while shielding parameters deemed important for prior skills.",
+        "rationale": "Catastrophic forgetting is driven by interference: updating parameters critical to old tasks to fit new data. UPIA reduces interference structurally by isolating most task-specific change to small adapters/prompts and by routing inputs to the right module, and functionally by distilling the frozen model’s behavior on current inputs so the shared representation and outputs do not drift in regions overlapping prior capabilities. Because distillation uses only the new data stream, no past examples are retained.\n\nUncertainty plays two roles: it gates update strength so that confident, well-established behavior is preserved, and it triggers expansion (new modules) only when needed, preventing destructive overwriting. The online importance map further protects parameters most responsible for prior tasks during any consolidation. Together, parameter isolation, rehearsal-free self-distillation, uncertainty-guided optimization, and selective consolidation provide a practical path to learn from new data without catastrophic forgetting and without storing all prior data.\n\nMemory remains small and bounded: only lightweight modules, a diagonal importance vector, and a few latent prototypes per task are kept. Optional adversarial feature alignment improves cross-domain compatibility, further reducing reliance on replay while maintaining performance on past skills.",
+        "inspired_by": [
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "parameter-efficient prompts with uncertainty-guided EMA updates and feature alignment"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "factorized shared vs domain-specific latents with domain-dependent priors"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based deterministic uncertainty for routing and confidence"
+          },
+          {
+            "seed_id": "663d598bb0b9",
+            "domain": "CV",
+            "borrowed_aspect": "EMA-based online uncertainty estimation to adapt update magnitudes"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "UPIA combines five distinct mechanisms: (1) parameter-isolated adapters/LoRA with prototype-based soft routing in pre-logit space (similar to LDU/MILE), (2) uncertainty-weighted gradient updates during training, (3) rehearsal-free self-distillation on current-task data only (matching both logits and intermediate features), (4) online diagonal importance maps with selective low-rank adapter merging/consolidation, and (5) adversarial feature alignment head. Searches found MILE (prototype-guided LoRA experts for continual learning), VPLU (uncertainty-guided visual prompt updating with adversarial alignment for continual adaptation), and various LoRA-based CL methods with subspace isolation. However, no single paper combines all these mechanisms together — particularly the rehearsal-free self-distillation on new-task data only paired with uncertainty-weighted gradients AND prototype routing AND adapter consolidation via importance-cosine alignment. The closest individual overlaps are MILE (prototype-guided LoRA routing), VPLU (uncertainty-guided prompts + adversarial alignment), and CCLIS (prototype-instance relation distillation). The full combination as proposed has not been surfaced as a joint application, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application, introducing named design choices (uncertainty-weighted gradients + rehearsal-free self-distillation on current data + importance-map-guided adapter merging) not present together in any surfaced paper.\n\nPrior works:\n  - MILE: Mixture of Incremental LoRA Experts (2026): prototype-guided gating over task-specific LoRA experts for continual segmentation — overlaps parameter isolation + prototype routing\n  - Cloud-Device Collaborative Adaptation / VPLU (CVPR 2022): uncertainty-guided visual prompt updating + adversarial feature alignment for continual adaptation without rehearsal — overlaps uncertainty-guided updates + adversarial alignment\n  - Contrastive Continual Learning with Importance Sampling and Prototype-Instance Relation Distillation / CCLIS (AAAI 2024): prototype-instance self-distillation for continual learning — overlaps prototype-based distillation component\n  - TreeLoRA (ICML 2025): hierarchical gradient-similarity guided LoRA adapters for continual learning — overlaps LoRA-based CL with gradient-based importance\n  - JumpLoRA (2026): sparse adapter-based parameter isolation for continual learning in LLMs — overlaps parameter isolation via LoRA",
+        "prior_works": [
+          "MILE: Mixture of Incremental LoRA Experts (2026): prototype-guided gating over task-specific LoRA experts for continual segmentation — overlaps parameter isolation + prototype routing",
+          "Cloud-Device Collaborative Adaptation / VPLU (CVPR 2022): uncertainty-guided visual prompt updating + adversarial feature alignment for continual adaptation without rehearsal — overlaps uncertainty-guided updates + adversarial alignment",
+          "Contrastive Continual Learning with Importance Sampling and Prototype-Instance Relation Distillation / CCLIS (AAAI 2024): prototype-instance self-distillation for continual learning — overlaps prototype-based distillation component",
+          "TreeLoRA (ICML 2025): hierarchical gradient-similarity guided LoRA adapters for continual learning — overlaps LoRA-based CL with gradient-based importance",
+          "JumpLoRA (2026): sparse adapter-based parameter isolation for continual learning in LLMs — overlaps parameter isolation via LoRA"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Uncertainty-Guided Parameter-Isolated Adaptation (UPIA), a rehearsal-light continual learning recipe that updates a model with new data while preserving prior skills. The backbone is kept stable and augmented with a bank of lightweight, task-specific modules (adapters/LoRA for weights or prefix/visual prompts for inputs). A small routing head operates in the pre-logit latent space to choose which module(s) to engage per input. For each new task, we instantiate a fresh module and train it on the new data while freezing the backbone and previously learned modules.\n\nTraining a new module proceeds with two coupled objectives: task learning and functional preservation. Task learning optimizes the new head and its adapter/prompt using uncertainty-weighted gradients: examples and parameters with higher predictive or estimation uncertainty receive stronger updates, while confident regions are updated conservatively. Functional preservation uses self-distillation from a frozen reference model (backbone plus previously learned router/modules) evaluated on the same new-task inputs—no past data are stored. We match both logits and intermediate features so that representations used by old tasks remain stable where the new data overlaps them, and we regularize the backbone via a small, diagonal importance map accumulated online to prevent drift on parameters identified as critical for past tasks.\n\nTo route inputs and to decide when and how strongly to update, we attach a discriminative latent head with a set of trainable prototypes per task. At inference, cosine similarities to task prototypes drive a soft routing distribution over modules; a deterministic confidence score flags out-of-domain inputs, in which case the router backs off to the shared backbone or a mixture of experts. During training on a new task, the same prototypes provide a fast uncertainty signal to upweight difficult cases and to trigger expansion (adding a new module) rather than overwriting shared features when the model is uncertain.\n\nPeriodically, we compact and consolidate. Using the online importance map and cosine alignment between adapter-induced updates and backbone gradients, we selectively merge low-interference subspaces of mature adapters back into the backbone via low-rank fusion, then prune seldom-used modules. We retain only tiny, non-data artifacts per past task: the diagonal importance map and a handful of latent prototypes for routing/distillation—no raw examples. To further stabilize under distribution shift without rehearsal, we add a lightweight feature-alignment head (adversarial discriminator on shared features) so the new module learns domain-invariant representations compatible with the frozen teacher.\n\nThis end-to-end procedure yields bounded memory growth (small adapters/prompts + prototypes + importance stats), rehearsal-free preservation via on-the-fly self-distillation on current inputs, and adaptive optimization that concentrates change where the model is uncertain while shielding parameters deemed important for prior skills.",
+    "final_rationale": "Catastrophic forgetting is driven by interference: updating parameters critical to old tasks to fit new data. UPIA reduces interference structurally by isolating most task-specific change to small adapters/prompts and by routing inputs to the right module, and functionally by distilling the frozen model’s behavior on current inputs so the shared representation and outputs do not drift in regions overlapping prior capabilities. Because distillation uses only the new data stream, no past examples are retained.\n\nUncertainty plays two roles: it gates update strength so that confident, well-established behavior is preserved, and it triggers expansion (new modules) only when needed, preventing destructive overwriting. The online importance map further protects parameters most responsible for prior tasks during any consolidation. Together, parameter isolation, rehearsal-free self-distillation, uncertainty-guided optimization, and selective consolidation provide a practical path to learn from new data without catastrophic forgetting and without storing all prior data.\n\nMemory remains small and bounded: only lightweight modules, a diagonal importance vector, and a few latent prototypes per task are kept. Optional adversarial feature alignment improves cross-domain compatibility, further reducing reliance on replay while maintaining performance on past skills.",
+    "final_inspired_by": [
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "parameter-efficient prompts with uncertainty-guided EMA updates and feature alignment"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "factorized shared vs domain-specific latents with domain-dependent priors"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based deterministic uncertainty for routing and confidence"
+      },
+      {
+        "seed_id": "663d598bb0b9",
+        "domain": "CV",
+        "borrowed_aspect": "EMA-based online uncertainty estimation to adapt update magnitudes"
+      }
+    ],
+    "wall_clock_s": 115.12,
+    "cost": {
+      "gen_prompt_tokens": 4801,
+      "gen_completion_tokens": 4269,
+      "judge_prompt_tokens": 96083,
+      "judge_completion_tokens": 1232,
+      "gen_cost_usd": 0.0487,
+      "judge_cost_usd": 0.3067,
+      "total_cost_usd": 0.3554
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the combination of uncertainty-weighted gradient updates with prototype-based routing in the latent space, plus the periodic low-rank fusion/merging of mature adapters back into the backbone guided by cosine alignment between adapter-induced updates and backbone gradients. This consolidation mechanism is relatively distinctive. Method B's strongest novel element is the \"anchor distribution\" construction using feature inversion and online PCA-based activation centroids/low-rank bases as a data-free rehearsal substitute, combined with alternating preservation/acquisition steps. Both methods combine several existing ideas (LoRA/adapters, distillation, routing, importance-based regularization) in ways that are incremental rather than truly groundbreaking. Method A introduces more simultaneously novel sub-components (uncertainty-guided gradient weighting tied to prototype confidence, plus the adapter-backbone subspace merging criterion), while Method B's anchor synthesis via feature inversion matching stored teacher statistics is a more focused and identifiable novel mechanism. On balance, Method A stacks more novel combinations but risks being a collection of loosely connected ideas, whereas Method B's anchor distillation with synthetic feature-matched pseudo-inputs is a cleaner novel contribution. The two are close, but Method A's uncertainty-prototype coupling plus subspace merging represents a slightly harder-to-find combination in prior literature."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is catastrophic forgetting during fine-tuning on new tasks, specifically without retaining prior data. Both methods engage this directly through parameter isolation (frozen backbone + adapters/LoRA), knowledge distillation from a frozen reference model, and avoiding raw data storage. Method A uses self-distillation on new-task inputs with importance maps and prototype-based routing, while Method B uses a frozen teacher snapshot with anchor distributions (synthetic/public data) for distillation. Both trace a clear causal pathway from the forgetting problem to specific mechanisms. However, Method B's anchor distillation step more directly addresses the \"without retaining all prior data\" constraint by explicitly constructing a data-free approximation of prior knowledge through activation centroids and synthetic pseudo-inputs, providing a more concrete mechanism for rehearsal-free preservation. Method A's approach is similarly valid but more diffuse across many coupled components, making the causal pathway from problem to solution slightly harder to trace. Both are highly valid, but Method B's mechanism is marginally more direct in addressing the specific dual constraint of no forgetting and no prior data retention."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A has a generally coherent structure: freeze base weights, add residual adapters, use a frozen teacher for distillation on anchor data, and route at inference. The main coherence weakness is the \"data-free anchor distribution\" step, which mixes several loosely connected strategies (sampling from public corpora, feature inversion, online PCA centroids) without clearly specifying how these are unified or how feature inversion is performed without stored data. The inference-time gating via a domain discriminator also introduces an undefined component that requires its own training signal. These are real gaps but not fatal contradictions.\n\nMethod B has more serious coherence tensions. It proposes freezing the backbone and previously learned modules while simultaneously regularizing the backbone via an importance map \"to prevent drift\" — but if the backbone is frozen, it cannot drift and the regularization is redundant or contradictory. Additionally, the method proposes periodically merging adapter subspaces back into the backbone via \"low-rank fusion,\" which directly contradicts the stated policy of keeping the backbone frozen and stable. The adversarial discriminator for domain-invariant features is also introduced without explaining how it interacts with the frozen backbone or the distillation objective. These internal contradictions (freeze backbone vs. regularize backbone vs. merge into backbone) represent genuine logical inconsistencies that would require redesign to resolve."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5127,
+    "judge_completion_tokens": 846,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0281,
+    "total_cost_usd": 0.0281
+  }
+}

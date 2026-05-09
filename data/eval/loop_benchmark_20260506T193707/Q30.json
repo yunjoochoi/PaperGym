@@ -1,0 +1,254 @@
+{
+  "query_id": "Q30",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Reward models for alignment require large preference datasets,\nbut high-quality human labels are scarce; how can we learn\nreliable reward models from limited or noisy preferences?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Build a bootstrapped, denoised preference pool before training the reward model. Start with AI-labeled preference pairs (or legacy human pairs if available) and re-query each pair multiple times using diverse labelers (e.g., several LLM judges or light-perturbed prompts) to obtain a consistency score c in [0,1]. Train a small ensemble of reward models on this pool and compute each pair’s average reward margin Δ̄ and ensemble disagreement σ_Δ. Prune contradictions (Δ̄ < 0 with high |Δ̄| and high c) and filter away trivially easy pairs (very large |Δ̄| with low σ_Δ), keeping a “core” set with moderate-to-large |Δ̄| but low σ_Δ, plus a frontier set of hard/ambiguous pairs (small |Δ̄| and/or high σ_Δ) for targeted review. If your preference data comes from multiple collection policies or labelers, estimate exposure propensities per context and source, and attach inverse-propensity weights to each pair to counter sampling bias before any filtering.\n\nTriage scarce human effort to the frontier set with a monotone reward-difference view. Fit a provisional reward model on the core set and sort all pairs by its predicted reward differences. Detect elbow/knee points on the cumulative accuracy curve to split the distribution into easy/high-confidence, uncertain, and likely-mislabeled tails. Auto-accept the easy region after a tiny spot-check, flip labels only in the most extreme low-confidence tail flagged by the curve, and allocate human annotation starting from the elbow moving into the uncertain region. Prioritize pairs by a mixture score that combines low |Δ̄|, high σ_Δ, and low c (multi-query inconsistency), which concentrates annotation on items that both the ensemble and the provisional model find confusing.\n\nTrain the reward model with a confidence- and propensity-weighted pairwise objective that is robust to outliers. Use a Bradley–Terry/DPO-style loss where each pair’s contribution is weighted by: (i) the multi-query consistency c, (ii) the inverse propensity weight to debias selection, and (iii) an uncertainty-aware downweight w = 1 / (1 + σ_Δ). Replace the standard logistic with a heavy-tailed alternative (Student’s t link or an equivalent robust loss) so rare but large residuals are softly clipped instead of dominating updates. Add a small margin-shrinkage penalty that pulls very small predicted gaps toward zero, further neutralizing ambiguous pairs. Optionally learn a per-pair temperature (heteroscedastic head) that predicts noise scale and gates the loss, trained to match observed multi-query variability.\n\nClose the loop with targeted data acquisition and safe downstream use. When collecting new model responses for comparison, rank multiple candidates per prompt with the current reward model and sample extremes (best and worst) much more often than mid-range items; this yields more informative preference updates and reduces exposure to the noisiest margin region. When using the reward model for RLHF, apply rank-based policy filtration to focus optimization on the reliably scored regions rather than mid-range plateaus, limiting over-optimization on spurious signals. Iterate: retrain the ensemble, refresh core/frontier sets, re-estimate propensities if sources shift, and spend incremental human budget only where the mixture score stays high.",
+        "rationale": "This pipeline raises reward-model reliability under scarce or noisy preferences by combining three complementary controls. First, it reduces label noise upfront via multi-query consistency, ensemble disagreement filtering, and automatic detection of easy versus error-prone regions, so the model sees fewer contradictory and trivial pairs. Second, it maximizes the impact of limited human labels through principled triage on the reward-gap distribution, auditing only a tiny easy subset and concentrating annotation on ambiguous, disagreement-heavy pairs. Third, it trains with robustness and debiasing: confidence- and propensity-weighted losses, heavy-tailed error models, and margin regularization prevent outliers and selection effects from skewing the learned reward.\n\nFinally, the same reliability lens guides both data acquisition and downstream RL: sampling extremes for comparisons increases information per label, and rank-based policy filtration during RL prevents the agent from exploiting mid-range noise. Together, these steps convert limited, noisy preferences into a denoised, debiased, and robust supervisory signal that transfers to more stable policy improvement.",
+        "inspired_by": [
+          {
+            "seed_id": "e0bd6ce437cf",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "ensemble-based preference filtering by margin averaging and disagreement"
+          },
+          {
+            "seed_id": "2ccfe7f0499c",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "targeted human feedback via elbow–knee segmentation and selective label flipping"
+          },
+          {
+            "seed_id": "dfd0278e3688",
+            "domain": "RL",
+            "borrowed_aspect": "multi-query preferences with confidence-weighted loss to suppress inconsistent labels"
+          },
+          {
+            "seed_id": "03f26ea245f1",
+            "domain": "IR_REC",
+            "borrowed_aspect": "inverse-propensity weighting from interventional overlaps to debias feedback"
+          },
+          {
+            "seed_id": "6b7e3555f12b",
+            "domain": "RL",
+            "borrowed_aspect": "rank-based filtration emphasizing reliable extremes and de-emphasizing mid-range noise"
+          },
+          {
+            "seed_id": "35dbae9aa284",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "heavy-tailed (Student’s t) modeling for robustness to outliers"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method is a multi-component pipeline combining: (1) multi-query consistency scoring for preference denoising (covered by \"Navigating Noisy Feedback\" 2410.17389), (2) ensemble reward model disagreement filtering with contradiction/trivial pair pruning (covered by DPF-CM 2509.01354 and \"Data with High and Consistent Preference Difference\" 2024), (3) reward-gap distribution triage with elbow/knee detection for human annotation (covered by RLTHF 2502.13417), (4) inverse propensity weighting for selection bias correction (not surfaced in combination with reward model training), (5) confidence+propensity+uncertainty-weighted robust loss with heavy-tailed link function and margin-shrinkage penalty (partially covered by CRM, EBRM, and DRDO but not this exact combination), and (6) rank-based policy filtration (covered by PF-PPO 2409.06957). No single paper combines all these mechanisms together. The closest papers each cover 1-2 components. The specific combination of inverse propensity weighting + multi-query consistency + ensemble disagreement + heavy-tailed robust loss + elbow-based annotation triage as a unified pipeline has not been surfaced. However, most individual components are published, and several pairs of components appear in related work. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this exact problem, with one named design choice (the mixture score combining |Δ̄|, σ_Δ, and c for annotation prioritization, plus the heteroscedastic per-pair temperature head) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - Navigating Noisy Feedback (2410.17389, 2024): multi-query consistency confidence-weighted preference loss for reward learning from noisy LLM feedback\n  - RLTHF: Targeted Human Feedback for LLM Alignment (2502.13417, 2025): elbow/knee-based reward-gap triage to direct human annotation to hard preference pairs\n  - DPF-CM (2509.01354, 2025): ensemble reward model filtering of contradictory/trivial preference pairs for RLHF denoising\n  - Policy Filtration for RLHF (2409.06957, 2024): rank-based policy filtration during PPO to avoid noisy mid-reward regions\n  - Data with High and Consistent Preference Difference (2025): preference-difference filtering based on Bradley-Terry MSE analysis\n  - Collaborative Reward Modeling CRM (2025): peer-review ensemble filtering of noisy preferences with curriculum learning\n  - Energy-Based Reward Model EBRM (2025): conflict-aware data filtering and label-noise-aware contrastive training for reward models\n  - RMO: Reward Margin Optimization (2026): dual denoising filtering of ambiguous preference pairs based on reward margin dynamics",
+        "prior_works": [
+          "Navigating Noisy Feedback (2410.17389, 2024): multi-query consistency confidence-weighted preference loss for reward learning from noisy LLM feedback",
+          "RLTHF: Targeted Human Feedback for LLM Alignment (2502.13417, 2025): elbow/knee-based reward-gap triage to direct human annotation to hard preference pairs",
+          "DPF-CM (2509.01354, 2025): ensemble reward model filtering of contradictory/trivial preference pairs for RLHF denoising",
+          "Policy Filtration for RLHF (2409.06957, 2024): rank-based policy filtration during PPO to avoid noisy mid-reward regions",
+          "Data with High and Consistent Preference Difference (2025): preference-difference filtering based on Bradley-Terry MSE analysis",
+          "Collaborative Reward Modeling CRM (2025): peer-review ensemble filtering of noisy preferences with curriculum learning",
+          "Energy-Based Reward Model EBRM (2025): conflict-aware data filtering and label-noise-aware contrastive training for reward models",
+          "RMO: Reward Margin Optimization (2026): dual denoising filtering of ambiguous preference pairs based on reward margin dynamics"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Build a bootstrapped, denoised preference pool before training the reward model. Start with AI-labeled preference pairs (or legacy human pairs if available) and re-query each pair multiple times using diverse labelers (e.g., several LLM judges or light-perturbed prompts) to obtain a consistency score c in [0,1]. Train a small ensemble of reward models on this pool and compute each pair’s average reward margin Δ̄ and ensemble disagreement σ_Δ. Prune contradictions (Δ̄ < 0 with high |Δ̄| and high c) and filter away trivially easy pairs (very large |Δ̄| with low σ_Δ), keeping a “core” set with moderate-to-large |Δ̄| but low σ_Δ, plus a frontier set of hard/ambiguous pairs (small |Δ̄| and/or high σ_Δ) for targeted review. If your preference data comes from multiple collection policies or labelers, estimate exposure propensities per context and source, and attach inverse-propensity weights to each pair to counter sampling bias before any filtering.\n\nTriage scarce human effort to the frontier set with a monotone reward-difference view. Fit a provisional reward model on the core set and sort all pairs by its predicted reward differences. Detect elbow/knee points on the cumulative accuracy curve to split the distribution into easy/high-confidence, uncertain, and likely-mislabeled tails. Auto-accept the easy region after a tiny spot-check, flip labels only in the most extreme low-confidence tail flagged by the curve, and allocate human annotation starting from the elbow moving into the uncertain region. Prioritize pairs by a mixture score that combines low |Δ̄|, high σ_Δ, and low c (multi-query inconsistency), which concentrates annotation on items that both the ensemble and the provisional model find confusing.\n\nTrain the reward model with a confidence- and propensity-weighted pairwise objective that is robust to outliers. Use a Bradley–Terry/DPO-style loss where each pair’s contribution is weighted by: (i) the multi-query consistency c, (ii) the inverse propensity weight to debias selection, and (iii) an uncertainty-aware downweight w = 1 / (1 + σ_Δ). Replace the standard logistic with a heavy-tailed alternative (Student’s t link or an equivalent robust loss) so rare but large residuals are softly clipped instead of dominating updates. Add a small margin-shrinkage penalty that pulls very small predicted gaps toward zero, further neutralizing ambiguous pairs. Optionally learn a per-pair temperature (heteroscedastic head) that predicts noise scale and gates the loss, trained to match observed multi-query variability.\n\nClose the loop with targeted data acquisition and safe downstream use. When collecting new model responses for comparison, rank multiple candidates per prompt with the current reward model and sample extremes (best and worst) much more often than mid-range items; this yields more informative preference updates and reduces exposure to the noisiest margin region. When using the reward model for RLHF, apply rank-based policy filtration to focus optimization on the reliably scored regions rather than mid-range plateaus, limiting over-optimization on spurious signals. Iterate: retrain the ensemble, refresh core/frontier sets, re-estimate propensities if sources shift, and spend incremental human budget only where the mixture score stays high.",
+    "final_rationale": "This pipeline raises reward-model reliability under scarce or noisy preferences by combining three complementary controls. First, it reduces label noise upfront via multi-query consistency, ensemble disagreement filtering, and automatic detection of easy versus error-prone regions, so the model sees fewer contradictory and trivial pairs. Second, it maximizes the impact of limited human labels through principled triage on the reward-gap distribution, auditing only a tiny easy subset and concentrating annotation on ambiguous, disagreement-heavy pairs. Third, it trains with robustness and debiasing: confidence- and propensity-weighted losses, heavy-tailed error models, and margin regularization prevent outliers and selection effects from skewing the learned reward.\n\nFinally, the same reliability lens guides both data acquisition and downstream RL: sampling extremes for comparisons increases information per label, and rank-based policy filtration during RL prevents the agent from exploiting mid-range noise. Together, these steps convert limited, noisy preferences into a denoised, debiased, and robust supervisory signal that transfers to more stable policy improvement.",
+    "final_inspired_by": [
+      {
+        "seed_id": "e0bd6ce437cf",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "ensemble-based preference filtering by margin averaging and disagreement"
+      },
+      {
+        "seed_id": "2ccfe7f0499c",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "targeted human feedback via elbow–knee segmentation and selective label flipping"
+      },
+      {
+        "seed_id": "dfd0278e3688",
+        "domain": "RL",
+        "borrowed_aspect": "multi-query preferences with confidence-weighted loss to suppress inconsistent labels"
+      },
+      {
+        "seed_id": "03f26ea245f1",
+        "domain": "IR_REC",
+        "borrowed_aspect": "inverse-propensity weighting from interventional overlaps to debias feedback"
+      },
+      {
+        "seed_id": "6b7e3555f12b",
+        "domain": "RL",
+        "borrowed_aspect": "rank-based filtration emphasizing reliable extremes and de-emphasizing mid-range noise"
+      },
+      {
+        "seed_id": "35dbae9aa284",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "heavy-tailed (Student’s t) modeling for robustness to outliers"
+      }
+    ],
+    "wall_clock_s": 157.27,
+    "cost": {
+      "gen_prompt_tokens": 7009,
+      "gen_completion_tokens": 6354,
+      "judge_prompt_tokens": 108185,
+      "judge_completion_tokens": 1220,
+      "gen_cost_usd": 0.0723,
+      "judge_cost_usd": 0.3429,
+      "total_cost_usd": 0.4152
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Tri-Source Uncertainty-Calibrated Reward Modeling (TRU-RM), a training loop that learns a reliable reward model rθ with three supervision streams: scarce human pairwise preferences (gold), plentiful pseudo-preferences from a pseudo-interactive demonstrator (weak), and pointwise outcome proxies from offline logs (implicit). The reward model has a shared trunk and per-source calibration heads that learn small, source-specific logit offsets to capture systematic bias. We insert a discriminative prototype layer in the pre-logit space and attach an uncertainty head uϕ that outputs a per-comparison confidence used to weight, filter, and schedule updates. A lightweight hierarchical prior encourages small source-specific biases while preserving a strong shared core, and we update the structured prior with a sampling-based gradient estimator to avoid expensive full Bayesian inference.\n\nTo expand supervision beyond scarce human labels, we train a pseudo-interactive demonstrator (PID) that, given a task instance, proposes multiple candidate outputs/trajectories and selects pseudo-winners based on accessible structure: distance-to-goal or constraint satisfaction in RL-style tasks, or rubric-based automatic judges (readability, factuality, instruction adherence) for text. The PID generates pairwise pseudo-labels across diverse difficulty levels; these are only accepted when the reward model’s uncertainty uϕ is low and the PID’s margin is high. Outcome proxies (success/penalty rates, rule violations, hallucination flags) supply pointwise targets that the reward head also regressively matches, tying the pairwise objective to measurable signals.\n\nTraining interleaves three losses with uncertainty-aware weighting: (1) a Bradley–Terry (or DPO-style) pairwise loss on human comparisons (unit weight), (2) the same loss on PID comparisons down-weighted by per-example confidence and a per-source uncertainty EMA, and (3) a pointwise regression/classification loss on outcome proxies with temperature-scaled targets. We maintain per-source moving averages of uncertainty (U-EMA) to adapt global weights online: noisier sources are down-weighted until they become reliable. Source-specific calibration heads are L2-regularized toward zero on batches that include any human-anchored examples, keeping weak-supervision biases from contaminating the shared trunk.\n\nTo spend human labels where they matter most, TRU-RM performs uncertainty-aware, efficient elicitation. For each task instance, we sample k diverse candidates, rank them with the pointwise reward, and run a small number of right-to-left adjacent comparisons among the top-k to identify only the most informative pairs to ask humans, prioritizing adjacent pairs with high disagreement or variance from uϕ. This yields near listwise refinement at O(k) human queries per instance. Periodically, we also query “anchor” comparisons drawn from a static reference set to recalibrate and audit the model.\n\nFinally, to prevent self-reward bias and drift, we include a debiasing monitor: a held-out suite scored by external references (task-specific metrics or curated gold comparisons). We regularize the reward model to maintain correlation with these references and limit candidate pool growth in self-improvement phases that would otherwise amplify stylistic or fluency artifacts. Together, the PID, uncertainty-weighted multi-source training, efficient elicitation, and debiasing yield a robust reward model from limited and noisy preference data.",
+        "rationale": "TRU-RM attacks scarcity by converting abundant structure into supervision: a pseudo-demonstrator generates many high-margin comparisons, and offline outcomes supply pointwise targets. It controls noise via single-pass latent uncertainty to filter and weight pseudo-labels, plus per-source U-EMA that automatically down-weights unreliable streams. Active query selection concentrates human effort on the smallest set of pairs that maximally reduce uncertainty, using efficient adjacent comparisons to approach listwise benefits without quadratic query costs.\n\nA shared-core, source-calibrated design lets the model learn a general reward signal while explicitly modeling biases from weak supervision, and a sampling-based structured prior improves data efficiency without heavy inference. Debiasing anchored to external references prevents the classic failure mode of self-reward pipelines that overvalue fluency or style. The result is a reward model that is better calibrated, more sample-efficient, and robust to noisy or synthetic preferences.",
+        "inspired_by": [
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "pseudo interactive demonstrator to generate supervision"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA and high-confidence pseudo-label filtering"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass latent uncertainty with prototype discrimination"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "efficient pairwise refinement via adjacent swaps over top-k"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "sampling-based gradient estimator for structured Bayesian models"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared vs domain-specific latent priors across data sources"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "self-evaluation bias diagnosis and mitigation in self-rewarding"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "TRU-RM combines several known mechanisms: (1) multi-source reward training with human + AI/pseudo preferences (related to HyPER, RRHF, and cost-effective proxy reward work), (2) uncertainty-weighted preference learning (related to Conformal Feedback Alignment, uncertainty-aware reward discounting), (3) active query selection for reward model training (related to Dual Active Learning for RLHF, ActiveUltraFeedback, Reviving the Classics), (4) discriminative prototype layers for uncertainty (related to LDU from the seeds), and (5) adjacent/right-to-left comparison for efficient elicitation (related to GLIMPSE from the seeds). However, no single paper combines all these elements: a pseudo-interactive demonstrator generating structured pseudo-labels, per-source calibration heads with hierarchical priors, U-EMA weighting across three supervision streams, prototype-based uncertainty filtering, and GLIMPSE-style adjacent comparisons for human elicitation — all in a unified reward modeling framework. The closest papers address subsets: HyPER routes between human/AI annotations but doesn't do uncertainty-weighted multi-source training; the active reward modeling papers focus on query selection but not multi-source calibration; uncertainty-aware reward discounting uses ensemble disagreement but not the full pipeline. The combination of all five mechanisms for this specific problem (reward modeling from scarce/noisy preferences) has no direct published match, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application, introducing named design choices (U-EMA per-source weighting, PID-based pseudo-label generation with margin filtering, per-source calibration heads) not present as a unified system in the literature.\n\nPrior works:\n  - Hybrid Preferences: Learning to Route Instances for Human vs. AI Feedback (HyPER, 2024): Routes between human and AI annotations for reward model training, overlapping with multi-source supervision concept.\n  - Cost-Effective Proxy Reward Model Construction with On-Policy and Active Learning (2024): Combines active learning with proxy reward construction from limited labeled data, overlapping with efficient elicitation component.\n  - Reviving The Classics: Active Reward Modeling in Large Language Model Alignment (2025): Fisher information-based active selection of pairs for reward model annotation, overlapping with uncertainty-aware elicitation.\n  - Uncertainty-Aware Reward Discounting for Mitigating Reward Hacking (2026): Dual-source uncertainty modeling for reward functions, overlapping with uncertainty-weighted reward training.\n  - Conformal Feedback Alignment (2026): Uncertainty-based preference weighting for DPO/PPO training, overlapping with uncertainty-calibrated loss weighting.\n  - Dual Active Learning for Reinforcement Learning from Human Feedback (2024): Active selection of conversations and teachers for reward learning, overlapping with efficient human elicitation.\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): Prototype-based discriminative uncertainty in pre-logit space, overlapping with the prototype layer + uncertainty head design.",
+        "prior_works": [
+          "Hybrid Preferences: Learning to Route Instances for Human vs. AI Feedback (HyPER, 2024): Routes between human and AI annotations for reward model training, overlapping with multi-source supervision concept.",
+          "Cost-Effective Proxy Reward Model Construction with On-Policy and Active Learning (2024): Combines active learning with proxy reward construction from limited labeled data, overlapping with efficient elicitation component.",
+          "Reviving The Classics: Active Reward Modeling in Large Language Model Alignment (2025): Fisher information-based active selection of pairs for reward model annotation, overlapping with uncertainty-aware elicitation.",
+          "Uncertainty-Aware Reward Discounting for Mitigating Reward Hacking (2026): Dual-source uncertainty modeling for reward functions, overlapping with uncertainty-weighted reward training.",
+          "Conformal Feedback Alignment (2026): Uncertainty-based preference weighting for DPO/PPO training, overlapping with uncertainty-calibrated loss weighting.",
+          "Dual Active Learning for Reinforcement Learning from Human Feedback (2024): Active selection of conversations and teachers for reward learning, overlapping with efficient human elicitation.",
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): Prototype-based discriminative uncertainty in pre-logit space, overlapping with the prototype layer + uncertainty head design."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Tri-Source Uncertainty-Calibrated Reward Modeling (TRU-RM), a training loop that learns a reliable reward model rθ with three supervision streams: scarce human pairwise preferences (gold), plentiful pseudo-preferences from a pseudo-interactive demonstrator (weak), and pointwise outcome proxies from offline logs (implicit). The reward model has a shared trunk and per-source calibration heads that learn small, source-specific logit offsets to capture systematic bias. We insert a discriminative prototype layer in the pre-logit space and attach an uncertainty head uϕ that outputs a per-comparison confidence used to weight, filter, and schedule updates. A lightweight hierarchical prior encourages small source-specific biases while preserving a strong shared core, and we update the structured prior with a sampling-based gradient estimator to avoid expensive full Bayesian inference.\n\nTo expand supervision beyond scarce human labels, we train a pseudo-interactive demonstrator (PID) that, given a task instance, proposes multiple candidate outputs/trajectories and selects pseudo-winners based on accessible structure: distance-to-goal or constraint satisfaction in RL-style tasks, or rubric-based automatic judges (readability, factuality, instruction adherence) for text. The PID generates pairwise pseudo-labels across diverse difficulty levels; these are only accepted when the reward model’s uncertainty uϕ is low and the PID’s margin is high. Outcome proxies (success/penalty rates, rule violations, hallucination flags) supply pointwise targets that the reward head also regressively matches, tying the pairwise objective to measurable signals.\n\nTraining interleaves three losses with uncertainty-aware weighting: (1) a Bradley–Terry (or DPO-style) pairwise loss on human comparisons (unit weight), (2) the same loss on PID comparisons down-weighted by per-example confidence and a per-source uncertainty EMA, and (3) a pointwise regression/classification loss on outcome proxies with temperature-scaled targets. We maintain per-source moving averages of uncertainty (U-EMA) to adapt global weights online: noisier sources are down-weighted until they become reliable. Source-specific calibration heads are L2-regularized toward zero on batches that include any human-anchored examples, keeping weak-supervision biases from contaminating the shared trunk.\n\nTo spend human labels where they matter most, TRU-RM performs uncertainty-aware, efficient elicitation. For each task instance, we sample k diverse candidates, rank them with the pointwise reward, and run a small number of right-to-left adjacent comparisons among the top-k to identify only the most informative pairs to ask humans, prioritizing adjacent pairs with high disagreement or variance from uϕ. This yields near listwise refinement at O(k) human queries per instance. Periodically, we also query “anchor” comparisons drawn from a static reference set to recalibrate and audit the model.\n\nFinally, to prevent self-reward bias and drift, we include a debiasing monitor: a held-out suite scored by external references (task-specific metrics or curated gold comparisons). We regularize the reward model to maintain correlation with these references and limit candidate pool growth in self-improvement phases that would otherwise amplify stylistic or fluency artifacts. Together, the PID, uncertainty-weighted multi-source training, efficient elicitation, and debiasing yield a robust reward model from limited and noisy preference data.",
+    "final_rationale": "TRU-RM attacks scarcity by converting abundant structure into supervision: a pseudo-demonstrator generates many high-margin comparisons, and offline outcomes supply pointwise targets. It controls noise via single-pass latent uncertainty to filter and weight pseudo-labels, plus per-source U-EMA that automatically down-weights unreliable streams. Active query selection concentrates human effort on the smallest set of pairs that maximally reduce uncertainty, using efficient adjacent comparisons to approach listwise benefits without quadratic query costs.\n\nA shared-core, source-calibrated design lets the model learn a general reward signal while explicitly modeling biases from weak supervision, and a sampling-based structured prior improves data efficiency without heavy inference. Debiasing anchored to external references prevents the classic failure mode of self-reward pipelines that overvalue fluency or style. The result is a reward model that is better calibrated, more sample-efficient, and robust to noisy or synthetic preferences.",
+    "final_inspired_by": [
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "pseudo interactive demonstrator to generate supervision"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA and high-confidence pseudo-label filtering"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single-pass latent uncertainty with prototype discrimination"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "efficient pairwise refinement via adjacent swaps over top-k"
+      },
+      {
+        "seed_id": "69f9d4fc5e68",
+        "domain": "RL",
+        "borrowed_aspect": "sampling-based gradient estimator for structured Bayesian models"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared vs domain-specific latent priors across data sources"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "self-evaluation bias diagnosis and mitigation in self-rewarding"
+      }
+    ],
+    "wall_clock_s": 158.81,
+    "cost": {
+      "gen_prompt_tokens": 4797,
+      "gen_completion_tokens": 4226,
+      "judge_prompt_tokens": 157674,
+      "judge_completion_tokens": 1263,
+      "gen_cost_usd": 0.0483,
+      "judge_cost_usd": 0.492,
+      "total_cost_usd": 0.5402
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of multi-query consistency scoring, ensemble-based reward margin/disagreement filtering, inverse-propensity weighting for sampling bias correction, and a heavy-tailed robust loss with per-pair heteroscedastic temperature — but each of these components (ensemble disagreement filtering, IPW debiasing, robust Bradley-Terry loss) exists in prior literature and the combination, while systematic, is an engineering assembly of known pieces. Method B's strongest novel element is the \"pseudo-interactive demonstrator\" (PID) concept — a structured module that generates pseudo-preferences via task-specific structural signals (distance-to-goal, rubric judges) and gates acceptance via uncertainty, combined with per-source calibration heads and a discriminative prototype layer in a tri-source training loop. The PID as a named, structured pseudo-labeler that bridges RL-style outcome signals and pairwise preference learning is a more original framing not easily found as a unified prior contribution. Both methods are largely assemblies of existing ideas, but Method B's PID mechanism and the tri-source uncertainty-calibrated architecture represent a more distinctive named contribution that would be harder to find in existing literature."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is learning reliable reward models from limited or noisy preference data. Method A addresses this through multi-source supervision (augmenting scarce human labels with pseudo-labels and outcome proxies), uncertainty-weighted training, and targeted human elicitation — directly engaging both the scarcity and noise dimensions. Method B addresses this through denoising the preference pool (consistency scoring, ensemble disagreement filtering, robust loss functions), triaging scarce human effort to informative pairs, and propensity weighting — also directly engaging both dimensions. Both methods trace a clear causal pathway from the problem to specific mechanisms. However, Method B's core mechanism is more tightly focused on the noise problem: it builds a systematic pipeline to identify and handle noisy/contradictory labels before and during training (multi-query consistency, ensemble disagreement, robust loss with heavy-tailed link, label flipping for mislabeled pairs), while also addressing scarcity through intelligent human effort allocation. Method A's approach to noise is primarily through uncertainty weighting, which is somewhat indirect compared to B's explicit denoising pipeline. Both are comparably direct, making this close to a tie, but Method B's explicit denoising mechanisms (consistency scoring, contradiction pruning, robust loss) more directly target the \"noisy preferences\" failure mode."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A introduces a \"pseudo-interactive demonstrator\" (PID) that generates pseudo-labels, but the acceptance criterion for PID labels requires the reward model's uncertainty to be low — yet early in training, the reward model has not been trained on sufficient data to produce reliable uncertainty estimates, creating a circular dependency. Additionally, the method combines a discriminative prototype layer, per-source calibration heads, an uncertainty head, a hierarchical prior updated via sampling-based gradient estimators, and U-EMA weighting — this is a large number of interdependent components whose interactions are underspecified, making implementation non-trivial without redesigning several pieces. Method B is more straightforward: it builds a denoised preference pool using multi-query consistency scoring, trains a small ensemble, uses the ensemble's disagreement and margin to triage human annotation, and applies a weighted robust loss. The steps follow logically from one another with no circular dependencies. The main complexity (inverse propensity weighting, heteroscedastic head) is well-defined and standard. Method B has no serious coherence flaws, while Method A has a meaningful circular dependency in its uncertainty-gated PID acceptance and an overly complex architecture with underspecified component interactions."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6138,
+    "judge_completion_tokens": 826,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0308,
+    "total_cost_usd": 0.0308
+  }
+}

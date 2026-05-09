@@ -1,0 +1,209 @@
+{
+  "query_id": "Q07",
+  "natural_domain": "MULTIMODAL",
+  "query_text": "Vision-language models trained on web data degrade when images\ncome from a shifted distribution like medical or satellite;\nhow can we maintain cross-modal alignment under unseen domain\nshift without target-domain labels?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Unsupervised Preference- and Anchor-guided Alignment (UPAA) for out-of-distribution vision–language alignment. UPAA keeps the original VLM largely frozen and inserts a lightweight visual adapter while upgrading the visual frontend for detail preservation. Concretely, we adopt an any‑resolution tiling frontend and a mixed-encoder fusion that concatenates features from a CLIP-like encoder and a DINOv2-style local-detail encoder, summarized by a Q‑Former into a fixed number of tokens. Inside a mid transformer layer we add a small set of learnable global attention maps as a domain adapter; only these maps, a shallow visual projection head, and prompt heads on the text side are trainable, preserving source-domain alignment while adding capacity to capture new spatial patterns.\n\nGiven only unlabeled target images, UPAA constructs self-supervised, clinically/semantically grounded pairwise preferences to preserve cross‑modal alignment. For each image, we generate K caption candidates using the base VLM (and optional open captioners) and compute saliency with self-supervised detectors (e.g., DINO/DINOv2 attention or SAM proposals). We form dispreferred pairs by (a) lesion/region neglect: occlude or locally perturb the top-salient region and pair the perturbed image with the original high‑scoring caption as a negative versus the unperturbed pair; and (b) plausible hallucinations: sample fluent alternative captions and select those whose CLIP score drops the least under salient‑region occlusion (i.e., text likely ungrounded) as dispreferred. We then optimize a pairwise preference loss that increases the similarity margin s(img, caption_pref) − s(img, caption_dispref) while keeping the text encoder mostly frozen. This makes the adapter sensitive to domain‑relevant regions without any ground‑truth labels.\n\nTo keep the joint space domain-invariant, we introduce text-anchored adversarial alignment. Build a bank of domain-agnostic anchors (colors, shapes, spatial relations) and optional domain lexicons mined from unlabeled corpora (e.g., radiology/satellite glossaries). A domain discriminator tries to tell whether an image–anchor pair embedding arises from source or target; we train the visual adapter through gradient reversal to confuse it, nudging target image embeddings toward the anchor-conditioned manifold already occupied by source pairs. If unlabeled in-domain text is available, we attach a lightweight MLM/adapter to the text encoder (initialized from a domain LM when possible) to better encode domain terms without supervision, stabilizing image–text scoring on jargon.\n\nFinally, UPAA prevents collapse and supports sub‑domain specialization via a multi-view prompting head. We maintain M prompt/view heads (e.g., generic, texture‑aware, geometry‑aware, domain‑term aware). For each target image, we select the head with the highest image–text score to pull closer, while gently pushing the remaining heads away (global–local loss). This encourages different heads to specialize to different target sub‑modes (e.g., retinal vs chest X‑rays; farmland vs urban satellite) without labels. Training alternates: (1) a few epochs of adversarial anchor alignment and any‑resolution adapter fitting; (2) preference optimization on the self‑constructed pairs; (3) short text‑side unsupervised updates if domain corpora exist. Inference uses tiling+fusion, evaluates all heads and a small prompt set, and reports the max score to remain robust under shift.",
+        "rationale": "The core failure under unseen domain shift is that the visual features drift while the text space and alignment margins stay calibrated to web imagery. UPAA supplies three complementary, label-free signals that directly target this: (i) localized perturbation and hallucination-based preferences teach the model which image regions must support the text, preserving grounding where web pretraining is weakest; (ii) text-anchored adversarial confusion pulls target image embeddings toward known text manifolds without needing target annotations; and (iii) multi-view heads keep capacity diversified so that some pathways specialize to new appearance statistics instead of averaging them away. The any‑resolution, mixed-encoder frontend and small global-attention adapter provide the needed inductive bias and a low-parameter knob to absorb domain-specific spatial patterns while protecting source alignment.\n\nBecause all supervision comes from the model’s own captions, saliency maps, generic anchors, and optional unlabeled text, UPAA applies to medical and satellite images alike. It avoids brittle self-training on single pseudo captions by using preference pairs and worst‑case (saliency‑conditioned) negatives, which are more robust under shift. The result is maintained or improved image–text alignment on unseen domains without requiring any target-domain labels.",
+        "inspired_by": [
+          {
+            "seed_id": "28f9423e8e86",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "dispreference pair construction via hallucinations and region‑neglect for alignment"
+          },
+          {
+            "seed_id": "7a1874944d01",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "any‑resolution tiling and mixed visual encoders with Q‑Former aggregation"
+          },
+          {
+            "seed_id": "4d9e4295a8f0",
+            "domain": "CV",
+            "borrowed_aspect": "lightweight global attention maps as domain adapters within transformers"
+          },
+          {
+            "seed_id": "491676f2ec86",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global–local loss to prevent viewer collapse and encourage specialization across multiple heads"
+          },
+          {
+            "seed_id": "0822027171c4",
+            "domain": "IR_REC",
+            "borrowed_aspect": "text‑anchored adversarial domain alignment using domain classifiers"
+          },
+          {
+            "seed_id": "1f00ffd3788c",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "domain‑specific language initialization to better encode jargon without supervision"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed UPAA method combines five distinct mechanisms for unsupervised VLM domain adaptation: (1) mixed CLIP+DINOv2 encoder with Q-Former and any-resolution tiling frontend, (2) global attention map domain adapter in a mid transformer layer, (3) saliency-guided preference pair construction (lesion neglect + hallucination-based negatives) without labels, (4) text-anchored adversarial alignment via gradient reversal using domain-agnostic anchors, and (5) multi-view prompting heads with global-local loss for sub-domain specialization. Searches surfaced MMedPO (seed 2) which covers the saliency-based preference pair construction for medical VLMs with labels, ADAPT which covers adversarial prompt tuning for UDA with CLIP, and the global attention map adapter from seed 7. However, no single paper combines all these mechanisms together, and critically the text-anchored adversarial alignment (using domain-agnostic text anchors like colors/shapes/spatial relations as discriminator anchors via gradient reversal) for VLM domain adaptation without labels was not surfaced in any search. The multi-view prompting heads with global-local loss applied to VLM sub-domain specialization under unsupervised shift is also not directly surfaced. The overall combination — unsupervised preference pairs from saliency + text-anchored adversarial alignment + multi-view specialization heads — for label-free VLM OOD alignment is not matched end-to-end in any surfaced paper. However, the preference pair construction mechanism closely mirrors MMedPO (which is a direct seed), and the global attention adapter mirrors the low-resource vision paper (seed 7). The combination of these known mechanisms without a surfaced joint application matches the Score 4 anchor.\n\nPrior works:\n  - MMedPO (2412.06141, 2024): Directly covers saliency-based lesion neglect and hallucination preference pairs for medical VLM alignment — the core preference optimization component of UPAA, though MMedPO uses labels and GPT-4o.\n  - ADAPT - Adversarial Dual Prompt Tuning (2025): Covers adversarial training + prompt tuning for unsupervised domain adaptation of CLIP, overlapping with the adversarial alignment component.\n  - Low-Resource Vision Challenges for Foundation Models (2401.04716, 2024): Covers the global attention map domain adapter inserted in a mid transformer layer — directly used as a component in UPAA.\n  - UniAff (2409.20551, 2024): Covers the mixed CLIP+DINOv2+Q-Former encoder with any-resolution tiling — directly used as the visual frontend in UPAA.\n  - Multi-View Document Representation Learning (2203.08372, 2022): Covers multi-view heads with global-local loss for specialization — adapted as the multi-view prompting head component.",
+        "prior_works": [
+          "MMedPO (2412.06141, 2024): Directly covers saliency-based lesion neglect and hallucination preference pairs for medical VLM alignment — the core preference optimization component of UPAA, though MMedPO uses labels and GPT-4o.",
+          "ADAPT - Adversarial Dual Prompt Tuning (2025): Covers adversarial training + prompt tuning for unsupervised domain adaptation of CLIP, overlapping with the adversarial alignment component.",
+          "Low-Resource Vision Challenges for Foundation Models (2401.04716, 2024): Covers the global attention map domain adapter inserted in a mid transformer layer — directly used as a component in UPAA.",
+          "UniAff (2409.20551, 2024): Covers the mixed CLIP+DINOv2+Q-Former encoder with any-resolution tiling — directly used as the visual frontend in UPAA.",
+          "Multi-View Document Representation Learning (2203.08372, 2022): Covers multi-view heads with global-local loss for specialization — adapted as the multi-view prompting head component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Unsupervised Preference- and Anchor-guided Alignment (UPAA) for out-of-distribution vision–language alignment. UPAA keeps the original VLM largely frozen and inserts a lightweight visual adapter while upgrading the visual frontend for detail preservation. Concretely, we adopt an any‑resolution tiling frontend and a mixed-encoder fusion that concatenates features from a CLIP-like encoder and a DINOv2-style local-detail encoder, summarized by a Q‑Former into a fixed number of tokens. Inside a mid transformer layer we add a small set of learnable global attention maps as a domain adapter; only these maps, a shallow visual projection head, and prompt heads on the text side are trainable, preserving source-domain alignment while adding capacity to capture new spatial patterns.\n\nGiven only unlabeled target images, UPAA constructs self-supervised, clinically/semantically grounded pairwise preferences to preserve cross‑modal alignment. For each image, we generate K caption candidates using the base VLM (and optional open captioners) and compute saliency with self-supervised detectors (e.g., DINO/DINOv2 attention or SAM proposals). We form dispreferred pairs by (a) lesion/region neglect: occlude or locally perturb the top-salient region and pair the perturbed image with the original high‑scoring caption as a negative versus the unperturbed pair; and (b) plausible hallucinations: sample fluent alternative captions and select those whose CLIP score drops the least under salient‑region occlusion (i.e., text likely ungrounded) as dispreferred. We then optimize a pairwise preference loss that increases the similarity margin s(img, caption_pref) − s(img, caption_dispref) while keeping the text encoder mostly frozen. This makes the adapter sensitive to domain‑relevant regions without any ground‑truth labels.\n\nTo keep the joint space domain-invariant, we introduce text-anchored adversarial alignment. Build a bank of domain-agnostic anchors (colors, shapes, spatial relations) and optional domain lexicons mined from unlabeled corpora (e.g., radiology/satellite glossaries). A domain discriminator tries to tell whether an image–anchor pair embedding arises from source or target; we train the visual adapter through gradient reversal to confuse it, nudging target image embeddings toward the anchor-conditioned manifold already occupied by source pairs. If unlabeled in-domain text is available, we attach a lightweight MLM/adapter to the text encoder (initialized from a domain LM when possible) to better encode domain terms without supervision, stabilizing image–text scoring on jargon.\n\nFinally, UPAA prevents collapse and supports sub‑domain specialization via a multi-view prompting head. We maintain M prompt/view heads (e.g., generic, texture‑aware, geometry‑aware, domain‑term aware). For each target image, we select the head with the highest image–text score to pull closer, while gently pushing the remaining heads away (global–local loss). This encourages different heads to specialize to different target sub‑modes (e.g., retinal vs chest X‑rays; farmland vs urban satellite) without labels. Training alternates: (1) a few epochs of adversarial anchor alignment and any‑resolution adapter fitting; (2) preference optimization on the self‑constructed pairs; (3) short text‑side unsupervised updates if domain corpora exist. Inference uses tiling+fusion, evaluates all heads and a small prompt set, and reports the max score to remain robust under shift.",
+    "final_rationale": "The core failure under unseen domain shift is that the visual features drift while the text space and alignment margins stay calibrated to web imagery. UPAA supplies three complementary, label-free signals that directly target this: (i) localized perturbation and hallucination-based preferences teach the model which image regions must support the text, preserving grounding where web pretraining is weakest; (ii) text-anchored adversarial confusion pulls target image embeddings toward known text manifolds without needing target annotations; and (iii) multi-view heads keep capacity diversified so that some pathways specialize to new appearance statistics instead of averaging them away. The any‑resolution, mixed-encoder frontend and small global-attention adapter provide the needed inductive bias and a low-parameter knob to absorb domain-specific spatial patterns while protecting source alignment.\n\nBecause all supervision comes from the model’s own captions, saliency maps, generic anchors, and optional unlabeled text, UPAA applies to medical and satellite images alike. It avoids brittle self-training on single pseudo captions by using preference pairs and worst‑case (saliency‑conditioned) negatives, which are more robust under shift. The result is maintained or improved image–text alignment on unseen domains without requiring any target-domain labels.",
+    "final_inspired_by": [
+      {
+        "seed_id": "28f9423e8e86",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "dispreference pair construction via hallucinations and region‑neglect for alignment"
+      },
+      {
+        "seed_id": "7a1874944d01",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "any‑resolution tiling and mixed visual encoders with Q‑Former aggregation"
+      },
+      {
+        "seed_id": "4d9e4295a8f0",
+        "domain": "CV",
+        "borrowed_aspect": "lightweight global attention maps as domain adapters within transformers"
+      },
+      {
+        "seed_id": "491676f2ec86",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global–local loss to prevent viewer collapse and encourage specialization across multiple heads"
+      },
+      {
+        "seed_id": "0822027171c4",
+        "domain": "IR_REC",
+        "borrowed_aspect": "text‑anchored adversarial domain alignment using domain classifiers"
+      },
+      {
+        "seed_id": "1f00ffd3788c",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "domain‑specific language initialization to better encode jargon without supervision"
+      }
+    ],
+    "wall_clock_s": 237.4,
+    "cost": {
+      "gen_prompt_tokens": 7421,
+      "gen_completion_tokens": 8901,
+      "judge_prompt_tokens": 134729,
+      "judge_completion_tokens": 1365,
+      "gen_cost_usd": 0.0983,
+      "judge_cost_usd": 0.4247,
+      "total_cost_usd": 0.5229
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose COMPASS, a test-time and continual, label-free adaptation layer that preserves vision–language alignment under unseen domain shift (e.g., medical, satellite) without target-domain labels. Starting from a frozen web-trained VLM (e.g., CLIP-like), we keep the text encoder fixed and adapt only a small set of vision-side modules: (i) a lightweight visual prompt front-end (pixel-level or early-feature prompts) and (ii) a factorized adapter that decomposes the visual representation into a shared, alignment-preserving pathway and a domain-specific modulation pathway. An exponential-moving-average (EMA) teacher of the full model anchors the original cross-modal geometry and prevents drift.\n\nThe domain-binding front-end couples two mechanisms. First, a learnable visual prompt bank is injected before or into the first few vision blocks, nudging inputs from the target domain toward the web pretraining manifold. Second, an amortized inference head estimates a per-image domain code z_dom that modulates intermediate features via a small FiLM/LoRA adapter stack, while a shared pathway passes gradients only through the adapters and prompts (the backbone remains frozen). We place a simple Gaussian prior over z_dom and regularize with a KL term so the domain-specific modulation remains compact and does not entangle with the shared alignment space. Both prompts and adapters are updated online, while the z_dom prior is refined slowly across the stream.\n\nUnsupervised alignment is maintained with three complementary signals. (1) Self-captioned contrastive alignment: for each target image, the VLM (or a small caption head) generates K candidate captions; we keep high-confidence text anchors and optimize an InfoNCE loss to increase image–text similarity for the top caption and decrease it for hard negatives (including other candidates and a fixed bank of generic web prompts). (2) Cross-view consistency: two strong augmentations of the same image must produce similar similarities over the caption bank, stabilizing the image embedding without labels. (3) Entropy shaping: we minimize entropy of the image–text similarity distribution over the candidate bank to produce confident, clustered alignments while avoiding collapse with temperature and teacher constraints.\n\nTo avoid catastrophic forgetting and preserve cross-modal geometry, we use a teacher–student consistency term: the student’s similarity matrix over a small replay buffer of web images and a fixed set of web text anchors is matched to the EMA teacher. We further add a lightweight domain discriminator on shared visual features with a gradient-reversal layer to keep the shared pathway domain-invariant; the domain-specific modulation absorbs style/content shift. Updates are uncertainty-weighted: per-sample confidence scores downweight noisy self-captions and limit prompt/adapter drift. Only prompts, adapters, z_dom inference, and the domain discriminator are trained; the text encoder, visual backbone, and the EMA teacher’s main weights remain frozen.\n\nDeployment: as target images stream in, we run a few inner-loop updates per batch with small learning rates and an uncertainty-guided EMA on the prompt bank. We cap compute by freezing deeper adapters, and apply early stopping when teacher–student discrepancy stops improving. At inference, the adapted prompts/adapters are used with the frozen text encoder; no target labels or paired texts are required, and the method remains open-vocabulary for downstream zero-shot queries.",
+        "rationale": "Cross-modal degradation under domain shift stems from visual features drifting away from the text-aligned manifold. By freezing the text encoder and constraining adaptation to small visual prompts and domain-specific adapters, we retain the shared alignment while granting just enough capacity to absorb style/content shift. The domain-factorized design explicitly separates a stable, alignment-preserving pathway from a compact domain modulation controlled by a prior, reducing the chance that adaptation breaks the learned image–text geometry.\n\nBecause no labels are available, we rely on self-captioning and open-vocabulary text banks to create pseudo text anchors, but guard against error amplification with uncertainty-weighted updates, cross-view consistency, and teacher–student constraints on a web replay buffer. Adversarial alignment further nudges shared features toward domain invariance, while uncertainty-aware prompt updates keep compute low and adaptation stable. Together, these ingredients maintain cross-modal alignment in new domains without target supervision.",
+        "inspired_by": [
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided visual prompt learning and adversarial feature alignment under continual shifts"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "deterministic uncertainty from a discriminative latent space to weight pseudo-labels and updates"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "factorization into shared and domain-specific latents with domain-dependent priors"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surface several related works on TTA for VLMs (visual prompts, EMA teacher-student, contrastive alignment, domain adaptation), but none combine all the distinctive mechanisms of COMPASS in the same framework: (1) factorized adapter decomposing visual representation into shared alignment-preserving + domain-specific modulation pathways with KL-regularized amortized domain code z_dom, (2) self-captioned InfoNCE contrastive alignment using VLM-generated pseudo-captions as text anchors, (3) gradient-reversal domain discriminator on shared features, and (4) uncertainty-weighted EMA prompt updates — all jointly for label-free VLM adaptation under domain shift. The closest work is the cloud-device VPLU paper (seed 8) which combines visual prompts + uncertainty-guided EMA + adversarial alignment + teacher-student, but lacks the factorized adapter with amortized domain code and self-captioning contrastive signal. OSClip combines prompt tuning + teacher-student for remote sensing but lacks the factorized design and self-captioning. No single paper surfaces the full combination, particularly the amortized domain code z_dom with KL prior + FiLM/LoRA factorized adapter + self-captioned contrastive alignment as a joint system. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing named design choices (amortized domain code with KL prior, factorized shared/domain-specific adapter) not present in the surfaced literature.\n\nPrior works:\n  - Cloud-Device Collaborative Adaptation (VPLU, 2022): visual prompts + uncertainty-guided EMA + adversarial domain discriminator + teacher-student for continual adaptation — overlaps substantially but lacks factorized adapter and self-captioning contrastive alignment.\n  - OSClip (2025): prompt tuning + teacher-student self-distillation for continual domain adaptation of CLIP to remote sensing — overlaps on continual TTA + teacher-student but lacks factorized design and self-captioning.\n  - DART (2024): dual-modal adaptive prompts (text + image) + knowledge retention for TTA of CLIP — overlaps on dual-modal prompting but lacks factorized adapter, domain code, and self-captioning.\n  - Semantic Anchor Transport / SAT (2024): pseudo-label alignment via text anchors + contrastive multi-template distillation for TTA — overlaps on text-anchor contrastive alignment but lacks factorized adapter and domain code.\n  - Learning to Adapt Frozen CLIP for Few-Shot TTA (2025): side branch + domain prompt for frozen CLIP adaptation — overlaps on frozen backbone + domain prompt but lacks factorized adapter and self-captioning.",
+        "prior_works": [
+          "Cloud-Device Collaborative Adaptation (VPLU, 2022): visual prompts + uncertainty-guided EMA + adversarial domain discriminator + teacher-student for continual adaptation — overlaps substantially but lacks factorized adapter and self-captioning contrastive alignment.",
+          "OSClip (2025): prompt tuning + teacher-student self-distillation for continual domain adaptation of CLIP to remote sensing — overlaps on continual TTA + teacher-student but lacks factorized design and self-captioning.",
+          "DART (2024): dual-modal adaptive prompts (text + image) + knowledge retention for TTA of CLIP — overlaps on dual-modal prompting but lacks factorized adapter, domain code, and self-captioning.",
+          "Semantic Anchor Transport / SAT (2024): pseudo-label alignment via text anchors + contrastive multi-template distillation for TTA — overlaps on text-anchor contrastive alignment but lacks factorized adapter and domain code.",
+          "Learning to Adapt Frozen CLIP for Few-Shot TTA (2025): side branch + domain prompt for frozen CLIP adaptation — overlaps on frozen backbone + domain prompt but lacks factorized adapter and self-captioning."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose COMPASS, a test-time and continual, label-free adaptation layer that preserves vision–language alignment under unseen domain shift (e.g., medical, satellite) without target-domain labels. Starting from a frozen web-trained VLM (e.g., CLIP-like), we keep the text encoder fixed and adapt only a small set of vision-side modules: (i) a lightweight visual prompt front-end (pixel-level or early-feature prompts) and (ii) a factorized adapter that decomposes the visual representation into a shared, alignment-preserving pathway and a domain-specific modulation pathway. An exponential-moving-average (EMA) teacher of the full model anchors the original cross-modal geometry and prevents drift.\n\nThe domain-binding front-end couples two mechanisms. First, a learnable visual prompt bank is injected before or into the first few vision blocks, nudging inputs from the target domain toward the web pretraining manifold. Second, an amortized inference head estimates a per-image domain code z_dom that modulates intermediate features via a small FiLM/LoRA adapter stack, while a shared pathway passes gradients only through the adapters and prompts (the backbone remains frozen). We place a simple Gaussian prior over z_dom and regularize with a KL term so the domain-specific modulation remains compact and does not entangle with the shared alignment space. Both prompts and adapters are updated online, while the z_dom prior is refined slowly across the stream.\n\nUnsupervised alignment is maintained with three complementary signals. (1) Self-captioned contrastive alignment: for each target image, the VLM (or a small caption head) generates K candidate captions; we keep high-confidence text anchors and optimize an InfoNCE loss to increase image–text similarity for the top caption and decrease it for hard negatives (including other candidates and a fixed bank of generic web prompts). (2) Cross-view consistency: two strong augmentations of the same image must produce similar similarities over the caption bank, stabilizing the image embedding without labels. (3) Entropy shaping: we minimize entropy of the image–text similarity distribution over the candidate bank to produce confident, clustered alignments while avoiding collapse with temperature and teacher constraints.\n\nTo avoid catastrophic forgetting and preserve cross-modal geometry, we use a teacher–student consistency term: the student’s similarity matrix over a small replay buffer of web images and a fixed set of web text anchors is matched to the EMA teacher. We further add a lightweight domain discriminator on shared visual features with a gradient-reversal layer to keep the shared pathway domain-invariant; the domain-specific modulation absorbs style/content shift. Updates are uncertainty-weighted: per-sample confidence scores downweight noisy self-captions and limit prompt/adapter drift. Only prompts, adapters, z_dom inference, and the domain discriminator are trained; the text encoder, visual backbone, and the EMA teacher’s main weights remain frozen.\n\nDeployment: as target images stream in, we run a few inner-loop updates per batch with small learning rates and an uncertainty-guided EMA on the prompt bank. We cap compute by freezing deeper adapters, and apply early stopping when teacher–student discrepancy stops improving. At inference, the adapted prompts/adapters are used with the frozen text encoder; no target labels or paired texts are required, and the method remains open-vocabulary for downstream zero-shot queries.",
+    "final_rationale": "Cross-modal degradation under domain shift stems from visual features drifting away from the text-aligned manifold. By freezing the text encoder and constraining adaptation to small visual prompts and domain-specific adapters, we retain the shared alignment while granting just enough capacity to absorb style/content shift. The domain-factorized design explicitly separates a stable, alignment-preserving pathway from a compact domain modulation controlled by a prior, reducing the chance that adaptation breaks the learned image–text geometry.\n\nBecause no labels are available, we rely on self-captioning and open-vocabulary text banks to create pseudo text anchors, but guard against error amplification with uncertainty-weighted updates, cross-view consistency, and teacher–student constraints on a web replay buffer. Adversarial alignment further nudges shared features toward domain invariance, while uncertainty-aware prompt updates keep compute low and adaptation stable. Together, these ingredients maintain cross-modal alignment in new domains without target supervision.",
+    "final_inspired_by": [
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided visual prompt learning and adversarial feature alignment under continual shifts"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "deterministic uncertainty from a discriminative latent space to weight pseudo-labels and updates"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "factorization into shared and domain-specific latents with domain-dependent priors"
+      }
+    ],
+    "wall_clock_s": 136.76,
+    "cost": {
+      "gen_prompt_tokens": 4803,
+      "gen_completion_tokens": 3792,
+      "judge_prompt_tokens": 123113,
+      "judge_completion_tokens": 1437,
+      "gen_cost_usd": 0.0439,
+      "judge_cost_usd": 0.3909,
+      "total_cost_usd": 0.4348
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the construction of self-supervised pairwise preferences via saliency-guided region occlusion and hallucination detection (lesion/region neglect and plausible hallucination mining) combined with text-anchored adversarial alignment using domain-agnostic anchors — this specific combination of saliency-based preference construction for unsupervised VLM adaptation is not a well-established pattern. Method B's strongest novel element is the factorized visual representation into shared alignment-preserving and domain-specific modulation pathways with an amortized per-image domain code z_dom, combined with EMA teacher anchoring and entropy shaping — however, these components (visual prompts, FiLM/LoRA adapters, EMA teacher-student, InfoNCE with self-captions, entropy minimization, gradient reversal) are individually well-established in test-time adaptation and domain adaptation literature, and their combination, while competent, follows recognizable patterns from TTT/TENT/CoOp/DomainBed work. Method A's saliency-driven preference pair construction specifically for cross-modal alignment under domain shift — using occlusion to identify ungrounded captions as dispreferred — is a more original mechanism that is harder to find in prior literature as a unified approach."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is cross-modal alignment degradation under unseen domain shift without target-domain labels. Both methods address this, but the question is which engages the failure mode more directly. Method A has a traceable causal pathway: frozen text encoder + visual prompts/adapters nudge shifted visual inputs toward the web pretraining manifold, self-captioned contrastive alignment directly re-establishes image-text similarity without labels, and the EMA teacher explicitly anchors cross-modal geometry. Each component maps directly to the failure mode (alignment degradation under shift, no labels). Method B also addresses the failure mode through preference-based alignment and adversarial domain adaptation, but its mechanism is more indirect—constructing pairwise preferences via saliency-based occlusion and hallucination detection is a more roundabout path to restoring cross-modal alignment compared to directly optimizing image-text similarity with self-generated anchors. Method A's self-captioned contrastive signal directly targets the alignment gap, while Method B's preference construction adds intermediate steps (saliency detection, occlusion, hallucination sampling) that are peripheral to the core alignment failure."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A has several coherence concerns. The preference construction relies on \"CLIP score drops the least under salient-region occlusion\" to identify ungrounded captions, but this is used as a signal to train the same CLIP-like encoder being adapted — a circular dependency that could destabilize training. The multi-view prompting head's selection mechanism (pick the head with highest image-text score, push others away) is underspecified: without labels, it's unclear how specialization to distinct sub-domains emerges rather than all heads collapsing to the same solution. The three-phase alternating training schedule also introduces ordering dependencies that are not fully justified. Method B is largely self-consistent: the factorized adapter with shared/domain-specific pathways, EMA teacher anchoring, and the three unsupervised signals (self-captioned contrastive, cross-view consistency, entropy shaping) are all compatible and well-precedented components. The main potential weakness is the circular self-captioning loop (using the VLM to generate captions that then supervise the VLM's adaptation), but this is mitigated by the EMA teacher constraint and uncertainty weighting, making it a known and manageable issue. Overall, Method B's components fit together more cleanly with fewer unresolved interdependencies."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6207,
+    "judge_completion_tokens": 856,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0315,
+    "total_cost_usd": 0.0315
+  }
+}

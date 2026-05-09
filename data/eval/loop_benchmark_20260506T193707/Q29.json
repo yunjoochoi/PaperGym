@@ -1,0 +1,220 @@
+{
+  "query_id": "Q29",
+  "natural_domain": "CV",
+  "query_text": "Models are brittle to adversarial perturbations imperceptible to\nhumans; how can pretraining objectives or data augmentation make\nmodels robust without expensive test-time defenses?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose FACT-MIX pretraining: a dual objective that couples invariance to imperceptible, human-preserving perturbations with explicit sensitivity to semantic, counterfactual edits—so the model learns what to ignore and what to react to. Build two perturbation banks per domain. (a) Factual, perceptual-preserving variants: for vision/audio use small spatial/time shifts, mild blurs, compression, and spectral jitter within perceptual thresholds; for text use paraphrases, synonym/inflection substitutions, punctuation/casing noise, and token/span drops. (b) Counterfactual variants that minimally alter surface form but flip meaning: for text, controlled role swaps or keyword replacements that change predicate–argument structure; for vision/audio, attribute flips or localized edits that change class-defining factors. During pretraining, draw triplets (x, x+, x−) where x+ is factual and x− is counterfactual.\n\nTrain a single model with a dual consistency–contrastive loss. First, impose factual consistency: align predictions pθ(y|x) and pθ(y|x+) via symmetric KL and align intermediate representations z(x), z(x+) via cosine or InfoNCE positives. Second, impose counterfactual separation: push apart z(x) and z(x−) with a margin, and apply unlikelihood on labels inconsistent with the counterfactual (penalize high probability of y on x− and of y− on x, x+). To prevent brittleness to token- or patch-level perturbations, add salience-aware masking: randomly drop or synonymize spans/patches while encouraging output stability, and occasionally replace salient spans with semantically opposite content to enforce sensitivity. A lightweight conditioning-dependency regularizer compares the model’s token-level or patch-level probabilities with and without the conditioning signal and penalizes low dependency on the input when predicting content words, discouraging reliance on spurious priors.\n\nStabilize features against high-frequency, spatially inconsistent noise with gradient-smoothing augmentation. Apply random shifts/jitters and compute a Normalized Discontinuity-style penalty: encourage small changes in feature maps and losses across these micro-transforms. This smoothness term reduces the model’s incentive to encode brittle edges and checkerboard artifacts that adversaries exploit, without introducing test-time defenses. For sequence models, also use selective token mixing: during training, partially replace corrupted or low-confidence tokens with their clean counterparts at a small mixing ratio to prevent cascading error amplification while maintaining exposure to noise.\n\nFinally, equip the encoder with a multi-view aggregation head that learns k latent \"view\" vectors per example. Feed each perturbed factual view x+ through the shared backbone and aggregate via permutation-invariant pooling (e.g., max or log-sum-exp) over the k latent views to produce a single representation used by the task head. Train with the dual loss on pooled outputs and per-view features; at inference, run a single forward pass with the learned latent views (no input augmentations), so robustness benefits persist without test-time cost.",
+        "rationale": "Adversarial brittleness stems from models exploiting spurious, high-frequency, and position-specific cues and from miscalibration about which input factors truly drive targets. Pretraining with a dual objective addresses both sides: factual consistency teaches invariance to imperceptible, human-preserving perturbations, while counterfactual separation and unlikelihood teach sensitivity when meaning truly changes. This calibrates the decision boundary around human semantics rather than surface quirks.\n\nThe gradient-smoothing penalty induced by micro-shifts reduces feature discontinuities that correlate with vulnerability to small Lp perturbations, while selective token mixing prevents instability from compounding errors. The conditioning-dependency regularizer keeps the model anchored to its inputs rather than language or class priors, and the learned multi-view aggregation internalizes robustness to diverse factual perturbations so no ensembles or test-time defenses are needed. All costs are borne at training time; inference uses a single forward pass.",
+        "inspired_by": [
+          {
+            "seed_id": "25b7f183d8ad",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "semantically controlled perturbation generator and unlikelihood negatives"
+          },
+          {
+            "seed_id": "bd24c7a92f6d",
+            "domain": "RL",
+            "borrowed_aspect": "random-shift augmentation as gradient smoothing and ND-style regularizer"
+          },
+          {
+            "seed_id": "cc8944ac8c5a",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "factual vs counterfactual masking objective with similarity/dissimilarity targets"
+          },
+          {
+            "seed_id": "359f98a60b38",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "conditioning dependency regularization to reduce reliance on priors"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-view representations with max-pooling aggregation"
+          },
+          {
+            "seed_id": "631afbec883a",
+            "domain": "SPEECH",
+            "borrowed_aspect": "selective token replacement to stabilize token distributions"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surface several related works: contrastive pretraining for adversarial robustness (AdvCL, RoCBert), counterfactual contrastive learning for domain shift (CF-SimCLR), and diffusion-based counterfactual augmentation for NLP robustness. However, none of these combine the specific dual objective of (1) factual consistency via symmetric KL + InfoNCE on perceptual-preserving variants AND (2) counterfactual separation with margin loss + unlikelihood training on meaning-flipping variants, together with (3) a gradient-smoothing Normalized Discontinuity penalty, (4) a conditioning-dependency regularizer comparing conditioned vs. unconditioned distributions, and (5) a multi-view aggregation head with learned latent view vectors pooled permutation-invariantly. The closest works (AdvCL, RoCBert) use contrastive pretraining with adversarial augmentations but do not have the counterfactual separation side or the other components. CF-SimCLR uses counterfactual positives but not the dual factual+counterfactual objective for adversarial robustness. The combination of all these mechanisms — especially the dual factual/counterfactual objective with unlikelihood, the ND-style smoothness penalty, the conditioning-dependency regularizer, and the multi-view aggregation head — has no direct published match, matching the Score 4 anchor (combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms found separately).\n\nPrior works:\n  - AdvCL (2021): Adversarial contrastive pretraining for robustness using high-frequency augmented views, but no counterfactual separation or dual factual/counterfactual objective.\n  - RoCBert (2022): Contrastive pretraining for Chinese NLP robustness with multimodal adversarial examples, but no counterfactual separation or unlikelihood training.\n  - CF-SimCLR / Counterfactual Contrastive Learning (2024): Uses counterfactual positives for domain shift robustness, but not dual factual+counterfactual with adversarial robustness framing.\n  - Diffusion Based Counterfactual Augmentation for Dual Sentiment Classification (2024): Counterfactual augmentation + contrastive learning for NLP robustness, but no factual consistency side or multi-view aggregation.\n  - Multi-View Document Representation Learning (2022): Multiple viewer tokens with max-pooling aggregation for dense retrieval, not adversarial robustness pretraining.\n  - Multi-Modal Hallucination Control by Visual Information Grounding (2024): PDM conditioning-dependency measure for VLMs, but used for inference-time hallucination detection, not as a training regularizer for adversarial robustness.",
+        "prior_works": [
+          "AdvCL (2021): Adversarial contrastive pretraining for robustness using high-frequency augmented views, but no counterfactual separation or dual factual/counterfactual objective.",
+          "RoCBert (2022): Contrastive pretraining for Chinese NLP robustness with multimodal adversarial examples, but no counterfactual separation or unlikelihood training.",
+          "CF-SimCLR / Counterfactual Contrastive Learning (2024): Uses counterfactual positives for domain shift robustness, but not dual factual+counterfactual with adversarial robustness framing.",
+          "Diffusion Based Counterfactual Augmentation for Dual Sentiment Classification (2024): Counterfactual augmentation + contrastive learning for NLP robustness, but no factual consistency side or multi-view aggregation.",
+          "Multi-View Document Representation Learning (2022): Multiple viewer tokens with max-pooling aggregation for dense retrieval, not adversarial robustness pretraining.",
+          "Multi-Modal Hallucination Control by Visual Information Grounding (2024): PDM conditioning-dependency measure for VLMs, but used for inference-time hallucination detection, not as a training regularizer for adversarial robustness."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose FACT-MIX pretraining: a dual objective that couples invariance to imperceptible, human-preserving perturbations with explicit sensitivity to semantic, counterfactual edits—so the model learns what to ignore and what to react to. Build two perturbation banks per domain. (a) Factual, perceptual-preserving variants: for vision/audio use small spatial/time shifts, mild blurs, compression, and spectral jitter within perceptual thresholds; for text use paraphrases, synonym/inflection substitutions, punctuation/casing noise, and token/span drops. (b) Counterfactual variants that minimally alter surface form but flip meaning: for text, controlled role swaps or keyword replacements that change predicate–argument structure; for vision/audio, attribute flips or localized edits that change class-defining factors. During pretraining, draw triplets (x, x+, x−) where x+ is factual and x− is counterfactual.\n\nTrain a single model with a dual consistency–contrastive loss. First, impose factual consistency: align predictions pθ(y|x) and pθ(y|x+) via symmetric KL and align intermediate representations z(x), z(x+) via cosine or InfoNCE positives. Second, impose counterfactual separation: push apart z(x) and z(x−) with a margin, and apply unlikelihood on labels inconsistent with the counterfactual (penalize high probability of y on x− and of y− on x, x+). To prevent brittleness to token- or patch-level perturbations, add salience-aware masking: randomly drop or synonymize spans/patches while encouraging output stability, and occasionally replace salient spans with semantically opposite content to enforce sensitivity. A lightweight conditioning-dependency regularizer compares the model’s token-level or patch-level probabilities with and without the conditioning signal and penalizes low dependency on the input when predicting content words, discouraging reliance on spurious priors.\n\nStabilize features against high-frequency, spatially inconsistent noise with gradient-smoothing augmentation. Apply random shifts/jitters and compute a Normalized Discontinuity-style penalty: encourage small changes in feature maps and losses across these micro-transforms. This smoothness term reduces the model’s incentive to encode brittle edges and checkerboard artifacts that adversaries exploit, without introducing test-time defenses. For sequence models, also use selective token mixing: during training, partially replace corrupted or low-confidence tokens with their clean counterparts at a small mixing ratio to prevent cascading error amplification while maintaining exposure to noise.\n\nFinally, equip the encoder with a multi-view aggregation head that learns k latent \"view\" vectors per example. Feed each perturbed factual view x+ through the shared backbone and aggregate via permutation-invariant pooling (e.g., max or log-sum-exp) over the k latent views to produce a single representation used by the task head. Train with the dual loss on pooled outputs and per-view features; at inference, run a single forward pass with the learned latent views (no input augmentations), so robustness benefits persist without test-time cost.",
+    "final_rationale": "Adversarial brittleness stems from models exploiting spurious, high-frequency, and position-specific cues and from miscalibration about which input factors truly drive targets. Pretraining with a dual objective addresses both sides: factual consistency teaches invariance to imperceptible, human-preserving perturbations, while counterfactual separation and unlikelihood teach sensitivity when meaning truly changes. This calibrates the decision boundary around human semantics rather than surface quirks.\n\nThe gradient-smoothing penalty induced by micro-shifts reduces feature discontinuities that correlate with vulnerability to small Lp perturbations, while selective token mixing prevents instability from compounding errors. The conditioning-dependency regularizer keeps the model anchored to its inputs rather than language or class priors, and the learned multi-view aggregation internalizes robustness to diverse factual perturbations so no ensembles or test-time defenses are needed. All costs are borne at training time; inference uses a single forward pass.",
+    "final_inspired_by": [
+      {
+        "seed_id": "25b7f183d8ad",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "semantically controlled perturbation generator and unlikelihood negatives"
+      },
+      {
+        "seed_id": "bd24c7a92f6d",
+        "domain": "RL",
+        "borrowed_aspect": "random-shift augmentation as gradient smoothing and ND-style regularizer"
+      },
+      {
+        "seed_id": "cc8944ac8c5a",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "factual vs counterfactual masking objective with similarity/dissimilarity targets"
+      },
+      {
+        "seed_id": "359f98a60b38",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "conditioning dependency regularization to reduce reliance on priors"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-view representations with max-pooling aggregation"
+      },
+      {
+        "seed_id": "631afbec883a",
+        "domain": "SPEECH",
+        "borrowed_aspect": "selective token replacement to stabilize token distributions"
+      }
+    ],
+    "wall_clock_s": 249.23,
+    "cost": {
+      "gen_prompt_tokens": 6926,
+      "gen_completion_tokens": 8073,
+      "judge_prompt_tokens": 117278,
+      "judge_completion_tokens": 1343,
+      "gen_cost_usd": 0.0894,
+      "judge_cost_usd": 0.372,
+      "total_cost_usd": 0.4614
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Universal-Perturbation-Invariant Pretraining (UPI-Pretrain). We pretrain the backbone to make its task-relevant representation invariant to a bank of human-imperceptible perturbations, so that standard fine-tuning and inference require no test-time defenses. For each sample, we form a tuple of one clean view and several perturbed views drawn from (i) conventional stochastic augmentations, and (ii) a small, learnable universal-perturbation bank implemented as input prompts added in pixel/frequency space under an Lp and perceptual constraint. The bank contains a handful of global and class-conditional prompts; it is optimized to maximize model loss/uncertainty on a moving target backbone while remaining imperceptible, and updated with an uncertainty-guided EMA so that harder samples drive stronger prompt updates without instability.\n\nWe treat perturbations as a domain shift and factor the backbone’s pre-logit representation into z_shared (robust, task-relevant) and z_delta (nuisance, perturbation-specific). A contrastive consistency loss pulls together all views of the same sample in z_shared and pushes apart different samples. Simultaneously, a lightweight domain discriminator with a gradient-reversal layer removes perturbation information from z_shared, while an auxiliary head on z_delta predicts the perturbation type, encouraging nuisance absorption into z_delta. Classification (or label-conditioned contrastive) losses are applied only on z_shared so the decision boundary depends on perturbation-invariant features.\n\nTo further enlarge decision radii, we insert a prototype-based discriminant layer before logits. Class prototypes are learned in the shared latent space with cosine similarity and an additive angular margin; we enforce that every perturbed view remains closest to its clean-class prototype and far from others, and we add a single-pass uncertainty head trained on this embedding. During pretraining the uncertainty is only used to (i) weight hard-example losses and (ii) steer the prompt-bank EMA; at test time, the backbone runs as-is with no extra defenses.\n\nWe augment the above with a mix-and-separate pretext: randomly mix pairs of samples and their perturbations in input space (and/or feature space) and train a small separation head sharing the backbone to recover the two samples’ clean-class logits, while the main head receives standard mixup targets. This compels the representation to linearly disentangle content from nuisance perturbations and reduces reliance on brittle, high-frequency cues.\n\nTraining recipe: warm-start the backbone for a short phase with standard supervised or label-conditioned contrastive learning on clean+weakly-augmented views, then activate the perturbation bank, domain-adversarial alignment, prototype-margin loss, and mix-and-separate head. Use 3–6 prompts in the bank (1–2 global, 2–4 class-conditional), constrain their L∞ norm (e.g., ε≈2/255–4/255) and optionally low-pass filter to preserve imperceptibility. Optimize the total loss as a weighted sum of contrastive consistency, classification/proto-margin, domain-adversarial, perturbation-type prediction (on z_delta), and mix-and-separate objectives. Fine-tune on the downstream task normally; inference uses the plain backbone without test-time defenses or extra passes.",
+        "rationale": "Training for perturbation invariance at pretraining time removes the need for expensive test-time defenses: the model has already learned to base decisions on features that are stable across a family of imperceptible attacks. A learnable universal-perturbation bank provides strong, hard augmentations without multi-step inner-loop attacks, and uncertainty-guided updates focus it where the model is fragile. Treating perturbations as a domain and explicitly factoring representations into shared vs nuisance channels, combined with gradient-reversal alignment, is an efficient way to purge attack-specific information from the decision-making subspace.\n\nPrototype-margin constraints increase inter-class separation and enforce that all perturbed views of a sample map near the same class prototype, which widens the margin against worst-case small perturbations. Finally, a mix-and-separate auxiliary task encourages linear disentanglement of content and nuisance, reducing reliance on non-robust, high-frequency cues. Together these pretraining objectives and augmentations yield robustness with zero added cost at inference time.",
+        "inspired_by": [
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "visual prompt learning with uncertainty-guided updating and adversarial feature alignment"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared vs domain-specific latent factorization"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based discriminative latent space with single-pass uncertainty"
+          },
+          {
+            "seed_id": "f41ac7143cfe",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "mix-and-separate auxiliary augmentation to strengthen feature disentanglement"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines: (1) a learnable universal-perturbation bank implemented as input prompts with uncertainty-guided EMA updates, (2) domain-adversarial gradient reversal to disentangle shared vs. nuisance representations, (3) prototype-based angular margin loss enforcing perturbed views stay near clean-class prototypes, and (4) a mix-and-separate pretext task for linear disentanglement of content from perturbation. Searches surfaced RoCL (NeurIPS 2020) doing adversarial contrastive learning, AIR (NeurIPS 2023) adding style-invariance regularization to adversarial contrastive learning, and RobustMAE (ICCV 2023) using frequency-domain visual prompts for robustness. However, no single paper combines all four mechanisms: a learnable universal-perturbation bank with uncertainty-guided EMA, gradient-reversal domain adversarial disentanglement into z_shared/z_delta, prototype angular margin enforcing perturbed-view proximity, and mix-and-separate pretext task — all within a single pretraining framework targeting perturbation invariance without test-time defenses. The individual mechanisms are known but their specific combination as proposed has not been surfaced. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with searches returning prior work on individual mechanisms but not their combination.\n\nPrior works:\n  - RoCL / Adversarial Self-Supervised Contrastive Learning (NeurIPS 2020): adversarial contrastive pretraining for robustness without labels, closest to the contrastive consistency component\n  - Enhancing ACL via Adversarial Invariant Regularization / AIR (NeurIPS 2023): style-invariance regularization added to adversarial contrastive learning, overlaps with the domain-adversarial disentanglement idea\n  - RobustMAE / Improving Adversarial Robustness via Test-time Frequency-domain Prompting (ICCV 2023): cluster-specific visual prompts for adversarial robustness, overlaps with the perturbation-bank-as-prompts idea\n  - AdvDINO (2025): gradient reversal layer in self-supervised pretraining for domain-invariant features, overlaps with GRL disentanglement component\n  - VPLU / Cloud-Device Collaborative Adaptation (2212.00972): uncertainty-guided EMA for visual prompt updates with adversarial alignment, overlaps with the prompt-bank EMA update mechanism",
+        "prior_works": [
+          "RoCL / Adversarial Self-Supervised Contrastive Learning (NeurIPS 2020): adversarial contrastive pretraining for robustness without labels, closest to the contrastive consistency component",
+          "Enhancing ACL via Adversarial Invariant Regularization / AIR (NeurIPS 2023): style-invariance regularization added to adversarial contrastive learning, overlaps with the domain-adversarial disentanglement idea",
+          "RobustMAE / Improving Adversarial Robustness via Test-time Frequency-domain Prompting (ICCV 2023): cluster-specific visual prompts for adversarial robustness, overlaps with the perturbation-bank-as-prompts idea",
+          "AdvDINO (2025): gradient reversal layer in self-supervised pretraining for domain-invariant features, overlaps with GRL disentanglement component",
+          "VPLU / Cloud-Device Collaborative Adaptation (2212.00972): uncertainty-guided EMA for visual prompt updates with adversarial alignment, overlaps with the prompt-bank EMA update mechanism"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Universal-Perturbation-Invariant Pretraining (UPI-Pretrain). We pretrain the backbone to make its task-relevant representation invariant to a bank of human-imperceptible perturbations, so that standard fine-tuning and inference require no test-time defenses. For each sample, we form a tuple of one clean view and several perturbed views drawn from (i) conventional stochastic augmentations, and (ii) a small, learnable universal-perturbation bank implemented as input prompts added in pixel/frequency space under an Lp and perceptual constraint. The bank contains a handful of global and class-conditional prompts; it is optimized to maximize model loss/uncertainty on a moving target backbone while remaining imperceptible, and updated with an uncertainty-guided EMA so that harder samples drive stronger prompt updates without instability.\n\nWe treat perturbations as a domain shift and factor the backbone’s pre-logit representation into z_shared (robust, task-relevant) and z_delta (nuisance, perturbation-specific). A contrastive consistency loss pulls together all views of the same sample in z_shared and pushes apart different samples. Simultaneously, a lightweight domain discriminator with a gradient-reversal layer removes perturbation information from z_shared, while an auxiliary head on z_delta predicts the perturbation type, encouraging nuisance absorption into z_delta. Classification (or label-conditioned contrastive) losses are applied only on z_shared so the decision boundary depends on perturbation-invariant features.\n\nTo further enlarge decision radii, we insert a prototype-based discriminant layer before logits. Class prototypes are learned in the shared latent space with cosine similarity and an additive angular margin; we enforce that every perturbed view remains closest to its clean-class prototype and far from others, and we add a single-pass uncertainty head trained on this embedding. During pretraining the uncertainty is only used to (i) weight hard-example losses and (ii) steer the prompt-bank EMA; at test time, the backbone runs as-is with no extra defenses.\n\nWe augment the above with a mix-and-separate pretext: randomly mix pairs of samples and their perturbations in input space (and/or feature space) and train a small separation head sharing the backbone to recover the two samples’ clean-class logits, while the main head receives standard mixup targets. This compels the representation to linearly disentangle content from nuisance perturbations and reduces reliance on brittle, high-frequency cues.\n\nTraining recipe: warm-start the backbone for a short phase with standard supervised or label-conditioned contrastive learning on clean+weakly-augmented views, then activate the perturbation bank, domain-adversarial alignment, prototype-margin loss, and mix-and-separate head. Use 3–6 prompts in the bank (1–2 global, 2–4 class-conditional), constrain their L∞ norm (e.g., ε≈2/255–4/255) and optionally low-pass filter to preserve imperceptibility. Optimize the total loss as a weighted sum of contrastive consistency, classification/proto-margin, domain-adversarial, perturbation-type prediction (on z_delta), and mix-and-separate objectives. Fine-tune on the downstream task normally; inference uses the plain backbone without test-time defenses or extra passes.",
+    "final_rationale": "Training for perturbation invariance at pretraining time removes the need for expensive test-time defenses: the model has already learned to base decisions on features that are stable across a family of imperceptible attacks. A learnable universal-perturbation bank provides strong, hard augmentations without multi-step inner-loop attacks, and uncertainty-guided updates focus it where the model is fragile. Treating perturbations as a domain and explicitly factoring representations into shared vs nuisance channels, combined with gradient-reversal alignment, is an efficient way to purge attack-specific information from the decision-making subspace.\n\nPrototype-margin constraints increase inter-class separation and enforce that all perturbed views of a sample map near the same class prototype, which widens the margin against worst-case small perturbations. Finally, a mix-and-separate auxiliary task encourages linear disentanglement of content and nuisance, reducing reliance on non-robust, high-frequency cues. Together these pretraining objectives and augmentations yield robustness with zero added cost at inference time.",
+    "final_inspired_by": [
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "visual prompt learning with uncertainty-guided updating and adversarial feature alignment"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared vs domain-specific latent factorization"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based discriminative latent space with single-pass uncertainty"
+      },
+      {
+        "seed_id": "f41ac7143cfe",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "mix-and-separate auxiliary augmentation to strengthen feature disentanglement"
+      }
+    ],
+    "wall_clock_s": 219.73,
+    "cost": {
+      "gen_prompt_tokens": 4799,
+      "gen_completion_tokens": 4160,
+      "judge_prompt_tokens": 124994,
+      "judge_completion_tokens": 1227,
+      "gen_cost_usd": 0.0476,
+      "judge_cost_usd": 0.3934,
+      "total_cost_usd": 0.441
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the learnable universal-perturbation bank implemented as input prompts with uncertainty-guided EMA updates, combined with a disentangled representation (z_shared/z_delta) enforced via gradient-reversal domain adversarial training, plus a mix-and-separate pretext task. While each component has precedents (universal adversarial perturbations, domain-adversarial networks, mixup), the specific combination of a learnable prompt bank as adversarial augmentation with uncertainty-steered EMA and the mix-and-separate disentanglement is a reasonably original assembly. Method B's strongest novel element is the dual factual/counterfactual perturbation bank that explicitly teaches the model both what to ignore (factual variants) and what to react to (counterfactual edits that flip meaning), combined with a conditioning-dependency regularizer that penalizes low input dependency. The factual-counterfactual duality as a pretraining objective is a more conceptually distinct framing—it reframes robustness not just as invariance but as a joint invariance-sensitivity learning problem, which is harder to find in prior adversarial robustness literature in this exact form. Both methods are complex assemblies, but Method B's core framing (dual banks enforcing simultaneous invariance and sensitivity) is a more original conceptual contribution than Method A's combination of existing robustness techniques."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is adversarial brittleness to imperceptible perturbations, requiring robustness baked into pretraining/augmentation without test-time defenses. Method A directly engages this by explicitly constructing a learnable universal-perturbation bank constrained to be imperceptible, then using domain-adversarial disentanglement to force the backbone's shared representation to be invariant to these perturbations—the causal pathway from \"imperceptible adversarial perturbations break models\" to \"learn representations invariant to such perturbations via contrastive consistency + gradient-reversal\" is clear and direct. Method B addresses a broader objective (factual invariance + counterfactual sensitivity), which is more about semantic robustness and spurious correlations than specifically adversarial imperceptible perturbations; its perturbation bank uses mild perceptual augmentations rather than adversarially optimized perturbations, making its engagement with the specific failure mode less direct. Method A's mechanism more precisely targets the named failure mode."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's most serious coherence weakness is the \"multi-view aggregation head that learns k latent view vectors per example\" at inference time — the claim that robustness persists through \"learned latent views\" in a single forward pass without test-time augmentation is underspecified; it is unclear how k latent views are instantiated at inference without actual input perturbations, making this component difficult to implement as described. Additionally, the combination of many loosely connected objectives (symmetric KL, InfoNCE, unlikelihood, salience masking, gradient-smoothing, token mixing, multi-view pooling) lacks a clear account of how they interact or are jointly stabilized during training.\n\nMethod B's most serious coherence weakness is the circular dependency in the perturbation bank optimization: the bank is optimized to maximize loss on a \"moving target backbone\" while the backbone is simultaneously being trained, and the uncertainty-guided EMA update is described but the precise alternation schedule is not fully specified. However, this is a known and manageable challenge (similar to adversarial training loops), and the rest of the method — disentangled representations via gradient reversal, prototype margin loss, mix-and-separate pretext, and a staged training recipe — fits together in a logically consistent pipeline with clear prerequisites and compatible mechanisms.\n\nOverall, Method B's components are more mutually compatible and the training recipe is more explicitly staged, making it more straightforwardly implementable despite its complexity. Method A's inference-time multi-view mechanism is a more fundamental coherence gap."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5925,
+    "judge_completion_tokens": 904,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0313,
+    "total_cost_usd": 0.0313
+  }
+}

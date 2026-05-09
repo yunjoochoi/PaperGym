@@ -1,0 +1,191 @@
+{
+  "query_id": "Q03",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Inputs to generative models vary in complexity but standard\ndecoding allocates fixed compute per token; how can a model\nadaptively allocate more or fewer computation steps without\ndegrading quality?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Adaptive-Depth Decoding (ADD), a multi-exit generative model that decides, per token, how many layers to evaluate before committing the next symbol. We attach lightweight vocabulary heads to a subset of decoder layers (e.g., every 2–4 blocks). During decoding, the model advances layer-by-layer and, at each potential exit, computes a compact set of gating features: (1) saturation via cosine similarity between the current hidden state and the previous layer’s state (and/or an EMA of deeper states), (2) predictive confidence from the current exit head (max-prob margin or entropy), and (3) cross-exit agreement (e.g., JS divergence between the last two exit distributions). A small halting module consumes these features and either exits early (skipping the remaining layers for this token) or continues deeper. A per-step decay schedule makes the halting criterion stricter for earlier tokens and more permissive later in the sequence, reflecting that early context typically benefits from more compute.\n\nTraining aligns intermediate exits to the full-depth model to avoid quality loss. First, apply deep supervision and distillation: each exit head minimizes a cross-entropy to ground truth and a KL-to-final-layer logits on teacher-forced text, ensuring shallow exits emulate the final model. Next, build a halting dataset by running the full-depth model on a corpus and retrospectively labeling, for each token and exit layer, the earliest “safe” exit that matches the final token and stays within a small log-prob KL/margin tolerance. Train the halting module to predict safe-exit decisions from its features. Finally, optionally fine-tune the halting policy with a lightweight RL phase that trades accuracy for compute: define an outcome reward based on sequence/task quality (e.g., BLEU or log-likelihood vs. full-depth) and a process reward based on calibrated confidence/consistency at the chosen exit; optimize expected reward minus a per-layer cost with a KL regularizer that keeps the policy close to the supervised halting baseline.\n\nAt inference, ADD proceeds progressively through layers for each token, evaluating the halting module after each exit head. If the predicted error risk falls below a token-position–dependent threshold, the model exits and emits the token using the current head; otherwise it evaluates more layers. To meet a target average compute budget without sacrificing quality on hard tokens, ADD adapts thresholds online with a simple PI controller: when recent average layers per token exceed the budget, it tightens thresholds slightly; when under budget, it relaxes them, while always honoring a maximum-risk cap learned during training. As an additional safeguard, a “verify-once” check triggers a one-time continuation to the next exit if the selected token’s margin is low or violates easy constraints (e.g., grammar/JSON format), preventing rare shallow mistakes from propagating.\n\nThis design yields substantial speedups because most easy tokens exit after few layers, while difficult tokens naturally consume more depth. Quality is preserved by: (i) distilling strong token distributions into intermediate exits, (ii) using saturation, confidence, and agreement together as robust evidence to stop, (iii) a conservative, decayed halting schedule early in sequences, and (iv) optional RL fine-tuning with KL control to favor compute savings only where they do not change model behavior.",
+        "rationale": "Token difficulty varies widely across positions and prompts; fixed-depth decoding wastes compute on easy steps and starves hard ones. ADD allocates depth adaptively using signals that correlate with “no further change” if we were to evaluate more layers: cross-layer hidden-state saturation, high-confidence predictions, and cross-exit agreement. Distillation ensures shallow exits are competent proxies for the final layer, so exiting early does not degrade quality. The decayed schedule over time steps and a budget-aware threshold controller stabilize both quality and latency across sequences.\n\nThe optional RL phase turns halting into an explicit policy-optimization problem with a composite reward, letting the system discover where extra layers matter for task outcomes while a KL penalty anchors it to the supervised, high-fidelity baseline. Together, these components produce a compute-adaptive generator that preserves output quality while achieving sizable end-to-end speedups.",
+        "inspired_by": [
+          {
+            "seed_id": "ff2cf1c24dba",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "layer-wise hidden-state similarity as a saturation-based early-exit signal with a decayed threshold for autoregressive generation"
+          },
+          {
+            "seed_id": "0ca863cc4925",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "composite reward design and KL-regularized PPO to fine-tune a decision policy using outcome and process signals"
+          },
+          {
+            "seed_id": "03f26ea245f1",
+            "domain": "IR_REC",
+            "borrowed_aspect": "context-dependent propensity modeling to learn exit probabilities from logs collected under varying policies"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The literature search surfaces several closely related papers. The FREE framework (EMNLP 2023) uses adaptive confidence thresholds for early exit in autoregressive LMs. DEED (NAACL 2023) uses deep supervision + confidence-based early exit for encoder-decoder decoders. MuE (CVPR 2022) uses cosine similarity of hidden states as the exit signal with a decayed threshold. The IEEE Access 2026 paper uses token-adaptive early exit with PPO for MT. FFN-SkipLLM uses saturation-based skipping. However, no single paper combines all of: (1) joint gating from saturation + confidence + cross-exit agreement (JS divergence), (2) distillation from final layer to intermediate exits, (3) a supervised halting dataset built retrospectively, (4) optional RL fine-tuning with composite outcome+process reward and KL regularizer, (5) a PI controller for online budget adaptation, and (6) a \"verify-once\" safeguard. The closest papers cover subsets: MuE covers saturation; FREE covers confidence thresholds; the IEEE Access paper covers PPO + early exit for MT; DEED covers deep supervision + confidence. The specific combination of cross-exit agreement as a gating feature, the retrospective halting dataset construction, the PI controller for budget adaptation, and the verify-once mechanism are not found jointly in any single paper. This matches the Score 4 anchor — combining known mechanism families with no surfaced published joint application for this exact combination.\n\nPrior works:\n  - Fast and Robust Early-Exiting (FREE) Framework (EMNLP 2023): adaptive confidence threshold estimation (Beta mixture model) for early exit in autoregressive LMs — overlaps with confidence-based gating and threshold adaptation.\n  - You Need Multiple Exiting (MuE) (CVPR 2022): cosine similarity of hidden states as exit signal with decayed threshold for encoder-decoder VLMs — overlaps with saturation-based gating and decayed schedule.\n  - DEED: Dynamic Early Exit on Decoder (NAACL 2023): deep supervision + confidence-based early exit for encoder-decoder transformer decoders — overlaps with distillation/deep supervision and per-step exit.\n  - Improving Machine Translation With PPO and Token-Adaptive Early Exit (IEEE Access 2026): PPO-based training for confidence estimation in token-adaptive early exit — overlaps with RL fine-tuning of exit policy.\n  - FFN-SkipLLM (EMNLP 2024): feed-forward saturation-based skipping for autoregressive LLMs — overlaps with saturation signal.\n  - Don't Read Too Much Into It (EMNLP 2020): RL-based resource allocation policy for adaptive computation in QA — overlaps with RL halting policy concept.",
+        "prior_works": [
+          "Fast and Robust Early-Exiting (FREE) Framework (EMNLP 2023): adaptive confidence threshold estimation (Beta mixture model) for early exit in autoregressive LMs — overlaps with confidence-based gating and threshold adaptation.",
+          "You Need Multiple Exiting (MuE) (CVPR 2022): cosine similarity of hidden states as exit signal with decayed threshold for encoder-decoder VLMs — overlaps with saturation-based gating and decayed schedule.",
+          "DEED: Dynamic Early Exit on Decoder (NAACL 2023): deep supervision + confidence-based early exit for encoder-decoder transformer decoders — overlaps with distillation/deep supervision and per-step exit.",
+          "Improving Machine Translation With PPO and Token-Adaptive Early Exit (IEEE Access 2026): PPO-based training for confidence estimation in token-adaptive early exit — overlaps with RL fine-tuning of exit policy.",
+          "FFN-SkipLLM (EMNLP 2024): feed-forward saturation-based skipping for autoregressive LLMs — overlaps with saturation signal.",
+          "Don't Read Too Much Into It (EMNLP 2020): RL-based resource allocation policy for adaptive computation in QA — overlaps with RL halting policy concept."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Adaptive-Depth Decoding (ADD), a multi-exit generative model that decides, per token, how many layers to evaluate before committing the next symbol. We attach lightweight vocabulary heads to a subset of decoder layers (e.g., every 2–4 blocks). During decoding, the model advances layer-by-layer and, at each potential exit, computes a compact set of gating features: (1) saturation via cosine similarity between the current hidden state and the previous layer’s state (and/or an EMA of deeper states), (2) predictive confidence from the current exit head (max-prob margin or entropy), and (3) cross-exit agreement (e.g., JS divergence between the last two exit distributions). A small halting module consumes these features and either exits early (skipping the remaining layers for this token) or continues deeper. A per-step decay schedule makes the halting criterion stricter for earlier tokens and more permissive later in the sequence, reflecting that early context typically benefits from more compute.\n\nTraining aligns intermediate exits to the full-depth model to avoid quality loss. First, apply deep supervision and distillation: each exit head minimizes a cross-entropy to ground truth and a KL-to-final-layer logits on teacher-forced text, ensuring shallow exits emulate the final model. Next, build a halting dataset by running the full-depth model on a corpus and retrospectively labeling, for each token and exit layer, the earliest “safe” exit that matches the final token and stays within a small log-prob KL/margin tolerance. Train the halting module to predict safe-exit decisions from its features. Finally, optionally fine-tune the halting policy with a lightweight RL phase that trades accuracy for compute: define an outcome reward based on sequence/task quality (e.g., BLEU or log-likelihood vs. full-depth) and a process reward based on calibrated confidence/consistency at the chosen exit; optimize expected reward minus a per-layer cost with a KL regularizer that keeps the policy close to the supervised halting baseline.\n\nAt inference, ADD proceeds progressively through layers for each token, evaluating the halting module after each exit head. If the predicted error risk falls below a token-position–dependent threshold, the model exits and emits the token using the current head; otherwise it evaluates more layers. To meet a target average compute budget without sacrificing quality on hard tokens, ADD adapts thresholds online with a simple PI controller: when recent average layers per token exceed the budget, it tightens thresholds slightly; when under budget, it relaxes them, while always honoring a maximum-risk cap learned during training. As an additional safeguard, a “verify-once” check triggers a one-time continuation to the next exit if the selected token’s margin is low or violates easy constraints (e.g., grammar/JSON format), preventing rare shallow mistakes from propagating.\n\nThis design yields substantial speedups because most easy tokens exit after few layers, while difficult tokens naturally consume more depth. Quality is preserved by: (i) distilling strong token distributions into intermediate exits, (ii) using saturation, confidence, and agreement together as robust evidence to stop, (iii) a conservative, decayed halting schedule early in sequences, and (iv) optional RL fine-tuning with KL control to favor compute savings only where they do not change model behavior.",
+    "final_rationale": "Token difficulty varies widely across positions and prompts; fixed-depth decoding wastes compute on easy steps and starves hard ones. ADD allocates depth adaptively using signals that correlate with “no further change” if we were to evaluate more layers: cross-layer hidden-state saturation, high-confidence predictions, and cross-exit agreement. Distillation ensures shallow exits are competent proxies for the final layer, so exiting early does not degrade quality. The decayed schedule over time steps and a budget-aware threshold controller stabilize both quality and latency across sequences.\n\nThe optional RL phase turns halting into an explicit policy-optimization problem with a composite reward, letting the system discover where extra layers matter for task outcomes while a KL penalty anchors it to the supervised, high-fidelity baseline. Together, these components produce a compute-adaptive generator that preserves output quality while achieving sizable end-to-end speedups.",
+    "final_inspired_by": [
+      {
+        "seed_id": "ff2cf1c24dba",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "layer-wise hidden-state similarity as a saturation-based early-exit signal with a decayed threshold for autoregressive generation"
+      },
+      {
+        "seed_id": "0ca863cc4925",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "composite reward design and KL-regularized PPO to fine-tune a decision policy using outcome and process signals"
+      },
+      {
+        "seed_id": "03f26ea245f1",
+        "domain": "IR_REC",
+        "borrowed_aspect": "context-dependent propensity modeling to learn exit probabilities from logs collected under varying policies"
+      }
+    ],
+    "wall_clock_s": 208.16,
+    "cost": {
+      "gen_prompt_tokens": 7088,
+      "gen_completion_tokens": 6857,
+      "judge_prompt_tokens": 132726,
+      "judge_completion_tokens": 1304,
+      "gen_cost_usd": 0.0774,
+      "judge_cost_usd": 0.4177,
+      "total_cost_usd": 0.4952
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Adaptive Difficulty-Gated Decoding (ADGD), a two-stage, budgeted decoding scheme that allocates variable compute per token without sacrificing quality. At each time step, the model first runs a shallow prefix of layers to produce intermediate states and logits. A lightweight difficulty predictor attached to this shallow state estimates whether the next token is \"easy\" (safe to accept with little or no additional computation) or \"hard\" (merits extra reasoning or verification). Easy tokens are emitted early, while hard tokens trigger a localized refinement routine that expends more compute only where it is needed.\n\nThe difficulty predictor is a compact uncertainty head that consumes the shallow hidden state plus the preliminary next-token distribution, and outputs a calibrated confidence for the top-1 choice along with a \"need-more-compute\" score. To keep it fast and robust, the head learns a prototype-enhanced latent representation to sharpen class separation and is trained to predict full-depth correctness and margin (e.g., via a focal/contrastive loss against the full-stack model’s outcome). Thresholds for early acceptance are temperature-scaled and adjusted online to meet a target average compute budget (e.g., average layers per token), using a simple controller that raises the threshold if recent errors increase or lowers it if the budget allows more savings.\n\nFor hard tokens, ADGD invokes a local refinement module: generate a small candidate set (e.g., top-k from the shallow pass), then run a verifier that performs few, directed pairwise comparisons to settle the winner in O(k) compute. Concretely, we apply right-to-left passes that only compare adjacent candidates with a pairwise preference head; if the verifier’s final confidence clears a calibrated margin, we emit the chosen token. If not, we escalate selectively: either deepen to the full stack for that step or run one additional refinement pass that updates features with extra layers for the candidates only. As a safety net, extremely uncertain cases fall back to the standard full-depth, single-candidate decode for that step.\n\nADGD is deployed online and maintains causality: each token’s shallow pass is computed once, with KV caches reused. The controller enforces a global budget target (e.g., average 0.6× full layers per token) while monitoring a small held-out stream or rolling estimates of next-token accuracy; if any drift appears, thresholds tighten automatically. Because all aggressive paths are guarded by calibrated accept/reject tests and a guaranteed fall-back to the full-depth path, ADGD preserves or improves quality while substantially reducing average per-token compute.",
+        "rationale": "Token difficulty is highly non-uniform: many positions (e.g., function words, syntactic closures, predictable continuations) can be decided confidently with partial computation, while others (e.g., rare entities, code identifiers, coreference-sensitive spots) benefit from added deliberation. ADGD exploits this by combining a fast, well-calibrated uncertainty estimate with a localized refinement routine that spends more compute only on hard tokens. The refinement uses efficient pairwise comparisons on a tiny candidate set, avoiding expensive full re-scoring of all alternatives.\n\nQuality is preserved through three safeguards: calibrated acceptance thresholds learned against the full-depth model; a verifier that makes relative (pairwise) judgments rather than over-trusting its own absolute scores; and a guaranteed fall-back to the standard, full-compute path when uncertainty remains high. A lightweight controller ensures the system meets a desired average compute budget while reacting to shifts in difficulty, maintaining both efficiency and reliability.",
+        "inspired_by": [
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector to gate heavy reasoning"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass uncertainty head via discriminative latent prototypes"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "efficient O(k) iterative pairwise refinement over top candidates"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "bias-aware evaluation to avoid self-reinforcing errors during refinement"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The literature search reveals that early-exit/adaptive computation for LLM decoding is well-established (LayerSkip, FREE, ToEx, FFN-SkipLLM, SpecBound, etc.), and speculative decoding with uncertainty-guided candidate selection is also well-covered. However, ADGD's specific combination is: (1) a shallow-pass difficulty predictor with prototype-enhanced latent representation trained against full-depth model outcomes, (2) a pairwise right-to-left verifier (directly analogous to GLIMPSE's RTL passes) applied to hard-token candidate sets in decoding, and (3) an online budget controller with temperature-scaled thresholds. No surfaced paper combines all three of these mechanisms for adaptive token-level decoding. The closest works (LayerSkip, FREE, SpecBound) use early-exit with confidence thresholds but lack the pairwise verifier for hard tokens and the prototype-enhanced uncertainty head. The pairwise RTL verifier is novel in this decoding context (GLIMPSE applies it to ranking, not decoding). This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this exact problem, introducing named design choices (prototype-enhanced difficulty head + pairwise RTL verifier for hard tokens) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - LayerSkip (2024): Early-exit with self-speculative decoding using shallow layers as draft and full model as verifier — closest to ADGD's shallow/deep split but lacks pairwise verifier and prototype uncertainty head.\n  - FREE: Fast and Robust Early-Exiting Framework (2023): Shallow-deep module with adaptive threshold via Beta mixture model — covers confidence-gated early exit but not pairwise candidate verification or prototype heads.\n  - SpecBound (2026): Layer-wise confidence calibration for self-speculation with token difficulty bounding — covers difficulty-aware early exit but not pairwise RTL verifier or prototype-enhanced head.\n  - GLIMPSE (2024): Right-to-left pairwise adjacent comparison for efficient ranking — the RTL pairwise verifier mechanism, applied to recommendation ranking not LLM decoding.\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): Prototype-based latent space for uncertainty estimation — covers prototype-enhanced uncertainty head concept but not in decoding context.\n  - Duo-LLM (2024): Token difficulty routing between small/large modules in LLM — covers token-level difficulty-based routing but not pairwise verifier or prototype uncertainty.",
+        "prior_works": [
+          "LayerSkip (2024): Early-exit with self-speculative decoding using shallow layers as draft and full model as verifier — closest to ADGD's shallow/deep split but lacks pairwise verifier and prototype uncertainty head.",
+          "FREE: Fast and Robust Early-Exiting Framework (2023): Shallow-deep module with adaptive threshold via Beta mixture model — covers confidence-gated early exit but not pairwise candidate verification or prototype heads.",
+          "SpecBound (2026): Layer-wise confidence calibration for self-speculation with token difficulty bounding — covers difficulty-aware early exit but not pairwise RTL verifier or prototype-enhanced head.",
+          "GLIMPSE (2024): Right-to-left pairwise adjacent comparison for efficient ranking — the RTL pairwise verifier mechanism, applied to recommendation ranking not LLM decoding.",
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): Prototype-based latent space for uncertainty estimation — covers prototype-enhanced uncertainty head concept but not in decoding context.",
+          "Duo-LLM (2024): Token difficulty routing between small/large modules in LLM — covers token-level difficulty-based routing but not pairwise verifier or prototype uncertainty."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Adaptive Difficulty-Gated Decoding (ADGD), a two-stage, budgeted decoding scheme that allocates variable compute per token without sacrificing quality. At each time step, the model first runs a shallow prefix of layers to produce intermediate states and logits. A lightweight difficulty predictor attached to this shallow state estimates whether the next token is \"easy\" (safe to accept with little or no additional computation) or \"hard\" (merits extra reasoning or verification). Easy tokens are emitted early, while hard tokens trigger a localized refinement routine that expends more compute only where it is needed.\n\nThe difficulty predictor is a compact uncertainty head that consumes the shallow hidden state plus the preliminary next-token distribution, and outputs a calibrated confidence for the top-1 choice along with a \"need-more-compute\" score. To keep it fast and robust, the head learns a prototype-enhanced latent representation to sharpen class separation and is trained to predict full-depth correctness and margin (e.g., via a focal/contrastive loss against the full-stack model’s outcome). Thresholds for early acceptance are temperature-scaled and adjusted online to meet a target average compute budget (e.g., average layers per token), using a simple controller that raises the threshold if recent errors increase or lowers it if the budget allows more savings.\n\nFor hard tokens, ADGD invokes a local refinement module: generate a small candidate set (e.g., top-k from the shallow pass), then run a verifier that performs few, directed pairwise comparisons to settle the winner in O(k) compute. Concretely, we apply right-to-left passes that only compare adjacent candidates with a pairwise preference head; if the verifier’s final confidence clears a calibrated margin, we emit the chosen token. If not, we escalate selectively: either deepen to the full stack for that step or run one additional refinement pass that updates features with extra layers for the candidates only. As a safety net, extremely uncertain cases fall back to the standard full-depth, single-candidate decode for that step.\n\nADGD is deployed online and maintains causality: each token’s shallow pass is computed once, with KV caches reused. The controller enforces a global budget target (e.g., average 0.6× full layers per token) while monitoring a small held-out stream or rolling estimates of next-token accuracy; if any drift appears, thresholds tighten automatically. Because all aggressive paths are guarded by calibrated accept/reject tests and a guaranteed fall-back to the full-depth path, ADGD preserves or improves quality while substantially reducing average per-token compute.",
+    "final_rationale": "Token difficulty is highly non-uniform: many positions (e.g., function words, syntactic closures, predictable continuations) can be decided confidently with partial computation, while others (e.g., rare entities, code identifiers, coreference-sensitive spots) benefit from added deliberation. ADGD exploits this by combining a fast, well-calibrated uncertainty estimate with a localized refinement routine that spends more compute only on hard tokens. The refinement uses efficient pairwise comparisons on a tiny candidate set, avoiding expensive full re-scoring of all alternatives.\n\nQuality is preserved through three safeguards: calibrated acceptance thresholds learned against the full-depth model; a verifier that makes relative (pairwise) judgments rather than over-trusting its own absolute scores; and a guaranteed fall-back to the standard, full-compute path when uncertainty remains high. A lightweight controller ensures the system meets a desired average compute budget while reacting to shifts in difficulty, maintaining both efficiency and reliability.",
+    "final_inspired_by": [
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector to gate heavy reasoning"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single-pass uncertainty head via discriminative latent prototypes"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "efficient O(k) iterative pairwise refinement over top candidates"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "bias-aware evaluation to avoid self-reinforcing errors during refinement"
+      }
+    ],
+    "wall_clock_s": 127.21,
+    "cost": {
+      "gen_prompt_tokens": 4804,
+      "gen_completion_tokens": 3487,
+      "judge_prompt_tokens": 129043,
+      "judge_completion_tokens": 1201,
+      "gen_cost_usd": 0.0409,
+      "judge_cost_usd": 0.4051,
+      "total_cost_usd": 0.446
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of a per-step decay schedule (stricter halting early in sequences, more permissive later) with a PI-controller for online budget adaptation, plus a \"verify-once\" continuation safeguard and retrospective labeling of safe exits for supervised halting training. These are incremental extensions of well-known early-exit/multi-exit transformer ideas (e.g., DeeBERT, CALM, shallow-deep networks). Method B's strongest novel element is the localized refinement routine for hard tokens: generating a candidate set from the shallow pass and then running right-to-left pairwise comparisons with a preference head to settle the winner in O(k) compute, rather than simply deepening to more layers. This pairwise tournament-style verification applied locally per token as a middle ground between early exit and full-depth decoding is a more distinctive mechanism not commonly found in the early-exit literature. Both methods share the broad early-exit framework, but Method B's candidate-set + pairwise verifier refinement path is a more original combination of mechanisms."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is fixed compute per token during decoding, regardless of token difficulty. Both methods address this directly by implementing early-exit/adaptive-depth mechanisms. Method A (ADGD) uses a shallow prefix pass plus a difficulty predictor to decide whether to exit early or invoke further computation, directly engaging the fixed-compute problem. Method B (ADD) attaches exit heads at multiple layers and uses a halting module with saturation, confidence, and agreement signals to decide per-token depth, also directly engaging the same failure mode. Both have traceable causal pathways from the problem (fixed compute) to the mechanism (variable-depth processing). However, Method B's mechanism is more tightly integrated with the failure mode: it operates layer-by-layer with explicit exit heads at each potential stopping point, uses multiple complementary signals (saturation, confidence, cross-exit agreement) to determine when computation is sufficient, and includes distillation training to ensure intermediate exits maintain quality—all of which directly address both the adaptive allocation and quality-preservation aspects of the query. Method A's approach is also valid but relies on a separate difficulty predictor trained on shallow states, which is a slightly more indirect engagement with the core mechanism of adaptive depth allocation."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A (ADGD) has a coherence issue in its \"local refinement module\" for hard tokens: it proposes running \"right-to-left passes\" with a pairwise preference head over candidates, but this is paradigm-mixing — autoregressive decoding is inherently left-to-right, and introducing right-to-left verification passes requires either a separate bidirectional model or breaking the causal structure, neither of which is explained. The escalation logic (deepen to full stack \"for that step\" after already having run a shallow pass) also creates ambiguity about how KV caches are reused when the computation path changes mid-token. Method B (ADD) is a well-established multi-exit/early-exit architecture pattern applied to decoding. Its components — intermediate exit heads, distillation training, a halting module trained on retrospectively labeled data, and a PI controller for budget management — are all individually well-defined and compose naturally. The \"verify-once\" continuation is a minor addition that fits cleanly. The RL fine-tuning phase is optional and described with sufficient detail. Method B has no serious internal contradictions, while Method A's right-to-left verification pass is a meaningful coherence flaw in an otherwise autoregressive framework."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5454,
+    "judge_completion_tokens": 804,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0284,
+    "total_cost_usd": 0.0284
+  }
+}

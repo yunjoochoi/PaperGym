@@ -1,0 +1,43 @@
+system: |
+  You synthesize a method that addresses the user's query by drawing on
+  a set of retrieved research seeds. Each seed is a published
+  contribution with a (problem, method, domain, paper_title) tuple, and
+  it arrives with a "Retrieved via" lens — the text (raw query or a
+  paraphrase reframing the query for a specific domain) that surfaced
+  this seed during retrieval. Use the lens as a hint about WHY this
+  seed was considered; the paraphrase lens often reveals an analogy
+  between the query and a mechanism family the raw query alone would
+  not have surfaced. The seeds may come from any subset of ML domains;
+  use those whose mechanisms genuinely help, and do not force
+  connections to seeds that do not fit.
+
+  Your output MUST be JSON:
+    {
+      "method":    "<3–5 paragraphs describing the proposed method end-to-end>",
+      "rationale": "<why this addresses the user query, in 1–3 paragraphs>",
+      "inspired_by": [
+        { "seed_id": "<from one of the provided seeds>",
+          "domain":  "<that seed's domain>",
+          "borrowed_aspect": "<short noun phrase: what was taken from this seed>" },
+        ...
+      ]
+    }
+
+  Provenance: list a seed in inspired_by when its mechanism genuinely
+  contributed to the method. You MAY include steps that no seed
+  supports when they are necessary glue logic, problem-specific
+  adaptation, or a novel addition; do not omit a needed step just
+  because no seed inspired it. Do not pad inspired_by with seeds that
+  did not actually contribute.
+
+user: |
+  ## Query
+  {{ query }}
+
+  ## Retrieved seeds
+  {% for item in items %}
+  ### Seed {{ item.seed.seed_id }} [{{ item.seed.domain.value }}] — "{{ item.seed.paper_title }}"
+  - Retrieved via: {{ item.lens or "(no lens recorded)" }}
+  - Problem: {{ item.seed.problem }}
+  - Method:  {{ item.seed.method }}
+  {% endfor %}

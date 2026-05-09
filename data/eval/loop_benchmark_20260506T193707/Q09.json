@@ -1,0 +1,220 @@
+{
+  "query_id": "Q09",
+  "natural_domain": "RL",
+  "query_text": "Online RL is expensive but offline data suffers from\ndistribution mismatch between behavior and target policy;\nhow can we learn a strong policy from logs alone while\navoiding extrapolation errors?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Pessimistic Support-Weighted Advantage Cloning (PSWAC), a fully offline algorithm that learns only from logs while avoiding extrapolation. First, fit a behavior model π_b(a|s) and a support score σ(s,a) over the dataset D. σ combines (i) the behavior likelihood (or a density ratio upper bound) and, when logs come from multiple past policies, (ii) context-dependent propensities learned by harvesting implicit interventions across rankers/deployments to estimate exposure of (s,a). We then define a binary support mask M(s,a)=1[σ(s,a)≥τ] and a soft penalty ρ(s,a)=1−σ(s,a) for actions with weak support. In parallel, train an ensemble of Q-critics with bootstrap resampling to obtain both value estimates and epistemic uncertainty u(s,a) via ensemble variance.\n\nFor value learning, use a pessimistic Bellman objective. The target for each transition is y=r+γ·min_k Q_k^LCB(s',a'), where a' is sampled from a support-respecting proposal (e.g., π_b masked by M) and Q^LCB(s,a)=Q(s,a)−λ·u(s,a)−τ_p·ρ(s,a) serves as a lower confidence bound. Additionally, add a conservative regularizer that explicitly penalizes large Q on low-support actions by sampling counterfactual actions from a proposal that emphasizes ρ(s,a). To robustify against outliers and mislabeled returns common in logs, fit each critic with a heavy‑tailed regression loss (e.g., Student’s t) rather than squared error, which downweights sporadic high‑TD‑error samples that would otherwise inflate Q on unsupported actions.\n\nFor policy learning, avoid direct Q‑maximization and instead perform support‑weighted advantage cloning. Compute LCB advantages A_LCB(s,a)=Q^LCB(s,a)−E_{a'~π_b}[Q^LCB(s,a')]. Train π by maximizing E_{(s,a)~D}[ M(s,a)·exp(β·A_LCB(s,a))·log π(a|s) ] subject to a small KL trust region to π_b. This yields a closed‑form target π*(a|s) ∝ M(s,a)·π_b(a|s)·exp(β·A_LCB(s,a)) that stays within support while upweighting advantageous deviations. Practically, we instantiate this either as (i) weighted behavior cloning with dynamic weights w(s,a)=M·exp(β·A_LCB), or (ii) a step‑wise preference loss on pairs (a+,a−) drawn from the same state where a+ has higher A_LCB—an offline objective that is theoretically equivalent to an on‑policy policy‑gradient under a shaped reward, ensuring stable improvement without importance sampling.\n\nFor model selection and safety, perform conservative offline evaluation with a doubly robust estimator that blends the learned propensity model and the LCB critics. When multiple loggers exist, use interventional sets to reduce bias in propensity learning and calibrate uncertainty; accept a new policy only if its LCB‑DR estimate exceeds the baseline by a preset margin. If the setting contains many related tasks (e.g., user‑personalized bandits or contextual subtasks), share structure across tasks via a hierarchical prior over critic parameters to tighten LCBs, enabling stronger yet safe improvements from limited per‑task data.",
+        "rationale": "The method addresses distribution mismatch by explicitly constraining optimization to the logged support (mask M and penalty ρ) and by applying pessimism through lower confidence bounds that subtract both uncertainty and low‑support penalties from Q. This prevents the policy from relying on extrapolated values for actions rarely or never seen in the logs. Using an ensemble and a heavy‑tailed critic loss further stabilizes value estimation under dataset noise.\n\nInstead of brittle Q‑maximization, advantage‑weighted cloning steers the policy toward higher‑value actions while remaining close to π_b and strictly within support, which is known to reduce extrapolation. Casting the policy update as a step‑wise preference objective whose gradient matches an on‑policy policy gradient under a shaped reward provides a principled offline improvement mechanism without high‑variance importance sampling. Finally, learning context‑dependent propensities from implicit interventions and employing a conservative doubly‑robust OPE enables safe selection of improved policies from logs alone.",
+        "inspired_by": [
+          {
+            "seed_id": "39c93c84fcad",
+            "domain": "RL",
+            "borrowed_aspect": "hierarchical lower-confidence-bound pessimism"
+          },
+          {
+            "seed_id": "03f26ea245f1",
+            "domain": "IR_REC",
+            "borrowed_aspect": "intervention harvesting to learn context-dependent propensities from multiple logging policies"
+          },
+          {
+            "seed_id": "565c2eec90ed",
+            "domain": "IR_REC",
+            "borrowed_aspect": "propensity-corrected risk and variance-reduced estimators"
+          },
+          {
+            "seed_id": "6b2ca65df0b4",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "equivalence of offline step-level preference loss to on-policy policy gradient"
+          },
+          {
+            "seed_id": "35dbae9aa284",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "Student's t robust regression to downweight outliers"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal several relevant papers but none that combine all the specific mechanisms of PSWAC end-to-end. The closest papers are: (1) A2PO (2024) which uses advantage-aware policy constraints for mixed-quality offline datasets but uses a CVAE rather than support masks + LCB ensemble; (2) BPR/Behaviour Preference Regression (2025) which uses pairwise preference loss for offline RL but without the support mask, heavy-tailed critic, or intervention harvesting; (3) DAUWC (2023) which combines ensemble uncertainty-weighted critics with advantage-weighted BC but lacks the support mask, heavy-tailed loss, and propensity/intervention harvesting; (4) DAC (2024) which uses LCB of Q-ensemble but with diffusion policies; (5) HierOPO (seed 10) which uses hierarchical LCB for multi-task offline bandits. No single paper combines: (a) binary support mask + soft penalty from behavior likelihood/intervention-harvested propensities, (b) ensemble LCB pessimism, (c) heavy-tailed Student's t critic loss, (d) support-weighted advantage cloning with pairwise preference equivalence, and (e) doubly robust OPE with intervention harvesting for policy selection. The heavy-tailed critic loss for offline RL and the intervention-harvesting propensity component are not found in any surfaced paper. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application, introducing named design choices (heavy-tailed critic, support mask from intervention-harvested propensities) not present in the surfaced literature, though individual mechanisms (LCB pessimism, advantage-weighted cloning, support constraints) are well-known.\n\nPrior works:\n  - A2PO: Advantage-Aware Policy Optimization (2024): advantage-aware offline RL with support constraints for mixed-quality datasets, closest to the policy learning component\n  - Behaviour Preference Regression for Offline RL (2025): pairwise preference loss for offline RL policy learning, overlaps with the preference-loss-as-policy-gradient component\n  - DAUWC: Double Actors and Uncertainty-Weighted Critics (2023): ensemble uncertainty + advantage-weighted BC for offline RL, overlaps with critic and policy learning components\n  - Diffusion Actor-Critic / DAC (2024): LCB of Q-ensemble for offline RL value targets, overlaps with pessimistic Bellman component\n  - HierOPO: Multi-Task Off-Policy Learning from Bandit Feedback (2022): hierarchical LCB for multi-task offline bandits, overlaps with hierarchical prior + LCB component\n  - Intervention Harvesting for Context-Dependent Examination-Bias Estimation (2018): implicit intervention harvesting for propensity estimation, overlaps with the propensity/support score component",
+        "prior_works": [
+          "A2PO: Advantage-Aware Policy Optimization (2024): advantage-aware offline RL with support constraints for mixed-quality datasets, closest to the policy learning component",
+          "Behaviour Preference Regression for Offline RL (2025): pairwise preference loss for offline RL policy learning, overlaps with the preference-loss-as-policy-gradient component",
+          "DAUWC: Double Actors and Uncertainty-Weighted Critics (2023): ensemble uncertainty + advantage-weighted BC for offline RL, overlaps with critic and policy learning components",
+          "Diffusion Actor-Critic / DAC (2024): LCB of Q-ensemble for offline RL value targets, overlaps with pessimistic Bellman component",
+          "HierOPO: Multi-Task Off-Policy Learning from Bandit Feedback (2022): hierarchical LCB for multi-task offline bandits, overlaps with hierarchical prior + LCB component",
+          "Intervention Harvesting for Context-Dependent Examination-Bias Estimation (2018): implicit intervention harvesting for propensity estimation, overlaps with the propensity/support score component"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Pessimistic Support-Weighted Advantage Cloning (PSWAC), a fully offline algorithm that learns only from logs while avoiding extrapolation. First, fit a behavior model π_b(a|s) and a support score σ(s,a) over the dataset D. σ combines (i) the behavior likelihood (or a density ratio upper bound) and, when logs come from multiple past policies, (ii) context-dependent propensities learned by harvesting implicit interventions across rankers/deployments to estimate exposure of (s,a). We then define a binary support mask M(s,a)=1[σ(s,a)≥τ] and a soft penalty ρ(s,a)=1−σ(s,a) for actions with weak support. In parallel, train an ensemble of Q-critics with bootstrap resampling to obtain both value estimates and epistemic uncertainty u(s,a) via ensemble variance.\n\nFor value learning, use a pessimistic Bellman objective. The target for each transition is y=r+γ·min_k Q_k^LCB(s',a'), where a' is sampled from a support-respecting proposal (e.g., π_b masked by M) and Q^LCB(s,a)=Q(s,a)−λ·u(s,a)−τ_p·ρ(s,a) serves as a lower confidence bound. Additionally, add a conservative regularizer that explicitly penalizes large Q on low-support actions by sampling counterfactual actions from a proposal that emphasizes ρ(s,a). To robustify against outliers and mislabeled returns common in logs, fit each critic with a heavy‑tailed regression loss (e.g., Student’s t) rather than squared error, which downweights sporadic high‑TD‑error samples that would otherwise inflate Q on unsupported actions.\n\nFor policy learning, avoid direct Q‑maximization and instead perform support‑weighted advantage cloning. Compute LCB advantages A_LCB(s,a)=Q^LCB(s,a)−E_{a'~π_b}[Q^LCB(s,a')]. Train π by maximizing E_{(s,a)~D}[ M(s,a)·exp(β·A_LCB(s,a))·log π(a|s) ] subject to a small KL trust region to π_b. This yields a closed‑form target π*(a|s) ∝ M(s,a)·π_b(a|s)·exp(β·A_LCB(s,a)) that stays within support while upweighting advantageous deviations. Practically, we instantiate this either as (i) weighted behavior cloning with dynamic weights w(s,a)=M·exp(β·A_LCB), or (ii) a step‑wise preference loss on pairs (a+,a−) drawn from the same state where a+ has higher A_LCB—an offline objective that is theoretically equivalent to an on‑policy policy‑gradient under a shaped reward, ensuring stable improvement without importance sampling.\n\nFor model selection and safety, perform conservative offline evaluation with a doubly robust estimator that blends the learned propensity model and the LCB critics. When multiple loggers exist, use interventional sets to reduce bias in propensity learning and calibrate uncertainty; accept a new policy only if its LCB‑DR estimate exceeds the baseline by a preset margin. If the setting contains many related tasks (e.g., user‑personalized bandits or contextual subtasks), share structure across tasks via a hierarchical prior over critic parameters to tighten LCBs, enabling stronger yet safe improvements from limited per‑task data.",
+    "final_rationale": "The method addresses distribution mismatch by explicitly constraining optimization to the logged support (mask M and penalty ρ) and by applying pessimism through lower confidence bounds that subtract both uncertainty and low‑support penalties from Q. This prevents the policy from relying on extrapolated values for actions rarely or never seen in the logs. Using an ensemble and a heavy‑tailed critic loss further stabilizes value estimation under dataset noise.\n\nInstead of brittle Q‑maximization, advantage‑weighted cloning steers the policy toward higher‑value actions while remaining close to π_b and strictly within support, which is known to reduce extrapolation. Casting the policy update as a step‑wise preference objective whose gradient matches an on‑policy policy gradient under a shaped reward provides a principled offline improvement mechanism without high‑variance importance sampling. Finally, learning context‑dependent propensities from implicit interventions and employing a conservative doubly‑robust OPE enables safe selection of improved policies from logs alone.",
+    "final_inspired_by": [
+      {
+        "seed_id": "39c93c84fcad",
+        "domain": "RL",
+        "borrowed_aspect": "hierarchical lower-confidence-bound pessimism"
+      },
+      {
+        "seed_id": "03f26ea245f1",
+        "domain": "IR_REC",
+        "borrowed_aspect": "intervention harvesting to learn context-dependent propensities from multiple logging policies"
+      },
+      {
+        "seed_id": "565c2eec90ed",
+        "domain": "IR_REC",
+        "borrowed_aspect": "propensity-corrected risk and variance-reduced estimators"
+      },
+      {
+        "seed_id": "6b2ca65df0b4",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "equivalence of offline step-level preference loss to on-policy policy gradient"
+      },
+      {
+        "seed_id": "35dbae9aa284",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "Student's t robust regression to downweight outliers"
+      }
+    ],
+    "wall_clock_s": 159.52,
+    "cost": {
+      "gen_prompt_tokens": 7087,
+      "gen_completion_tokens": 7213,
+      "judge_prompt_tokens": 109030,
+      "judge_completion_tokens": 1216,
+      "gen_cost_usd": 0.081,
+      "judge_cost_usd": 0.3453,
+      "total_cost_usd": 0.4263
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Support-Constrained, Uncertainty-Guided Offline RL (SCU-ORL)\n\n1) Learn a calibrated behavior model and a fast uncertainty/support estimator from logs. Fit an expressive conditional policy β(a|s) on the dataset with maximum likelihood; for high-dimensional actions, parameterize β as a structured density (e.g., a Bayesian-network–factorized normalizing flow) so we can sample and evaluate per-dimension likelihoods efficiently. In parallel, learn a deterministic uncertainty head u(s,a) by embedding (s,a) into a prototype-based latent space and training for distinction maximization; treat low prototype affinity as high uncertainty. Combine both into a support score σ(s,a) = sigmoid(c1 · log β(a|s) − c2 · u(s,a)), which serves as a soft mask indicating how much an action is in-distribution at state s.\n\n2) Train a pessimistic, in-sample critic without max over unseen actions. Learn Qθ with TD on logged state–action pairs using the target y = r + γ Vϕ(s′). Estimate Vϕ(s) by expectile regression over in-dataset actions only: fit V to the τ-expectile of Q(s,·) using samples a ~ β(·|s) reweighted by σ(s,a), avoiding extrapolation to unsupported actions. Add a conservative penalty that pushes down Q on actions away from the behavior support: Lconsv = η · (E_{a~p_wide(·|s)}[Qθ(s,a)] − E_{a~β(·|s)}[Qθ(s,a)]), where p_wide is a broad proposal around β (e.g., behavior noise or a temperature-raised sampler). Weight the penalty by state novelty U(s) = Ea[1 − σ(s,a)] so pessimism increases where support is weak. This yields stable, pessimistic values estimated strictly on in-sample (or near-support) actions.\n\n3) Improve the policy with support-gated advantage-weighted cloning under a per-state trust region. Compute advantages A(s,a) = Qθ(s,a) − Vϕ(s). Train πψ(a|s) by maximizing E_{(s,a)~D}[ w(s,a) · log πψ(a|s) ] with w(s,a) = clip(exp(A/λ), wmax) · σ(s,a), so only advantageous, in-support actions get amplified. Simultaneously keep π close to β via a per-state KL constraint DKL(π||β) ≤ ε enforced by a Lagrange multiplier α: minimize E_s[ α (DKL(π||β) − ε) ] alongside the cloning objective. Update α online to meet the target ε. For discrete actions, optionally refine selection locally by re-ranking only the top-k actions sampled from β using Qθ with a few adjacent comparisons, keeping inference cheap and within support.\n\n4) Make conservatism and trust adapt to uncertainty during training and deployment. Update the pessimism coefficient η and the KL multiplier α with an uncertainty-guided EMA schedule: increase them when U(s) is high and relax them when U(s) is low, smoothing over batches to avoid oscillations. Use bootstrapped target networks and cross-fitting to reduce overestimation. At deployment, form a novelty-adaptive mixture πdeploy(a|s) = (1 − ρ(s)) πψ(a|s) + ρ(s) β(a|s), where ρ(s) = clip(Ea[1 − σ(s,a)], 0, ρmax), to fall back to logged behavior in unfamiliar regions while exploiting learned advantages in well-supported regions.",
+        "rationale": "The core failure mode in offline RL is extrapolation: max operators and policy improvement over unseen actions inflate Q on out-of-distribution actions, leading to brittle policies. This method removes the need to evaluate or optimize over unsupported actions by (i) learning values purely from in-sample actions via expectile value regression, (ii) regularizing Q pessimistically on actions outside the behavior support, and (iii) constraining policy improvement to advantage-weighted cloning inside the learned support while enforcing a per-state KL trust region to the behavior.\n\nA fast, deterministic uncertainty estimate and an explicit behavior density together provide a principled support score that gates both critic and actor updates and drives adaptive regularization. The result is a strong policy extracted from logs alone that exploits advantages where the data are reliable, stays close to the behavior where they are not, and avoids extrapolation errors without requiring any online interaction.",
+        "inspired_by": [
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based deterministic uncertainty in latent space"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA scheduling for adaptive updates"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "local top-k re-ranking with adjacent comparisons"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "structured probabilistic modeling with sampling-based gradients"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "restricting decisions to a safe, navigable subset during improvement"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines several known offline RL mechanisms: (1) expectile regression for in-sample value estimation (IQL, 2021), (2) advantage-weighted behavior cloning (AWR/IQL), (3) KL-based policy constraints (BRAC-style), and (4) uncertainty-based pessimism (EDAC, CQL). However, the specific combination of a prototype-based distinction-maximization uncertainty head (LDU-style) fused with a structured behavior density into a unified support score σ(s,a), used to gate both critic updates (reweighted expectile regression) and actor updates (support-gated advantage weighting), combined with a per-state KL trust region with online Lagrange multiplier adaptation, state-novelty-weighted pessimism penalty, and a novelty-adaptive deployment mixture — this exact combination was not surfaced in any search. IQL covers expectile regression + advantage-weighted BC; PIQL adds support constraints; EDAC covers uncertainty-based ensemble pessimism. But the prototype/LDU-based support score driving adaptive pessimism coefficients and a deployment fallback mixture is not present in any surfaced paper. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing named design choices (support score σ combining behavior density and prototype uncertainty, state-novelty-weighted pessimism, novelty-adaptive deployment mixture) not present in the surfaced literature.\n\nPrior works:\n  - Offline Reinforcement Learning with Implicit Q-Learning (IQL, 2021): expectile regression for in-sample value estimation + advantage-weighted BC — core building blocks of the proposed method\n  - PIQL: Projective Implicit Q-Learning with Support Constraint (2025): IQL variant with support constraint for policy improvement — closely related to the support-gated actor update\n  - Uncertainty-Based Offline RL with Diversified Q-Ensemble (EDAC, 2021): uncertainty-based pessimism penalty on OOD actions — related to the conservative penalty component\n  - Latent Discriminant Deterministic Uncertainty (LDU, 2022): prototype-based distinction maximization for uncertainty estimation — the uncertainty head design in the proposed method\n  - RBWE (2025): offline RL with fallback mechanism to heuristic under high uncertainty — related to the novelty-adaptive deployment mixture",
+        "prior_works": [
+          "Offline Reinforcement Learning with Implicit Q-Learning (IQL, 2021): expectile regression for in-sample value estimation + advantage-weighted BC — core building blocks of the proposed method",
+          "PIQL: Projective Implicit Q-Learning with Support Constraint (2025): IQL variant with support constraint for policy improvement — closely related to the support-gated actor update",
+          "Uncertainty-Based Offline RL with Diversified Q-Ensemble (EDAC, 2021): uncertainty-based pessimism penalty on OOD actions — related to the conservative penalty component",
+          "Latent Discriminant Deterministic Uncertainty (LDU, 2022): prototype-based distinction maximization for uncertainty estimation — the uncertainty head design in the proposed method",
+          "RBWE (2025): offline RL with fallback mechanism to heuristic under high uncertainty — related to the novelty-adaptive deployment mixture"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Support-Constrained, Uncertainty-Guided Offline RL (SCU-ORL)\n\n1) Learn a calibrated behavior model and a fast uncertainty/support estimator from logs. Fit an expressive conditional policy β(a|s) on the dataset with maximum likelihood; for high-dimensional actions, parameterize β as a structured density (e.g., a Bayesian-network–factorized normalizing flow) so we can sample and evaluate per-dimension likelihoods efficiently. In parallel, learn a deterministic uncertainty head u(s,a) by embedding (s,a) into a prototype-based latent space and training for distinction maximization; treat low prototype affinity as high uncertainty. Combine both into a support score σ(s,a) = sigmoid(c1 · log β(a|s) − c2 · u(s,a)), which serves as a soft mask indicating how much an action is in-distribution at state s.\n\n2) Train a pessimistic, in-sample critic without max over unseen actions. Learn Qθ with TD on logged state–action pairs using the target y = r + γ Vϕ(s′). Estimate Vϕ(s) by expectile regression over in-dataset actions only: fit V to the τ-expectile of Q(s,·) using samples a ~ β(·|s) reweighted by σ(s,a), avoiding extrapolation to unsupported actions. Add a conservative penalty that pushes down Q on actions away from the behavior support: Lconsv = η · (E_{a~p_wide(·|s)}[Qθ(s,a)] − E_{a~β(·|s)}[Qθ(s,a)]), where p_wide is a broad proposal around β (e.g., behavior noise or a temperature-raised sampler). Weight the penalty by state novelty U(s) = Ea[1 − σ(s,a)] so pessimism increases where support is weak. This yields stable, pessimistic values estimated strictly on in-sample (or near-support) actions.\n\n3) Improve the policy with support-gated advantage-weighted cloning under a per-state trust region. Compute advantages A(s,a) = Qθ(s,a) − Vϕ(s). Train πψ(a|s) by maximizing E_{(s,a)~D}[ w(s,a) · log πψ(a|s) ] with w(s,a) = clip(exp(A/λ), wmax) · σ(s,a), so only advantageous, in-support actions get amplified. Simultaneously keep π close to β via a per-state KL constraint DKL(π||β) ≤ ε enforced by a Lagrange multiplier α: minimize E_s[ α (DKL(π||β) − ε) ] alongside the cloning objective. Update α online to meet the target ε. For discrete actions, optionally refine selection locally by re-ranking only the top-k actions sampled from β using Qθ with a few adjacent comparisons, keeping inference cheap and within support.\n\n4) Make conservatism and trust adapt to uncertainty during training and deployment. Update the pessimism coefficient η and the KL multiplier α with an uncertainty-guided EMA schedule: increase them when U(s) is high and relax them when U(s) is low, smoothing over batches to avoid oscillations. Use bootstrapped target networks and cross-fitting to reduce overestimation. At deployment, form a novelty-adaptive mixture πdeploy(a|s) = (1 − ρ(s)) πψ(a|s) + ρ(s) β(a|s), where ρ(s) = clip(Ea[1 − σ(s,a)], 0, ρmax), to fall back to logged behavior in unfamiliar regions while exploiting learned advantages in well-supported regions.",
+    "final_rationale": "The core failure mode in offline RL is extrapolation: max operators and policy improvement over unseen actions inflate Q on out-of-distribution actions, leading to brittle policies. This method removes the need to evaluate or optimize over unsupported actions by (i) learning values purely from in-sample actions via expectile value regression, (ii) regularizing Q pessimistically on actions outside the behavior support, and (iii) constraining policy improvement to advantage-weighted cloning inside the learned support while enforcing a per-state KL trust region to the behavior.\n\nA fast, deterministic uncertainty estimate and an explicit behavior density together provide a principled support score that gates both critic and actor updates and drives adaptive regularization. The result is a strong policy extracted from logs alone that exploits advantages where the data are reliable, stays close to the behavior where they are not, and avoids extrapolation errors without requiring any online interaction.",
+    "final_inspired_by": [
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based deterministic uncertainty in latent space"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA scheduling for adaptive updates"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "local top-k re-ranking with adjacent comparisons"
+      },
+      {
+        "seed_id": "69f9d4fc5e68",
+        "domain": "RL",
+        "borrowed_aspect": "structured probabilistic modeling with sampling-based gradients"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "restricting decisions to a safe, navigable subset during improvement"
+      }
+    ],
+    "wall_clock_s": 124.57,
+    "cost": {
+      "gen_prompt_tokens": 4801,
+      "gen_completion_tokens": 4144,
+      "judge_prompt_tokens": 151311,
+      "judge_completion_tokens": 1179,
+      "gen_cost_usd": 0.0474,
+      "judge_cost_usd": 0.4716,
+      "total_cost_usd": 0.5191
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of context-dependent propensity estimation via \"implicit interventions across rankers/deployments\" (harvesting natural interventional sets from multi-logger data) with a heavy-tailed regression loss for critic training to handle mislabeled returns, plus the reframing of the policy update as a step-wise preference loss shown to be theoretically equivalent to on-policy policy gradient under a shaped reward. Method B's strongest novel element is the prototype-based latent space with \"distinction maximization\" for uncertainty estimation combined with a state-novelty-weighted conservative penalty and an uncertainty-guided EMA schedule that dynamically adapts pessimism and trust-region coefficients during training. Both methods are elaborate combinations of known offline RL components (pessimistic critics, advantage-weighted cloning, support constraints, KL trust regions). Method A's claim that the pairwise preference loss is theoretically equivalent to on-policy policy gradient is a moderately interesting framing, and the multi-logger interventional propensity idea has some novelty. Method B's distinction-maximization prototype uncertainty head and the adaptive EMA schedule for jointly tuning η and α are also non-standard but feel more like engineering variations. On balance, Method A's interventional-set propensity harvesting from multi-deployment logs and the preference-loss/policy-gradient equivalence framing represent a slightly more distinctive conceptual contribution not easily found in existing offline RL literature."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is distribution mismatch in offline RL leading to extrapolation errors when the target policy queries out-of-distribution (OOD) actions. Both methods engage this failure mode directly through support estimation, pessimistic value learning, and constrained policy improvement. Method A uses a behavior model combined with a prototype-based uncertainty estimator to form a support score, applies expectile regression over in-sample actions, adds a conservative penalty weighted by state novelty, and gates policy improvement via advantage-weighted cloning with a KL constraint—each step traceable to preventing OOD extrapolation. Method B similarly fits a behavior model and support score, uses an ensemble-based LCB critic with explicit OOD penalties, and performs support-masked advantage cloning with a KL trust region. Both methods hit the failure mode head-on with comparable causal pathways: support estimation → pessimistic critic → constrained policy extraction. The mechanisms are structurally equivalent in directness, with neither offering a meaningfully more direct engagement with the core failure mode than the other."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's most serious coherence weakness is the prototype-based \"distinction maximization\" uncertainty head, which is an underspecified component—the training objective for this head is not clearly defined, and how prototype affinity translates to uncertainty is left vague. Additionally, the adaptive EMA schedule for simultaneously updating both η and α based on U(s) introduces a coupled dual-adaptation loop that could easily become unstable, and the interaction between the Lagrange multiplier α (already being updated online) and the EMA schedule is not resolved. Method B's most serious coherence weakness is the claim that the step-wise preference loss on pairs is \"theoretically equivalent to an on-policy policy-gradient under a shaped reward\"—this equivalence is asserted without justification and is not obviously true in the offline setting, making it a logical gap. Additionally, the doubly robust estimator for model selection requires propensity scores, but the behavior model is already being used as a support estimator, creating a potential circularity. Overall, both methods have coherence gaps, but Method A's underspecified uncertainty head and the coupled adaptive update scheme represent more fundamental implementation obstacles than Method B's unjustified equivalence claim and mild circularity. Method B's core pipeline (ensemble critics, LCB targets, support-masked advantage cloning) is more straightforwardly implementable end-to-end."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6858,
+    "judge_completion_tokens": 870,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0336,
+    "total_cost_usd": 0.0336
+  }
+}

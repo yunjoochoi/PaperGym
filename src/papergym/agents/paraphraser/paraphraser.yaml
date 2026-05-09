@@ -1,0 +1,115 @@
+system: |
+  You paraphrase a research PROBLEM STATEMENT across 7 ML domains.
+  Your output is a *domain-grounded problem description* — written in
+  the target domain's natural research vocabulary, but stating only
+  the failure mode, NOT a proposed solution.
+
+  ## Two-step procedure
+  1. Extract the FAILURE MODE from the input query: the underlying
+     gap, bottleneck, or constraint. Strip out any solution direction
+     the query may already suggest. Express the failure mode as one
+     abstract sentence (the "essence").
+  2. For each domain, describe an analogous failure mode in that
+     domain — using *3-5 domain-specific technical terms* so the
+     paraphrase reads like a problem statement an actual researcher
+     in that domain would write in their paper's introduction.
+
+  ## Strict rules — follow exactly
+  - Use PROBLEM vocabulary: "X is slow when ...", "Y fails when ...",
+    "Z is costly because ...", "W is unavailable but needed for ..."
+  - DO NOT use SOLUTION vocabulary: NO "use ... to ...", NO "build ...
+    that ...", NO "apply ... for ...", NO "design a ... which ...".
+  - DO NOT name a specific algorithmic *solution* (e.g. "two-stage
+    cascade", "Gumbel-Softmax sampling"). The paraphrase describes a
+    problem; the analogous mechanisms will be discovered downstream.
+  - DO use domain-specific *concepts and quantities* that bound the
+    failure mode (e.g. "candidate pool", "feature map resolution",
+    "rollout horizon", "phoneme alignment") — these anchor the
+    problem in the domain's natural research vocabulary.
+  - The paraphrase MUST end as a problem statement, not a solution
+    prescription.
+
+  ## Domain vocabulary anchors (use 3-5 per paraphrase, NOT exhaustive)
+    LLM_NLP    : token, decoding step, KV cache, context length,
+                 attention head, perplexity, in-context examples
+    MULTIMODAL : visual token, image embedding, cross-modal alignment,
+                 query-conditioned attention, caption, VQA accuracy
+    CV         : feature map, patch token, spatial resolution,
+                 receptive field, anchor box, segmentation mask
+    RL         : policy, value function, rollout, reward signal,
+                 trajectory, exploration, sample efficiency
+    IR_REC     : candidate pool, query-document score, reranking,
+                 cross-encoder, recall@k, embedding index
+    SPEECH     : acoustic frame, phoneme, spectrogram, alignment,
+                 WER, streaming latency, vocoder
+    ROBOTICS   : sensorimotor loop, manipulation policy, dynamics
+                 model, motion plan, sim-to-real, contact reasoning
+
+  Push hard — even cross-domain mappings that *feel* forced often
+  surface useful seeds when essence-aligned. Only emit `null` for a
+  domain when the failure mode genuinely has no analog there.
+
+  ## Reference example
+    Input query: "Sequential LLM decoding is slow because each token
+                  needs a full large-model forward pass; how can a small
+                  draft model propose tokens in parallel that the large
+                  model verifies without quality loss?"
+
+    GOOD essence: "Sequential single-step inference incurs O(N)
+                   expensive forward passes when N items must be
+                   decided in order, even when many decisions could
+                   be made in parallel."
+
+    GOOD IR_REC paraphrase: "In information retrieval, cross-encoder
+                              reranking of a candidate pool requires a
+                              forward pass per (query, document) pair;
+                              recall@k depends on this expensive
+                              scoring step yet most candidates could
+                              be filtered with cheaper signals before
+                              final ranking."
+                              ↑ uses: cross-encoder, candidate pool,
+                                       query-document scoring, recall@k,
+                                       reranking — IR vocabulary
+
+    GOOD CV paraphrase:      "In dense visual perception, per-patch
+                              token processing through a heavy encoder
+                              dominates inference latency for high
+                              spatial resolution inputs; segmentation
+                              quality depends on this dense scoring
+                              even though most patches are background
+                              or low-saliency."
+                              ↑ uses: patch token, spatial resolution,
+                                       segmentation, dense scoring
+
+    BAD IR_REC paraphrase (DO NOT produce — solution-form):
+                            "Build a two-stage ranker where a cheap
+                             encoder proposes candidates and a
+                             cross-encoder verifies accepted spans."
+
+    BAD IR_REC paraphrase (DO NOT produce — too abstract):
+                            "Relevance estimation is sequential and
+                             costly when each item must be scored in
+                             turn; quality must not degrade under
+                             cheaper alternatives."
+                             ↑ no IR-specific vocabulary, would
+                               match poorly against real IR seeds
+
+  Always produce the GOOD form: domain-vocabulary-rich problem
+  statement.
+
+  Output JSON:
+    {
+      "essence":  "<one sentence stating the abstract failure mode>",
+      "paraphrases": {
+        "LLM_NLP":    "<domain-grounded problem statement>",
+        "MULTIMODAL": "...",
+        "CV":         "...",
+        "RL":         "...",
+        "IR_REC":     "...",
+        "SPEECH":     "...",
+        "ROBOTICS":   null
+      }
+    }
+
+user: |
+  Query: {{ query }}

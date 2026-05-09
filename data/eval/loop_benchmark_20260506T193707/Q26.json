@@ -1,0 +1,281 @@
+{
+  "query_id": "Q26",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Learned representations are opaque and hard to debug or edit;\nhow can we reverse-engineer what specific circuits compute,\ndecompose representations into human-interpretable features,\nand verify those decompositions?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose a circuit rationalization and verification framework that treats a model’s internal components (e.g., attention heads, MLP channels, neurons, or edges) as a pool from which a minimal, task-sufficient subcircuit is softly selected. A separator network observes the current sample’s intermediate activations and outputs a sparse, differentiable mask over components. Using these masks, we decompose the representation into two pooled summaries: a rationale summary (the masked features) and an environment summary (the complement). A lightweight predictor is trained to reproduce the model’s original output from the rationale summary alone, with an explicit size penalty on the mask to encourage minimality. Training alternates between optimizing the separator (to find smaller, more faithful rationales) and the predictor (to fit the target), so that the rationale converges to a compact, self-sufficient subcircuit.\n\nTo causally test that the separator has isolated the true mechanism, we augment data by recombining subcircuits across a batch: we pair a rationale from sample i with the environment from sample j and require the predictor’s output to follow sample i’s label. This rationale–environment mixing stress-tests whether the selected subcircuit is minimally sufficient and environment-invariant. In parallel, for each output token or logit, we learn a per-output soft intervention mask using a factual/counterfactual objective: under the factual mask the output should remain unchanged, while under the counterfactual (inverted or shuffled) mask it should diverge. This yields necessity–sufficiency curves that quantify how much of the behavior the subcircuit accounts for. For attention-heavy models, we additionally compute a token-level alignment-path score over layers to verify that information flow along attention paths used by the subcircuit is monotonic and consistent with plausible input→output alignments.\n\nTo make the subcircuit’s state human-interpretable, we introduce K feature slots over the rationale summary with sparse routing and max-aggregation, so distinct slots preferentially capture different semantic aspects. We train simple probe heads from these slots to regress or classify human-understandable attributes relevant to the domain (e.g., lexical tags for text, physical parameters, or object/region identities for vision); where grounded evidence is available (e.g., linked segments, spans, or parts), we add weak supervision aligning masks to evidence and constrain attention paths that feed the subcircuit to pass through those supports. This produces a dictionary of features whose activations are locally causal (by construction), slot-separated (by sparse routing and max aggregation), and semantically named (by probes and optional groundings).\n\nFor external verification and editability, we distill the model’s decision restricted to the rationale summary into a compact student (e.g., gradient-boosted trees) and use exact attributions in the student to cross-check feature importance against our masks and probes. We also harvest implicit interventions by evaluating the same inputs under multiple stochastic or fine-tuned model variants, forming interventional pairs that let us estimate each component’s context-specific causal effect while controlling for confounders. Finally, we support surgical edits by gating or fine-tuning only the parameters feeding into masked components or feature slots, while monitoring off-target drift. Edits can up/down-weight specific slots, swap in alternative slot activations, or clamp attention-path segments; we verify edits with the same sufficiency/comprehensiveness curves, recombination tests, alignment-path scores, and student-model fidelity.\n\nEvaluation reports: (1) sufficiency and comprehensiveness as a function of mask sparsity; (2) recombination accuracy that the rationale determines predictions when mixed with arbitrary environments; (3) alignment-path monotonicity and consistency across layers for attention circuits; (4) agreement with grounded evidence where available; (5) student fidelity and SHAP-based attribution alignment with separator masks; and (6) edit locality, measuring target-behavior change vs. non-target preservation.",
+        "rationale": "The separator-and-augmentation core isolates minimal, self-sufficient subcircuits by construction, then falsifies spurious explanations by mixing rationales with unrelated environments. The factual/counterfactual objective provides robust necessity–sufficiency guarantees for the same mask, while an alignment-path score checks that attention-mediated signal flow adheres to plausible input–output alignments rather than exploiting distributed shortcuts. Slotting and max aggregation encourage the rationale’s state to decompose into a small set of disentangled, human-nameable features, and lightweight probes ground those features in domain semantics without retraining the backbone.\n\nIndependent verification closes the loop: a student model affords exact, fast attributions to compare with learned masks, and harvested interventions across model variants estimate context-dependent causal effects without intrusive randomized ablations. Because edits are restricted to the gated subcircuit, users can change behavior predictably with minimal collateral impact, and the same causal and alignment tests certify that the decomposition remains accurate after editing.",
+        "inspired_by": [
+          {
+            "seed_id": "f7ecfad65b31",
+            "domain": "CV",
+            "borrowed_aspect": "rationale–environment masking with augmented recombination for sufficiency testing"
+          },
+          {
+            "seed_id": "cc8944ac8c5a",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "factual vs. counterfactual masking objective for faithful explanations"
+          },
+          {
+            "seed_id": "298c239b83ef",
+            "domain": "SPEECH",
+            "borrowed_aspect": "token-level alignment path scoring to verify layerwise alignment"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "grounded supervision linking evidential regions to rationales"
+          },
+          {
+            "seed_id": "57a143152990",
+            "domain": "RL",
+            "borrowed_aspect": "student distillation with exact TreeSHAP attributions for verification"
+          },
+          {
+            "seed_id": "1318a70569b1",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "lightweight probe heads regressing human-interpretable parameters from frozen features"
+          },
+          {
+            "seed_id": "f047c107313d",
+            "domain": "SPEECH",
+            "borrowed_aspect": "auxiliary supervision mapping segments to target lexicon for semantic specialization"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-view slots with max aggregation to separate semantic facets"
+          },
+          {
+            "seed_id": "045552de6ee0",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "information-rate diagnostics to localize task-critical components"
+          },
+          {
+            "seed_id": "03f26ea245f1",
+            "domain": "IR_REC",
+            "borrowed_aspect": "harvesting implicit interventions across variants to estimate context-specific propensities"
+          },
+          {
+            "seed_id": "9102c8c37284",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "curriculum that progressively enlarges allowed subcircuit size for stable training"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method is a large composite framework combining: (1) rationale-environment separation with cross-batch mixing augmentation (directly from GREA, 2022); (2) factual/counterfactual mask objectives for necessity-sufficiency (from CF2, 2022, and AudioGenX, 2502.00459); (3) sparse feature slots with max-aggregation for disentangled decomposition (related to SAE literature but with a distinct slot-based framing); (4) alignment path score for attention monotonicity verification (directly from the APS paper, 2510.12116); (5) student model distillation with SHAP attribution cross-checking; and (6) intervention harvesting across model variants. While each individual component has precedents, the specific combination applied to the problem of circuit rationalization and verification in mechanistic interpretability — particularly the joint use of rationale-environment mixing, factual/counterfactual masks, feature slots with probes, alignment path scores, student distillation for cross-checking, and intervention harvesting — has not been published as an integrated framework. The searches surface prior work on individual mechanisms but not their combination for this specific problem. The alignment path score component is borrowed from speech-text alignment (APS paper), and the rationale-environment mixing from graph rationalization (GREA), but their joint application to circuit-level mechanistic interpretability with all the additional verification components is not found in any single paper. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing named design choices not in the surfaced literature as a unified circuit rationalization and verification framework.\n\nPrior works:\n  - Graph Rationalization with Environment-based Augmentations / GREA (2022): Direct predecessor for rationale-environment separation with cross-batch mixing and alternating separator-predictor training with size regularization.\n  - Learning and Evaluating Graph Neural Network Explanations based on Counterfactual and Factual Reasoning / CF2 (2022): Factual/counterfactual reasoning for necessity-sufficiency evaluation of explanations.\n  - AudioGenX: Explainability on Text-to-Audio Generative Models (2025): Per-output soft intervention mask with factual/counterfactual objectives and L1/L2 sparsity regularization for explanation.\n  - Understanding the Modality Gap / Alignment Path Score (2510.12116, 2025): Token-level alignment path score measuring monotonicity and consistency of attention paths across layers.\n  - XRL-Bench / TabularSHAP (2402.12685, 2024): Student tree model trained on neural network outputs with SHAP attributions for cross-checking feature importance.\n  - Intervention Harvesting for Context-Dependent Examination-Bias Estimation (1811.01802, 2018): Harvesting implicit interventions from multiple model variants to estimate context-specific causal effects.",
+        "prior_works": [
+          "Graph Rationalization with Environment-based Augmentations / GREA (2022): Direct predecessor for rationale-environment separation with cross-batch mixing and alternating separator-predictor training with size regularization.",
+          "Learning and Evaluating Graph Neural Network Explanations based on Counterfactual and Factual Reasoning / CF2 (2022): Factual/counterfactual reasoning for necessity-sufficiency evaluation of explanations.",
+          "AudioGenX: Explainability on Text-to-Audio Generative Models (2025): Per-output soft intervention mask with factual/counterfactual objectives and L1/L2 sparsity regularization for explanation.",
+          "Understanding the Modality Gap / Alignment Path Score (2510.12116, 2025): Token-level alignment path score measuring monotonicity and consistency of attention paths across layers.",
+          "XRL-Bench / TabularSHAP (2402.12685, 2024): Student tree model trained on neural network outputs with SHAP attributions for cross-checking feature importance.",
+          "Intervention Harvesting for Context-Dependent Examination-Bias Estimation (1811.01802, 2018): Harvesting implicit interventions from multiple model variants to estimate context-specific causal effects."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose a circuit rationalization and verification framework that treats a model’s internal components (e.g., attention heads, MLP channels, neurons, or edges) as a pool from which a minimal, task-sufficient subcircuit is softly selected. A separator network observes the current sample’s intermediate activations and outputs a sparse, differentiable mask over components. Using these masks, we decompose the representation into two pooled summaries: a rationale summary (the masked features) and an environment summary (the complement). A lightweight predictor is trained to reproduce the model’s original output from the rationale summary alone, with an explicit size penalty on the mask to encourage minimality. Training alternates between optimizing the separator (to find smaller, more faithful rationales) and the predictor (to fit the target), so that the rationale converges to a compact, self-sufficient subcircuit.\n\nTo causally test that the separator has isolated the true mechanism, we augment data by recombining subcircuits across a batch: we pair a rationale from sample i with the environment from sample j and require the predictor’s output to follow sample i’s label. This rationale–environment mixing stress-tests whether the selected subcircuit is minimally sufficient and environment-invariant. In parallel, for each output token or logit, we learn a per-output soft intervention mask using a factual/counterfactual objective: under the factual mask the output should remain unchanged, while under the counterfactual (inverted or shuffled) mask it should diverge. This yields necessity–sufficiency curves that quantify how much of the behavior the subcircuit accounts for. For attention-heavy models, we additionally compute a token-level alignment-path score over layers to verify that information flow along attention paths used by the subcircuit is monotonic and consistent with plausible input→output alignments.\n\nTo make the subcircuit’s state human-interpretable, we introduce K feature slots over the rationale summary with sparse routing and max-aggregation, so distinct slots preferentially capture different semantic aspects. We train simple probe heads from these slots to regress or classify human-understandable attributes relevant to the domain (e.g., lexical tags for text, physical parameters, or object/region identities for vision); where grounded evidence is available (e.g., linked segments, spans, or parts), we add weak supervision aligning masks to evidence and constrain attention paths that feed the subcircuit to pass through those supports. This produces a dictionary of features whose activations are locally causal (by construction), slot-separated (by sparse routing and max aggregation), and semantically named (by probes and optional groundings).\n\nFor external verification and editability, we distill the model’s decision restricted to the rationale summary into a compact student (e.g., gradient-boosted trees) and use exact attributions in the student to cross-check feature importance against our masks and probes. We also harvest implicit interventions by evaluating the same inputs under multiple stochastic or fine-tuned model variants, forming interventional pairs that let us estimate each component’s context-specific causal effect while controlling for confounders. Finally, we support surgical edits by gating or fine-tuning only the parameters feeding into masked components or feature slots, while monitoring off-target drift. Edits can up/down-weight specific slots, swap in alternative slot activations, or clamp attention-path segments; we verify edits with the same sufficiency/comprehensiveness curves, recombination tests, alignment-path scores, and student-model fidelity.\n\nEvaluation reports: (1) sufficiency and comprehensiveness as a function of mask sparsity; (2) recombination accuracy that the rationale determines predictions when mixed with arbitrary environments; (3) alignment-path monotonicity and consistency across layers for attention circuits; (4) agreement with grounded evidence where available; (5) student fidelity and SHAP-based attribution alignment with separator masks; and (6) edit locality, measuring target-behavior change vs. non-target preservation.",
+    "final_rationale": "The separator-and-augmentation core isolates minimal, self-sufficient subcircuits by construction, then falsifies spurious explanations by mixing rationales with unrelated environments. The factual/counterfactual objective provides robust necessity–sufficiency guarantees for the same mask, while an alignment-path score checks that attention-mediated signal flow adheres to plausible input–output alignments rather than exploiting distributed shortcuts. Slotting and max aggregation encourage the rationale’s state to decompose into a small set of disentangled, human-nameable features, and lightweight probes ground those features in domain semantics without retraining the backbone.\n\nIndependent verification closes the loop: a student model affords exact, fast attributions to compare with learned masks, and harvested interventions across model variants estimate context-dependent causal effects without intrusive randomized ablations. Because edits are restricted to the gated subcircuit, users can change behavior predictably with minimal collateral impact, and the same causal and alignment tests certify that the decomposition remains accurate after editing.",
+    "final_inspired_by": [
+      {
+        "seed_id": "f7ecfad65b31",
+        "domain": "CV",
+        "borrowed_aspect": "rationale–environment masking with augmented recombination for sufficiency testing"
+      },
+      {
+        "seed_id": "cc8944ac8c5a",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "factual vs. counterfactual masking objective for faithful explanations"
+      },
+      {
+        "seed_id": "298c239b83ef",
+        "domain": "SPEECH",
+        "borrowed_aspect": "token-level alignment path scoring to verify layerwise alignment"
+      },
+      {
+        "seed_id": "7f79d5d52bbc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "grounded supervision linking evidential regions to rationales"
+      },
+      {
+        "seed_id": "57a143152990",
+        "domain": "RL",
+        "borrowed_aspect": "student distillation with exact TreeSHAP attributions for verification"
+      },
+      {
+        "seed_id": "1318a70569b1",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "lightweight probe heads regressing human-interpretable parameters from frozen features"
+      },
+      {
+        "seed_id": "f047c107313d",
+        "domain": "SPEECH",
+        "borrowed_aspect": "auxiliary supervision mapping segments to target lexicon for semantic specialization"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-view slots with max aggregation to separate semantic facets"
+      },
+      {
+        "seed_id": "045552de6ee0",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "information-rate diagnostics to localize task-critical components"
+      },
+      {
+        "seed_id": "03f26ea245f1",
+        "domain": "IR_REC",
+        "borrowed_aspect": "harvesting implicit interventions across variants to estimate context-specific propensities"
+      },
+      {
+        "seed_id": "9102c8c37284",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "curriculum that progressively enlarges allowed subcircuit size for stable training"
+      }
+    ],
+    "wall_clock_s": 174.39,
+    "cost": {
+      "gen_prompt_tokens": 7148,
+      "gen_completion_tokens": 8798,
+      "judge_prompt_tokens": 124575,
+      "judge_completion_tokens": 1201,
+      "gen_cost_usd": 0.0969,
+      "judge_cost_usd": 0.3917,
+      "total_cost_usd": 0.4887
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Build a feature-first, circuit-second pipeline that turns opaque activations into causal, human-auditable components. First, pick a target model layer (or short stack of layers) and collect activations over a diverse, held-out corpus. Learn a sparse dictionary over these activations with a reconstruction objective and strong sparsity, but stabilize and sharpen feature semantics by adding a prototype-anchoring head: each latent unit is encouraged to become the centroid of a tight, discriminative cluster in the activation space, and an auxiliary confidence head flags when a unit’s semantics are uncertain. The result is a monosemantic feature bank whose codes reconstruct the original activations while remaining highly sparse and cluster-aligned, providing candidate human-interpretable features.\n\nNext, map features to minimal circuits. For each discovered feature, identify upstream donors and downstream consumers by tracing gradients and weight-mediated influence to form an initial overcomplete subgraph. Prune it with hierarchical group-sparsity: iteratively apply group-lasso-style penalties over structured groups (e.g., neuron fan-in, fan-out, and layer-level groups) to drive most edges to zero while preserving the feature’s ability to reconstruct and affect the model’s logits. Alternate expansion (add the highest-residual contributors) and pruning steps until the subgraph stabilizes into a compact “circuitlet” that carries that feature’s computation.\n\nVerify the decomposition causally, not just correlationally. Perform activation and path patching: for matched input pairs where a feature is high vs low, interchange only the feature code (and, separately, only edges of its circuitlet) and measure Average Causal Effect on task outputs. To keep verification scalable, maintain a top-k set of suspected critical nodes/edges per feature and perform efficient pairwise checks among adjacent candidates, refining the ranking of important elements with near-linear cost rather than exhaustive all-pairs tests. In parallel, run layer-wise linear probes for the human-labeled concept linked to each feature to localize where the concept first emerges and where it is read out, and require that interventional effects and probe localization agree before accepting a feature–circuit match.\n\nHarden and document the results. Use the confidence head to gate claims: features with high uncertainty undergo extra testing on out-of-distribution and counterfactual datasets, plus negative-control interventions that should not change the output. Avoid model self-evaluation by relying on external references (held-out labels, perturbation-grounded metrics) and human spot checks only for borderline cases. Finally, publish a feature card for each accepted unit summarizing exemplars, counter-exemplars, causal effect sizes, upstream/downstream nodes, known failure modes, and safe edit directions. Edits are then applied by steering along a feature’s code or by weight surgery confined to its verified circuitlet and are re-validated with the same interventional tests before deployment.",
+        "rationale": "Sparse, prototype-anchored dictionary learning turns dense activations into a small set of monosemantic codes that are easier to name and edit, while an uncertainty head helps avoid overclaiming when features are entangled. Hierarchical, group-sparse pruning converts diffuse influence maps into compact, testable circuitlets aligned to how parameters are organized, yielding minimal explanations that survive ablations.\n\nCausal verification via interchanges and activation/path patching ensures that the proposed features and circuits are not just predictive but mechanistically necessary or sufficient for the behavior. Efficient pairwise refinement makes these tests scalable, and layer-wise linear probes triangulate where concepts live, offering a second, independent check. Guarding against self-evaluation bias with reference-based metrics and negative controls reduces the risk of falsely validating spurious decompositions.",
+        "inspired_by": [
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "layer-wise linear probing for knowledge localization"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-anchored discriminative latent space with an uncertainty head"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "hierarchical group-sparse selection to prune large search spaces"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "efficient pairwise refinement among top-k candidates"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "avoidance of self-evaluation bias in iterative validation"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines: (1) sparse dictionary learning (SAE-style) with a prototype-anchoring head and uncertainty/confidence gating — the \"feature anchoring\" concept appears in one 2025 paper but as a theoretical identifiability fix, not as a prototype-centroid clustering head with confidence gating; (2) hierarchical group-sparse pruning to form \"circuitlets\" — no paper was found combining group-lasso-style structured pruning with circuit discovery in mechanistic interpretability; (3) causal verification via activation/path patching with efficient pairwise refinement and linear probe triangulation — these individual components exist (activation patching, SAEs, linear probes) but their joint pipeline with the specific efficient pairwise ranking and probe-patching agreement requirement is not surfaced; (4) feature cards with uncertainty-gated OOD testing and negative controls. The HAGD paper (2026) is the closest to the circuit-discovery component but uses attribution graph decomposition + GNN meta-learning, not group-sparse pruning. The overall pipeline — prototype-anchored SAE + hierarchical group-sparse circuitlet pruning + efficient pairwise causal verification + probe-patching agreement + uncertainty-gated feature cards — has no end-to-end match in the literature. Individual mechanisms are known, but their specific combination with the prototype-anchoring head and group-sparse circuitlet pruning as named design choices is not surfaced. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application, introducing named design choices (prototype-anchoring head, group-sparse circuitlet pruning, probe-patching agreement requirement) not present in the surfaced literature.\n\nPrior works:\n  - Dictionary Learning Improves Patch-Free Circuit Discovery in Mechanistic Interpretability (2024): SAE-based circuit discovery framework tracing dictionary features to circuits, overlapping with the feature-to-circuit mapping component.\n  - A Unified Theory of Sparse Dictionary Learning in Mechanistic Interpretability (2025): Introduces \"feature anchoring\" as a technique to restore SDL identifiability, partially overlapping with the prototype-anchoring concept.\n  - Identifying Functionally Important Features with End-to-End Sparse Dictionary Learning (2024): E2E SAEs ensuring features are functionally important, overlapping with the causal verification motivation.\n  - Hierarchical Sparse Circuit Extraction from Billion-Parameter Language Models (2026): HAGD framework for hierarchical circuit discovery, overlapping with the hierarchical circuit pruning component.\n  - Causal Abstraction: A Theoretical Foundation for Mechanistic Interpretability (2023): Unifies activation/path patching, SAEs, and circuit analysis under causal abstraction, overlapping with the causal verification component.\n  - Improving Dictionary Learning with Gated Sparse Autoencoders (2024): Gated SAEs separating feature detection from magnitude estimation, overlapping with the sparse dictionary learning component.",
+        "prior_works": [
+          "Dictionary Learning Improves Patch-Free Circuit Discovery in Mechanistic Interpretability (2024): SAE-based circuit discovery framework tracing dictionary features to circuits, overlapping with the feature-to-circuit mapping component.",
+          "A Unified Theory of Sparse Dictionary Learning in Mechanistic Interpretability (2025): Introduces \"feature anchoring\" as a technique to restore SDL identifiability, partially overlapping with the prototype-anchoring concept.",
+          "Identifying Functionally Important Features with End-to-End Sparse Dictionary Learning (2024): E2E SAEs ensuring features are functionally important, overlapping with the causal verification motivation.",
+          "Hierarchical Sparse Circuit Extraction from Billion-Parameter Language Models (2026): HAGD framework for hierarchical circuit discovery, overlapping with the hierarchical circuit pruning component.",
+          "Causal Abstraction: A Theoretical Foundation for Mechanistic Interpretability (2023): Unifies activation/path patching, SAEs, and circuit analysis under causal abstraction, overlapping with the causal verification component.",
+          "Improving Dictionary Learning with Gated Sparse Autoencoders (2024): Gated SAEs separating feature detection from magnitude estimation, overlapping with the sparse dictionary learning component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Build a feature-first, circuit-second pipeline that turns opaque activations into causal, human-auditable components. First, pick a target model layer (or short stack of layers) and collect activations over a diverse, held-out corpus. Learn a sparse dictionary over these activations with a reconstruction objective and strong sparsity, but stabilize and sharpen feature semantics by adding a prototype-anchoring head: each latent unit is encouraged to become the centroid of a tight, discriminative cluster in the activation space, and an auxiliary confidence head flags when a unit’s semantics are uncertain. The result is a monosemantic feature bank whose codes reconstruct the original activations while remaining highly sparse and cluster-aligned, providing candidate human-interpretable features.\n\nNext, map features to minimal circuits. For each discovered feature, identify upstream donors and downstream consumers by tracing gradients and weight-mediated influence to form an initial overcomplete subgraph. Prune it with hierarchical group-sparsity: iteratively apply group-lasso-style penalties over structured groups (e.g., neuron fan-in, fan-out, and layer-level groups) to drive most edges to zero while preserving the feature’s ability to reconstruct and affect the model’s logits. Alternate expansion (add the highest-residual contributors) and pruning steps until the subgraph stabilizes into a compact “circuitlet” that carries that feature’s computation.\n\nVerify the decomposition causally, not just correlationally. Perform activation and path patching: for matched input pairs where a feature is high vs low, interchange only the feature code (and, separately, only edges of its circuitlet) and measure Average Causal Effect on task outputs. To keep verification scalable, maintain a top-k set of suspected critical nodes/edges per feature and perform efficient pairwise checks among adjacent candidates, refining the ranking of important elements with near-linear cost rather than exhaustive all-pairs tests. In parallel, run layer-wise linear probes for the human-labeled concept linked to each feature to localize where the concept first emerges and where it is read out, and require that interventional effects and probe localization agree before accepting a feature–circuit match.\n\nHarden and document the results. Use the confidence head to gate claims: features with high uncertainty undergo extra testing on out-of-distribution and counterfactual datasets, plus negative-control interventions that should not change the output. Avoid model self-evaluation by relying on external references (held-out labels, perturbation-grounded metrics) and human spot checks only for borderline cases. Finally, publish a feature card for each accepted unit summarizing exemplars, counter-exemplars, causal effect sizes, upstream/downstream nodes, known failure modes, and safe edit directions. Edits are then applied by steering along a feature’s code or by weight surgery confined to its verified circuitlet and are re-validated with the same interventional tests before deployment.",
+    "final_rationale": "Sparse, prototype-anchored dictionary learning turns dense activations into a small set of monosemantic codes that are easier to name and edit, while an uncertainty head helps avoid overclaiming when features are entangled. Hierarchical, group-sparse pruning converts diffuse influence maps into compact, testable circuitlets aligned to how parameters are organized, yielding minimal explanations that survive ablations.\n\nCausal verification via interchanges and activation/path patching ensures that the proposed features and circuits are not just predictive but mechanistically necessary or sufficient for the behavior. Efficient pairwise refinement makes these tests scalable, and layer-wise linear probes triangulate where concepts live, offering a second, independent check. Guarding against self-evaluation bias with reference-based metrics and negative controls reduces the risk of falsely validating spurious decompositions.",
+    "final_inspired_by": [
+      {
+        "seed_id": "a9647aa8fe5e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "layer-wise linear probing for knowledge localization"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-anchored discriminative latent space with an uncertainty head"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "hierarchical group-sparse selection to prune large search spaces"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "efficient pairwise refinement among top-k candidates"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "avoidance of self-evaluation bias in iterative validation"
+      }
+    ],
+    "wall_clock_s": 117.51,
+    "cost": {
+      "gen_prompt_tokens": 4804,
+      "gen_completion_tokens": 3122,
+      "judge_prompt_tokens": 112654,
+      "judge_completion_tokens": 1215,
+      "gen_cost_usd": 0.0372,
+      "judge_cost_usd": 0.3562,
+      "total_cost_usd": 0.3934
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the prototype-anchoring head combined with a confidence-gated feature card system and the alternating expansion/pruning \"circuitlet\" discovery process. However, these are largely combinations of existing techniques: sparse autoencoders (SAE/dictionary learning), group lasso pruning, activation patching, and linear probes are all well-established in mechanistic interpretability literature. The prototype-anchoring and confidence head add incremental novelty. Method B's strongest novel element is the rationale-environment recombination training signal: explicitly pairing rationale subcircuits from one sample with environment complements from another sample as a training objective to enforce environment-invariance. This cross-sample mixing as a causal stress-test during training (not just evaluation) is a more original mechanism. Additionally, the per-output factual/counterfactual soft intervention mask learning for necessity-sufficiency curves, combined with the separator-predictor alternating training framework applied to circuit discovery, represents a more distinctive combination not commonly found in mechanistic interpretability work. Method A reads more like a careful engineering pipeline of known components, while Method B introduces a more original training-time causal verification mechanism via recombination."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is that learned representations are opaque, making it hard to (a) reverse-engineer what specific circuits compute, (b) decompose representations into human-interpretable features, and (c) verify those decompositions. Method A addresses this through a circuit rationalization framework with sparse masking, recombination tests, and sufficiency/comprehensiveness curves, but its mechanism is heavily focused on selecting minimal subcircuits and verifying them causally—the human-interpretable feature decomposition is somewhat secondary (feature slots with probes are added on top). Method B directly addresses all three sub-problems in sequence: it first builds a monosemantic feature bank (decomposition into interpretable features), then maps features to minimal circuits (reverse-engineering computation), then verifies causally via activation/path patching with agreement between interventional effects and probe localization (verification). Method B's pipeline is more directly structured around the three named challenges in the query, with a cleaner causal pathway from problem to method step for each sub-problem, whereas Method A's primary mechanism is circuit selection with interpretability as an add-on."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A presents a clear, sequential pipeline: sparse dictionary learning with prototype anchoring, gradient-based circuit pruning with group lasso, activation/path patching for causal verification, and confidence-gated documentation. The steps build on each other logically, and each component is well-defined and implementable. The main potential weakness is the \"prototype-anchoring head\" combined with sparse dictionary learning, which adds complexity but is not contradictory. The alternating expansion/pruning for circuitlet discovery is coherent, and the requirement that interventional effects and probe localization agree before accepting a match is a reasonable consistency check.\n\nMethod B introduces a separator network that outputs differentiable masks over components, which is coherent in principle. However, the method mixes several paradigms in ways that create tension: the separator network observes intermediate activations to produce masks, but the training alternates between separator and predictor optimization — this is coherent as a two-player game. The more serious issue is the \"rationale-environment mixing\" across batch samples, which assumes that subcircuits from different samples can be recombined meaningfully, an assumption that may not hold for non-linear models and is not justified. Additionally, the K feature slots with sparse routing over the rationale summary, combined with the separator masks, the per-output soft intervention masks, and the student distillation, creates a pipeline with many interacting components whose interactions are not fully specified, making implementation ambiguous. The \"alignment-path monotonicity\" criterion for attention circuits is introduced without clear definition of what constitutes a valid monotonic path.\n\nMethod A is more internally consistent, with each step clearly prerequisite to the next and fewer unjustified assumptions, while Method B accumulates multiple loosely connected mechanisms whose interactions are underspecified."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6045,
+    "judge_completion_tokens": 909,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0318,
+    "total_cost_usd": 0.0318
+  }
+}

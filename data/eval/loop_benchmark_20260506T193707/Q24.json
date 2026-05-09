@@ -1,0 +1,289 @@
+{
+  "query_id": "Q24",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Pretraining at scale is expensive; can we replace some real\ndata with synthetic curricula that exercise specific\ncapabilities, and how do we ensure synthetic data improves\nrather than degrades downstream performance?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose SkillForge, a risk-controlled synthetic curriculum pipeline that replaces a fraction of real pretraining data with capability-targeted synthetic shards while guaranteeing no degradation on downstream tasks. First, define a capability graph (e.g., logical reasoning, multi-hop retrieval, code execution, spatial grounding) and attach for each node a generator–checker pair and a small, real held-out sentinel suite. For each capability, a strong teacher model produces synthetic instances targeted to that skill (e.g., question-guided prompts or programmatic templates) and emits lightweight supervision signals we can reuse during training (token logprobs/solutions/rationales). We generate diverse variants per seed (prompt paraphrases, perturbations, hard-negative distractors) and record augmentation metadata and teacher top-k logits alongside the text to enable low-overhead, replayable distillation.\n\nAll synthetic candidates are filtered by a multi-critic verifier ensemble to ensure they are valid, on-domain, and non-duplicative. Concretely, we score each item with multiple complementary critics: (1) semantic fidelity via multiple embedding models comparing input↔output consistency or solution↔spec alignment; (2) cross-model solvability via multiple base models (or smaller probes) that attempt the task; and (3) difficulty/diversity diagnostics (length, novelty vs. a real-data ANN index, error-injection success). We average/aggregate these signals into a SIM-like quality score and retain only items above a per-capability threshold, followed by near-duplicate removal and bucketed difficulty balancing. We further add a lightweight consistency regularizer during training by pairing paraphrased variants of the same synthetic item and penalizing prediction divergence to avoid overfitting to surface artifacts.\n\nAdmission of synthetic shards into training is governed by per-capability conformal risk control and advantage-gated distillation. For each capability, we periodically perform short probe updates using just the candidate shard and evaluate on its real sentinel suite to estimate the performance delta; we maintain a running, calibrated acceptance threshold that targets a maximum tolerated error increase (e.g., α = 1% per suite). Shards whose estimated risk exceeds the conformal threshold are rejected or down-weighted; accepted shards get a mixing weight that increases with estimated benefit and coverage gaps. During mixed training, we apply teacher-guided distillation only when the teacher’s advantage over the student (via confidence/margin or held-out proxy accuracy) exceeds a margin, otherwise defaulting to standard language modeling loss to prevent over-trusting erroneous synthetic supervision.\n\nTraining uses dynamic mixture scheduling: start with higher proportions of easier, high-confidence synthetic shards for each capability, then anneal toward harder ones while steadily interleaving real data. Batch composition is adjusted online using a bandit over capabilities to maximize improvement on a rotating battery of downstream probes. We keep synthetic replay cheap by storing teacher top-k logits and augmentation metadata and reusing them in the dataloader, preserving the original compute budget. Throughout, we log sequential learning curves and curriculum metadata to a centralized tracker and perform frequent A/B validations on the sentinel suites; when a capability’s synthetic stream shows diminishing returns or risk creep, its mixture weight decays automatically.\n",
+        "rationale": "Targeting synthetic generation to explicit capability nodes avoids the broad distribution shifts that occur when naively swapping in generic synthetic text. Using multi-critic verification ensures that only semantically faithful, solvable, and diverse synthetic items survive to training, reducing label noise and template overfitting. The advantage-gated use of teacher signals keeps the model from inheriting teacher errors and lets the student deviate when it already performs better.\n\nMost critically, per-capability conformal admission with small real sentinel suites provides a principled safeguard: each synthetic shard must empirically clear a calibrated, data-driven threshold on real examples before it can influence training, yielding finite-sample guarantees against performance degradation. A dynamic mixture schedule then focuses compute where synthetic data is demonstrably helpful, while consistency regularization and replayable teacher logits improve learning efficiency and robustness. Together, these pieces enable replacing a measurable portion of real data with synthetic curricula without sacrificing—and often improving—downstream performance.\n",
+        "inspired_by": [
+          {
+            "seed_id": "08be938c476e",
+            "domain": "CV",
+            "borrowed_aspect": "offline teacher-labeled augmentations and replayable top-k logits"
+          },
+          {
+            "seed_id": "c36ac00d94ea",
+            "domain": "SPEECH",
+            "borrowed_aspect": "multi-critic ensemble similarity scoring to filter synthetic data"
+          },
+          {
+            "seed_id": "3065495cf523",
+            "domain": "RL",
+            "borrowed_aspect": "conformal risk control with online threshold calibration"
+          },
+          {
+            "seed_id": "2b41a5eece77",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "advantage-gated imitation from a teacher"
+          },
+          {
+            "seed_id": "25e4dcae1532",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "adaptive mixing of simulated and real data during training"
+          },
+          {
+            "seed_id": "176e3b3120e9",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "curriculum tracking with sequential test metrics"
+          },
+          {
+            "seed_id": "eedb9fef0129",
+            "domain": "CV",
+            "borrowed_aspect": "consistency regularization across paired variants"
+          },
+          {
+            "seed_id": "d54cefc9ff77",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "task-guided synthetic generation focused on relevant content"
+          },
+          {
+            "seed_id": "ed7c7dd48e9e",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "domain-aware pretraining corpus curation"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches have not surfaced any paper that combines all the key mechanisms of SkillForge: (1) capability-graph-structured synthetic data generation with generator-checker pairs, (2) multi-critic verifier ensemble for synthetic data quality filtering, (3) per-capability conformal risk control for shard admission with real sentinel suites, (4) advantage-gated distillation, and (5) bandit-based dynamic mixture scheduling — all applied jointly to LLM pretraining. Individual components exist in isolation: conformal prediction for LLM outputs (CFC paper), curriculum pretraining for LLMs (learning rate decay paper), knowledge distillation with teacher advantage gating (TAPG in robotics), and multi-agent verification for synthetic data quality (speech SIM score paper). However, no paper combines conformal risk control for synthetic data admission with capability-targeted generation and advantage-gated distillation for LLM pretraining. The most distinctive and novel element — using per-capability conformal risk control with real sentinel suites to gate synthetic shard admission into pretraining — has no direct precedent in the literature. The combination of this with multi-critic verification, bandit scheduling, and advantage-gated distillation for pretraining represents a genuinely novel system. This matches the Score 4-5 range; since the conformal admission mechanism is a named new design choice not found in any surfaced paper applied to this problem, and the combination of mechanism families has no surfaced joint application, this leans toward 5. However, several sub-components (curriculum scheduling, knowledge distillation with advantage gating, multi-critic verification) are individually known, and the overall framing as a \"pipeline\" with multiple known pieces slightly tempers the score to 4.\n\nPrior works:\n  - Conformal Constrained Policy Optimization for Cost-Effective LLM Agents (2511.11828, 2025): Uses conformal prediction for LLM agent action sets, but not for synthetic data admission in pretraining.\n  - How Learning Rate Decay Wastes Your Best Data in Curriculum-Based LLM Pretraining (2025): Curriculum scheduling for LLM pretraining with quality-based ordering, but no conformal risk control or synthetic data generation.\n  - Grasp Anything / TAPG (2403.10187, 2024): Advantage-gated teacher distillation where student imitates only when teacher has higher value, but applied to robotics not LLM pretraining.\n  - Unlocking Speech Instruction Data Potential with Query Rewriting (2507.08603): Multi-model ensemble SIM score for synthetic data quality filtering, but for speech fine-tuning not LLM pretraining with conformal admission.\n  - Reinforce Data / Dataset Reinforcement (2303.08983): Precomputed teacher logits stored for replayable distillation, but for CV not LLM pretraining with capability-targeted generation.",
+        "prior_works": [
+          "Conformal Constrained Policy Optimization for Cost-Effective LLM Agents (2511.11828, 2025): Uses conformal prediction for LLM agent action sets, but not for synthetic data admission in pretraining.",
+          "How Learning Rate Decay Wastes Your Best Data in Curriculum-Based LLM Pretraining (2025): Curriculum scheduling for LLM pretraining with quality-based ordering, but no conformal risk control or synthetic data generation.",
+          "Grasp Anything / TAPG (2403.10187, 2024): Advantage-gated teacher distillation where student imitates only when teacher has higher value, but applied to robotics not LLM pretraining.",
+          "Unlocking Speech Instruction Data Potential with Query Rewriting (2507.08603): Multi-model ensemble SIM score for synthetic data quality filtering, but for speech fine-tuning not LLM pretraining with conformal admission.",
+          "Reinforce Data / Dataset Reinforcement (2303.08983): Precomputed teacher logits stored for replayable distillation, but for CV not LLM pretraining with capability-targeted generation."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose SkillForge, a risk-controlled synthetic curriculum pipeline that replaces a fraction of real pretraining data with capability-targeted synthetic shards while guaranteeing no degradation on downstream tasks. First, define a capability graph (e.g., logical reasoning, multi-hop retrieval, code execution, spatial grounding) and attach for each node a generator–checker pair and a small, real held-out sentinel suite. For each capability, a strong teacher model produces synthetic instances targeted to that skill (e.g., question-guided prompts or programmatic templates) and emits lightweight supervision signals we can reuse during training (token logprobs/solutions/rationales). We generate diverse variants per seed (prompt paraphrases, perturbations, hard-negative distractors) and record augmentation metadata and teacher top-k logits alongside the text to enable low-overhead, replayable distillation.\n\nAll synthetic candidates are filtered by a multi-critic verifier ensemble to ensure they are valid, on-domain, and non-duplicative. Concretely, we score each item with multiple complementary critics: (1) semantic fidelity via multiple embedding models comparing input↔output consistency or solution↔spec alignment; (2) cross-model solvability via multiple base models (or smaller probes) that attempt the task; and (3) difficulty/diversity diagnostics (length, novelty vs. a real-data ANN index, error-injection success). We average/aggregate these signals into a SIM-like quality score and retain only items above a per-capability threshold, followed by near-duplicate removal and bucketed difficulty balancing. We further add a lightweight consistency regularizer during training by pairing paraphrased variants of the same synthetic item and penalizing prediction divergence to avoid overfitting to surface artifacts.\n\nAdmission of synthetic shards into training is governed by per-capability conformal risk control and advantage-gated distillation. For each capability, we periodically perform short probe updates using just the candidate shard and evaluate on its real sentinel suite to estimate the performance delta; we maintain a running, calibrated acceptance threshold that targets a maximum tolerated error increase (e.g., α = 1% per suite). Shards whose estimated risk exceeds the conformal threshold are rejected or down-weighted; accepted shards get a mixing weight that increases with estimated benefit and coverage gaps. During mixed training, we apply teacher-guided distillation only when the teacher’s advantage over the student (via confidence/margin or held-out proxy accuracy) exceeds a margin, otherwise defaulting to standard language modeling loss to prevent over-trusting erroneous synthetic supervision.\n\nTraining uses dynamic mixture scheduling: start with higher proportions of easier, high-confidence synthetic shards for each capability, then anneal toward harder ones while steadily interleaving real data. Batch composition is adjusted online using a bandit over capabilities to maximize improvement on a rotating battery of downstream probes. We keep synthetic replay cheap by storing teacher top-k logits and augmentation metadata and reusing them in the dataloader, preserving the original compute budget. Throughout, we log sequential learning curves and curriculum metadata to a centralized tracker and perform frequent A/B validations on the sentinel suites; when a capability’s synthetic stream shows diminishing returns or risk creep, its mixture weight decays automatically.\n",
+    "final_rationale": "Targeting synthetic generation to explicit capability nodes avoids the broad distribution shifts that occur when naively swapping in generic synthetic text. Using multi-critic verification ensures that only semantically faithful, solvable, and diverse synthetic items survive to training, reducing label noise and template overfitting. The advantage-gated use of teacher signals keeps the model from inheriting teacher errors and lets the student deviate when it already performs better.\n\nMost critically, per-capability conformal admission with small real sentinel suites provides a principled safeguard: each synthetic shard must empirically clear a calibrated, data-driven threshold on real examples before it can influence training, yielding finite-sample guarantees against performance degradation. A dynamic mixture schedule then focuses compute where synthetic data is demonstrably helpful, while consistency regularization and replayable teacher logits improve learning efficiency and robustness. Together, these pieces enable replacing a measurable portion of real data with synthetic curricula without sacrificing—and often improving—downstream performance.\n",
+    "final_inspired_by": [
+      {
+        "seed_id": "08be938c476e",
+        "domain": "CV",
+        "borrowed_aspect": "offline teacher-labeled augmentations and replayable top-k logits"
+      },
+      {
+        "seed_id": "c36ac00d94ea",
+        "domain": "SPEECH",
+        "borrowed_aspect": "multi-critic ensemble similarity scoring to filter synthetic data"
+      },
+      {
+        "seed_id": "3065495cf523",
+        "domain": "RL",
+        "borrowed_aspect": "conformal risk control with online threshold calibration"
+      },
+      {
+        "seed_id": "2b41a5eece77",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "advantage-gated imitation from a teacher"
+      },
+      {
+        "seed_id": "25e4dcae1532",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "adaptive mixing of simulated and real data during training"
+      },
+      {
+        "seed_id": "176e3b3120e9",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "curriculum tracking with sequential test metrics"
+      },
+      {
+        "seed_id": "eedb9fef0129",
+        "domain": "CV",
+        "borrowed_aspect": "consistency regularization across paired variants"
+      },
+      {
+        "seed_id": "d54cefc9ff77",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "task-guided synthetic generation focused on relevant content"
+      },
+      {
+        "seed_id": "ed7c7dd48e9e",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "domain-aware pretraining corpus curation"
+      }
+    ],
+    "wall_clock_s": 190.68,
+    "cost": {
+      "gen_prompt_tokens": 7141,
+      "gen_completion_tokens": 6838,
+      "judge_prompt_tokens": 116493,
+      "judge_completion_tokens": 1110,
+      "gen_cost_usd": 0.0773,
+      "judge_cost_usd": 0.3661,
+      "total_cost_usd": 0.4434
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Build a capability-first synthetic curriculum. Start by instantiating a capability graph that enumerates target skills (e.g., arithmetic, multi-hop reasoning, code tracing, retrieval grounding) and their dependencies. For each node, define specification-level objectives, unit tests, and minimal input–output schemas. Use constrained generators (programmatic templates, simulators, or LLMs with hard constraints) to produce synthetic items and a two-stage vetting pipeline: (1) evidence generation (rationales, intermediate steps) and (2) specification checking with external oracles (symbolic solvers, compilers, retrieval truth sets) plus reference-based metrics. Only samples that pass spec checks and show diverse coverage of the node’s decision boundary are admitted to the pool, and each sample is tagged with its capability node and difficulty.\n\nTarget where synthetic data matters most with lightweight selection and uncertainty signals. Maintain a small, continuously refreshed real holdout that reflects downstream workloads. Train a cheap selector to pick “core” synthetic examples per capability that are most likely to shift performance on the holdout, using signals from a single-pass uncertainty head and capability-coverage gaps. Sampling prioritizes: (a) high-uncertainty regions on the holdout, (b) under-covered capability nodes or edges in the graph, and (c) counterfactual pairs that separate closely confusable cases. This keeps synthetic volume low but relevant, and the selector is re-fit periodically on fresh model embeddings so the curriculum follows the model’s current failure modes.\n\nBridge the domain gap while you train. Use a representation that explicitly separates shared vs domain-specific factors between synthetic and real data, aligning the shared space and regularizing away synthetic artifacts. Interleave training with a DAgger-style correction loop: periodically roll the model on small slices of real data, capture its errors, and synthesize targeted counterexamples or demonstrations that correct those specific failure modes; mix these with a small amount of real corrections. Start with scaffolded synthetic tasks (clean, simplified, abundant feedback) and gradually remove scaffolds while increasing realism and the real:synth ratio as real-holdout metrics improve. Weight gradients by uncertainty- and quality-aware scores so reliable, high-informational synthetic items contribute more than noisy ones.\n\nEnforce no-regret gates so synthetic never degrades performance. Training proceeds in batches of synthetic updates; each batch is tentatively applied and then evaluated on the frozen real holdout. If any key metric regresses beyond a preset tolerance, the batch is rolled back or down-weighted, and its failure signature is fed back to the generator to produce harder, better-targeted items. Track coverage over the capability graph and require minimum improvements or coverage gains before advancing to harder nodes. This tight loop—spec-first generation, selective admission, aligned training with corrective rollouts, and no-regret gating—lets synthetic curricula safely replace a measurable fraction of real pretraining while improving downstream utility.\n",
+        "rationale": "The approach replaces undifferentiated web-scale data with spec-checked, capability-tagged synthetic items that directly exercise the skills you care about, while a lightweight selector and uncertainty signals concentrate effort where the model is most brittle. Domain-bridged representations and a DAgger-like correction loop counteract distribution shift and overfitting to synthetic artifacts, and scaffolded-to-real scheduling mirrors how fixtures are phased out in skill learning.\n\nCritically, external specification checks and no-regret holdout gates prevent self-rewarded drift: synthetic batches must prove they help on real data before they are retained. By tracking coverage on a capability graph, the method ensures systematic growth in breadth and difficulty rather than style or fluency gains that fail to move downstream metrics. Together, these pieces enable substituting a meaningful share of real data with synthetic curricula without sacrificing—and often improving—downstream performance.\n",
+        "inspired_by": [
+          {
+            "seed_id": "3e4700d9e4a8",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "motivational knowledge graph to structure problems and dependencies"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "avoidance of self-evaluation bias via external metrics and gating"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector that chooses core evidence before expensive reasoning"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass uncertainty estimation from discriminative latent prototypes"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided update weighting and pseudo-label filtering"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared vs domain-specific latent partitioning to bridge data domains"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "DAgger-style pseudo-demonstrator for corrective supervision"
+          },
+          {
+            "seed_id": "a680f4fc4baf",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "scaffolded curriculum with gradual removal of supports"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines five distinct mechanisms: (1) a capability dependency graph driving spec-checked synthetic data generation with oracle verification, (2) a lightweight selector using uncertainty signals and capability-coverage gaps to prioritize synthetic samples, (3) shared/domain-specific latent space alignment to bridge synthetic-real domain gap, (4) DAgger-style corrective rollout loops interleaved with training, and (5) no-regret holdout gating with rollback of harmful synthetic batches. Searches surfaced GoalCover (2026) which decomposes goals into subgoals and assesses coverage gaps in fine-tuning data — partially overlapping with the capability graph idea — and GraphGen (2025) which uses knowledge graphs to guide synthetic QA generation targeting knowledge gaps. However, no paper was found that combines all five mechanisms together, and critically, the no-regret gating with rollback, the DAgger-style correction loop for synthetic data generation, and the shared/domain-specific latent alignment for synthetic-real bridging in LLM pretraining are not surfaced as a joint combination anywhere. The individual mechanisms (DAgger, domain-invariant representations, curriculum learning, uncertainty sampling) are known separately, but their specific combination for the problem of safely replacing real pretraining data with synthetic curricula has no direct published match. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms known but not combined as proposed.\n\nPrior works:\n  - GoalCover (2026): decomposes high-level goals into atomic subgoals and assesses coverage gaps in fine-tuning datasets, overlapping with the capability graph and coverage-gap targeting components\n  - GraphGen (2025): knowledge graph-guided synthetic data generation targeting knowledge gaps in LLMs, overlapping with graph-structured capability targeting and synthetic generation\n  - SimRAG (2024): self-training with synthetic data generation and filtering for domain adaptation of LLMs, partially overlapping with the selective admission and domain adaptation components\n  - Learning Predictive Models From Observation and Interaction (2019): shared vs. domain-specific latent partitioning across domains, overlapping with the domain-bridging representation component\n  - DUET/DAgger for VLN (2022): DAgger-style pseudo-interactive demonstrator for corrective rollouts, overlapping with the DAgger correction loop component",
+        "prior_works": [
+          "GoalCover (2026): decomposes high-level goals into atomic subgoals and assesses coverage gaps in fine-tuning datasets, overlapping with the capability graph and coverage-gap targeting components",
+          "GraphGen (2025): knowledge graph-guided synthetic data generation targeting knowledge gaps in LLMs, overlapping with graph-structured capability targeting and synthetic generation",
+          "SimRAG (2024): self-training with synthetic data generation and filtering for domain adaptation of LLMs, partially overlapping with the selective admission and domain adaptation components",
+          "Learning Predictive Models From Observation and Interaction (2019): shared vs. domain-specific latent partitioning across domains, overlapping with the domain-bridging representation component",
+          "DUET/DAgger for VLN (2022): DAgger-style pseudo-interactive demonstrator for corrective rollouts, overlapping with the DAgger correction loop component"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Build a capability-first synthetic curriculum. Start by instantiating a capability graph that enumerates target skills (e.g., arithmetic, multi-hop reasoning, code tracing, retrieval grounding) and their dependencies. For each node, define specification-level objectives, unit tests, and minimal input–output schemas. Use constrained generators (programmatic templates, simulators, or LLMs with hard constraints) to produce synthetic items and a two-stage vetting pipeline: (1) evidence generation (rationales, intermediate steps) and (2) specification checking with external oracles (symbolic solvers, compilers, retrieval truth sets) plus reference-based metrics. Only samples that pass spec checks and show diverse coverage of the node’s decision boundary are admitted to the pool, and each sample is tagged with its capability node and difficulty.\n\nTarget where synthetic data matters most with lightweight selection and uncertainty signals. Maintain a small, continuously refreshed real holdout that reflects downstream workloads. Train a cheap selector to pick “core” synthetic examples per capability that are most likely to shift performance on the holdout, using signals from a single-pass uncertainty head and capability-coverage gaps. Sampling prioritizes: (a) high-uncertainty regions on the holdout, (b) under-covered capability nodes or edges in the graph, and (c) counterfactual pairs that separate closely confusable cases. This keeps synthetic volume low but relevant, and the selector is re-fit periodically on fresh model embeddings so the curriculum follows the model’s current failure modes.\n\nBridge the domain gap while you train. Use a representation that explicitly separates shared vs domain-specific factors between synthetic and real data, aligning the shared space and regularizing away synthetic artifacts. Interleave training with a DAgger-style correction loop: periodically roll the model on small slices of real data, capture its errors, and synthesize targeted counterexamples or demonstrations that correct those specific failure modes; mix these with a small amount of real corrections. Start with scaffolded synthetic tasks (clean, simplified, abundant feedback) and gradually remove scaffolds while increasing realism and the real:synth ratio as real-holdout metrics improve. Weight gradients by uncertainty- and quality-aware scores so reliable, high-informational synthetic items contribute more than noisy ones.\n\nEnforce no-regret gates so synthetic never degrades performance. Training proceeds in batches of synthetic updates; each batch is tentatively applied and then evaluated on the frozen real holdout. If any key metric regresses beyond a preset tolerance, the batch is rolled back or down-weighted, and its failure signature is fed back to the generator to produce harder, better-targeted items. Track coverage over the capability graph and require minimum improvements or coverage gains before advancing to harder nodes. This tight loop—spec-first generation, selective admission, aligned training with corrective rollouts, and no-regret gating—lets synthetic curricula safely replace a measurable fraction of real pretraining while improving downstream utility.\n",
+    "final_rationale": "The approach replaces undifferentiated web-scale data with spec-checked, capability-tagged synthetic items that directly exercise the skills you care about, while a lightweight selector and uncertainty signals concentrate effort where the model is most brittle. Domain-bridged representations and a DAgger-like correction loop counteract distribution shift and overfitting to synthetic artifacts, and scaffolded-to-real scheduling mirrors how fixtures are phased out in skill learning.\n\nCritically, external specification checks and no-regret holdout gates prevent self-rewarded drift: synthetic batches must prove they help on real data before they are retained. By tracking coverage on a capability graph, the method ensures systematic growth in breadth and difficulty rather than style or fluency gains that fail to move downstream metrics. Together, these pieces enable substituting a meaningful share of real data with synthetic curricula without sacrificing—and often improving—downstream performance.\n",
+    "final_inspired_by": [
+      {
+        "seed_id": "3e4700d9e4a8",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "motivational knowledge graph to structure problems and dependencies"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "avoidance of self-evaluation bias via external metrics and gating"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector that chooses core evidence before expensive reasoning"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single-pass uncertainty estimation from discriminative latent prototypes"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided update weighting and pseudo-label filtering"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared vs domain-specific latent partitioning to bridge data domains"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "DAgger-style pseudo-demonstrator for corrective supervision"
+      },
+      {
+        "seed_id": "a680f4fc4baf",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "scaffolded curriculum with gradual removal of supports"
+      }
+    ],
+    "wall_clock_s": 131.3,
+    "cost": {
+      "gen_prompt_tokens": 4805,
+      "gen_completion_tokens": 3685,
+      "judge_prompt_tokens": 142072,
+      "judge_completion_tokens": 1093,
+      "gen_cost_usd": 0.0429,
+      "judge_cost_usd": 0.4426,
+      "total_cost_usd": 0.4855
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the DAgger-style corrective rollout loop combined with a no-regret gating mechanism that rolls back synthetic batches and feeds failure signatures back to the generator — this closed-loop, rollback-with-feedback design is a distinctive combination not commonly seen in synthetic curriculum literature. Method B's strongest novel element is the use of conformal risk control (a statistically grounded framework) applied per-capability to govern shard admission, combined with advantage-gated distillation that conditions on teacher-student margin. The conformal risk control framing applied to synthetic data admission is a more precisely novel and identifiable mechanism — it borrows a specific statistical tool (conformal prediction/risk control) and applies it in a new context. However, both methods share substantial structural overlap: capability graphs, quality filtering, difficulty scheduling, holdout-based gating, and domain alignment. Method B's conformal risk control is a more crisply named and theoretically grounded novel component, while Method A's novelty is more diffuse across several interacting mechanisms. On balance, Method B's conformal risk control + advantage-gated distillation combination is slightly harder to find in prior literature as an exact pairing for this problem."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is twofold: (a) synthetic data may not exercise the right capabilities, and (b) synthetic data may degrade downstream performance. Both methods address these directly. Method A uses a capability graph, spec-checking with oracles, uncertainty-driven selection, DAgger-style correction loops, and explicit no-regret gating with rollback. Method B uses a capability graph, multi-critic verification, conformal risk control with per-capability sentinel suites, and advantage-gated distillation. Both trace a clear causal pathway from the problem to specific mechanism steps. However, Method B's conformal risk control provides a more formally grounded mechanism for the \"no degradation\" guarantee—it uses calibrated acceptance thresholds with statistical backing, whereas Method A's no-regret gates are conceptually similar but less formally specified. Method A's DAgger-style correction loop and representation alignment more directly address the domain gap aspect. Overall, both methods engage the failure mode with comparable directness and specificity; neither is clearly more direct than the other across both sub-problems."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A is largely coherent but has a notable tension: it proposes \"short probe updates using just the candidate shard\" to estimate performance delta before admission, which at pretraining scale is expensive and somewhat contradicts the stated goal of preserving the original compute budget. The conformal risk control framing is reasonable but the per-shard probe-update mechanism is underspecified in terms of how it integrates with large-scale pretraining without significant overhead. The bandit-over-capabilities online scheduling is also somewhat vague about implementation details but not incoherent. Overall the pieces fit together, though the probe-update admission step creates a practical tension with the compute budget constraint.\n\nMethod B also has coherence issues. The DAgger-style correction loop (\"roll the model on small slices of real data, capture its errors, synthesize targeted counterexamples\") is a reasonable idea but the mechanism for \"a representation that explicitly separates shared vs domain-specific factors\" is underspecified—it's unclear what architecture or training objective achieves this separation, making that component difficult to implement without redesign. The \"no-regret gate\" with batch rollback is coherent in principle but rolling back batches during pretraining is non-trivial and not explained. The selector being \"re-fit periodically on fresh model embeddings\" is plausible but adds an unspecified training loop. Despite these gaps, the overall pipeline steps are logically ordered and mutually compatible.\n\nBoth methods have coherence weaknesses, but Method A's components connect more explicitly to each other (the conformal threshold feeds into mixing weights, distillation is conditioned on advantage, scheduling is tied to sentinel performance), whereas Method B's domain-separation representation component is a significant undefined prerequisite. Method A is marginally more coherent overall."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5544,
+    "judge_completion_tokens": 912,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0303,
+    "total_cost_usd": 0.0303
+  }
+}

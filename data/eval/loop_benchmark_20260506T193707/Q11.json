@@ -1,0 +1,284 @@
+{
+  "query_id": "Q11",
+  "natural_domain": "SPEECH",
+  "query_text": "Speech recognition for low-resource languages or specialized\ndomains lacks transcribed audio; how can we leverage synthetic\ndata or transfer learning to reach competitive accuracy with\nminimal real labeled data?\n",
+  "c_loop": {
+    "rounds": 2,
+    "converged": true,
+    "final_score": 5,
+    "round_scores": [
+      3,
+      5
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "1) Build the right text and language model first. Retrieve and transform in-domain text using a dataset-retrieval-and-transformation pipeline: mine public corpora, manuals, chat logs, and domain documents that match the target language/domain; then normalize to ASR style (spoken-form punctuation, numeral expansion, abbreviations, code-switch variants) and expand with rare terms and morphology. From this script, construct a pronunciation lexicon or grapheme mapping and train a compact domain language model (e.g., 4–6 gram and a small transformer LM) for shallow fusion or WFST decoding. Deduplicate and stratify the script for coverage over word frequency bins, numerics, entities, and prosody markers.\n\n2) Turn the script into strong synthetic audio with transfer-learned multilingual TTS. Start from a robust multilingual TTS trained on high-resource languages; fine-tune lightly toward the target language or accent using any available transcribed minutes or pseudo-transcripts, leveraging codec-based acoustic tokenization to preserve cross-lingual prosody and phonotactics. Synthesize 100–1000 hours with multiple speakers, speaking rates, and style/noise profiles; augment on-the-fly with room impulse responses, codecs, and gain perturbations. Ensure phoneme and syllable coverage by sampling the script with a curriculum that upweights rare words and domain terms early and ramps toward natural frequency later.\n\n3) Pretrain the ASR encoder with a unified supervised plus self-supervised objective. Use a wav2vec 2.0–style stack with a quantizer and transformer context network. Jointly optimize (i) CTC on high-resource labeled speech and on a quality-controlled subset of the synthetic speech-text pairs to encourage phone-aligned features, and (ii) masked contrastive learning on large amounts of unlabeled target audio mixed with the remaining synthetic audio to adapt the codebook and contextual space to the target acoustics and vocabulary. After convergence, freeze the feature encoder or apply a low learning rate to stabilize downstream tuning.\n\n4) Fine-tune with minimal real labels, strong pseudo-labels, and a calibrated curriculum. Use a strong multilingual teacher ASR to transcribe the unlabeled target audio; keep only high-confidence segments and filter with the domain lexicon and LM to reduce homophone and OOV errors. Train the student on a mixture of the small real labeled set, high-confidence pseudo-labels, and a downweighted sample of synthetic pairs. Start with real+pseudo data, anneal synthetic weight as WER drops, and gradually admit lower-confidence pseudo-labels if the dev set improves. Use CTC or RNN-T loss with SpecAugment and speed perturbation; add parameter-efficient adapters or selectively unfreeze upper transformer layers for domain adaptation. Decode with beam search and shallow-fuse the domain LM; optionally rescore with the transformer LM. Iterate: re-transcribe unlabeled audio with the improved student, refresh the LM on new transcripts, and regenerate a small tranche of harder synthetic utterances focused on remaining error modes until dev WER plateaus.",
+        "rationale": "Domain-matched text determines the vocabulary and n-gram statistics that drive ASR decoding; retrieving and transforming existing datasets yields high-coverage scripts without costly manual authoring. High-fidelity multilingual TTS, trained via transfer, can then turn these scripts into acoustically diverse, label-perfect pairs that inject the right terms, numbers, and entities into the acoustic model and LM, even when human transcripts are scarce.\n\nUnified supervised plus self-supervised pretraining aligns the encoder to phonetic structure while adapting its latent space to target acoustics using abundant unlabeled audio. This produces features that transfer with little labeled data. Finally, confidence-filtered pseudo-labeling exploits all available target audio to close the domain gap, while curriculum weighting and parameter-efficient adaptation prevent overfitting to synthetic artifacts. Shallow-fusion with the domain LM ensures the decoder respects target phrasing and terminology, pushing accuracy toward competitive levels with only a small real labeled set.",
+        "inspired_by": [
+          {
+            "seed_id": "b63494f09d1d",
+            "domain": "SPEECH",
+            "borrowed_aspect": "unified supervised plus self-supervised pretraining with CTC and masked contrastive learning"
+          },
+          {
+            "seed_id": "9bc55d88241b",
+            "domain": "SPEECH",
+            "borrowed_aspect": "transfer-learned multilingual TTS with discrete codec modeling for cross-lingual synthesis"
+          },
+          {
+            "seed_id": "38cce1357658",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "retrieval and LLM-driven transformation of existing datasets to create domain-specific scripts"
+          }
+        ],
+        "novelty_score": 3,
+        "novelty_reasoning": "The proposed method is a multi-stage pipeline combining: (1) dataset retrieval and transformation for ASR script preparation (similar to DataTune from seed 18, but applied to ASR text normalization), (2) multilingual TTS with codec-based acoustic tokenization for synthetic data generation, (3) joint CTC + contrastive self-supervised pretraining (essentially UniSpeech, seed 16), and (4) curriculum-based pseudo-labeling with synthetic data annealing and domain LM shallow fusion. UniSpeech (2021) directly covers the core pretraining mechanism (joint CTC + phonetically-aware contrastive SSL). TTS-based augmentation for low-resource ASR is well-established. The iterative pseudo-labeling with teacher-student approach is also known. However, the specific combination of: codec-based multilingual TTS transfer + dataset retrieval/transformation pipeline for ASR scripts + UniSpeech-style pretraining + curriculum pseudo-labeling with synthetic annealing as a unified end-to-end system has not been surfaced as a single published work. The individual components are all known, and some pairs (TTS augmentation + self-supervised pretraining, pseudo-labeling + domain LM) appear in related work, but the full combination with the specific codec-based TTS transfer and dataset retrieval pipeline is not directly matched. This matches the Score 3 anchor — combining 2-3 known mechanisms with prior published joint application to this problem family, where searches surface papers pairing the same mechanisms for closely related problems.\n\nPrior works:\n  - UniSpeech: Unified Speech Representation Learning with Labeled and Unlabeled Data (2021): Directly covers the joint CTC + phonetically-aware contrastive self-supervised pretraining component for cross-lingual low-resource ASR.\n  - Semi-supervised ASR based on Iterative Joint Training with Discrete Speech Synthesis (2022): Covers iterative joint training with discrete speech synthesis and pseudo-labeling for low-resource ASR.\n  - Speaker Augmentation for Low Resource Speech Recognition (2020): Covers TTS-based data augmentation with speaker diversity for low-resource ASR.\n  - Doing More with Less: Data Augmentation for Sudanese Dialect ASR (2026): Combines TTS augmentation and self-training pseudo-labels for low-resource ASR fine-tuning.\n  - Better Synthetic Data by Retrieving and Transforming Existing Datasets (2024): Covers dataset retrieval and transformation pipeline for synthetic training data generation.",
+        "prior_works": [
+          "UniSpeech: Unified Speech Representation Learning with Labeled and Unlabeled Data (2021): Directly covers the joint CTC + phonetically-aware contrastive self-supervised pretraining component for cross-lingual low-resource ASR.",
+          "Semi-supervised ASR based on Iterative Joint Training with Discrete Speech Synthesis (2022): Covers iterative joint training with discrete speech synthesis and pseudo-labeling for low-resource ASR.",
+          "Speaker Augmentation for Low Resource Speech Recognition (2020): Covers TTS-based data augmentation with speaker diversity for low-resource ASR.",
+          "Doing More with Less: Data Augmentation for Sudanese Dialect ASR (2026): Combines TTS augmentation and self-training pseudo-labels for low-resource ASR fine-tuning.",
+          "Better Synthetic Data by Retrieving and Transforming Existing Datasets (2024): Covers dataset retrieval and transformation pipeline for synthetic training data generation."
+        ],
+        "feedback_used": null
+      },
+      {
+        "round_num": 2,
+        "method": "We propose RAPSODY, a low-label ASR training recipe that pairs a structure-aware encoder with two nonstandard supervision signals and a look-ahead synthetic curriculum. First, we insert a Global Temporal Prior Attention (GTPA) module into a mid layer of a Conformer/Transformer encoder. GTPA learns a small bank of reusable attention templates over time that encode language- and domain-agnostic temporal relations (e.g., local context, syllable-scale spans, onset–nucleus–coda and long-range vowel/consonant dependencies). For each frame t, we crop an aligned h×h sub-map from each global template, normalize it into token-to-token weights, apply it to values, and mix the result with multi-head self-attention via learned gates. This adds few parameters, regularizes attention toward speech-appropriate structures, and reduces overfitting in low-resource transfer.\n\nSecond, we replace standard pseudo-label pretraining with Rendition-Stack Consistency. For each text segment, we form a stack of heterogeneous audio renditions: diverse multi-speaker TTS, speed/pitch/noise perturbations, and optional voice-converted in-domain utterances aligned to that text. We enforce a denoising consistency objective that pulls encoder and decoder hidden states for all items in a stack toward a shared text-conditioned prototype (computed as the moving-average feature of a random pair in the stack), using a cosine similarity loss at multiple layers. The supervised head (CTC or transducer) is trained on the small real labeled set only; stacks do not require frame-level alignments. This consolidates speaker, channel, and prosody variation while keeping content fixed, yielding invariant features that transfer across accents and domains with minimal labels.\n\nThird, we introduce Listwise Hypothesis Distillation without ground truth to exploit unlabeled in-domain audio. The current ASR produces n-best hypotheses per utterance. A composite scorer (domain LM, pronunciation/lexicon prior, and an LLM judge scoring semantic plausibility for the target domain) induces a strict ranking over the n-best. We optimize the acoustic model and fusion weights with a differentiable listwise loss (e.g., weighted RankNet/Plackett–Luce) so that the model’s scores respect the external ranking. To avoid hurting partially correct hypotheses, we filter “negatives” with an LLM that flags hypotheses containing correct substrings/entities as ambiguous rather than incorrect; only truly irrelevant hypotheses contribute as negatives. This converts readily-available priors into powerful, label-free supervision that goes beyond top-1 pseudo-labels.\n\nFinally, we drive synthetic data generation with Look-ahead Curriculum Planning. We define coverage goals (“skills”) over phoneme n-grams, tones/prosody patterns, morphology, and domain entity pronunciation variants. Simple regressors estimate the expected WER improvement from adding a candidate synthetic batch given the model’s current confusion profile and the batch’s coverage statistics. A short-horizon tree search samples generation actions (speaker/pace/noise profiles, lexicon variants, entity lists), prunes low-value branches via success predictors, and chooses the next synthetic batch to materialize from TTS/VC. We alternate planning–generation–training rounds, annealing the synthetic mix as the model’s uncertainty shrinks. Throughout, GTPA parameters are shared across languages and updated jointly, enabling cross-lingual transfer of temporal priors even when labeled target data is scarce.\n\nTraining schedule: warm-start the encoder on any public speech with masked prediction only to stabilize features; insert GTPA and fine-tune briefly on the small labeled set to set the supervised head; then alternate (a) Rendition-Stack Consistency on synthetic stacks, (b) Listwise Hypothesis Distillation on unlabeled in-domain audio, and (c) Look-ahead Curriculum Planning to choose the next synthetic tranche. Decode with a light domain LM (or shallow fusion) during the listwise phase; remove or down-weight it at the end if end-to-end decoding is desired. This end-to-end process reaches competitive accuracy with minimal real labels by combining structure priors, label-free listwise supervision, and planned synthetic coverage.",
+        "rationale": "GTPA injects reusable, speech-appropriate attention structure into the encoder, improving generalization when labeled target data is limited and reducing the burden on data to teach long- and mid-range temporal dependencies. Rendition-Stack Consistency exploits abundant synthetic variation anchored to identical text to explicitly disentangle content from nuisance factors, providing stronger invariance than standard augmentation alone while consuming no additional labels. Listwise Hypothesis Distillation turns readily available external knowledge (domain LM, lexicon, LLM semantic judgments) into a dense supervision signal on unlabeled audio, leveraging the full n-best list rather than brittle top-1 pseudo-labels and guarding against false-negative penalties.\n\nThe look-ahead synthetic curriculum addresses the core inefficiency of naive TTS augmentation: not all synthetic utterances are equally useful. By planning over phonetic/prosodic/entity coverage with simple, learned improvement predictors, the system preferentially generates batches that close the model’s current weaknesses, yielding faster gains under a fixed synthetic budget. These mechanisms are complementary: structure priors ease transfer, stack consistency builds robust representations, listwise distillation aligns scoring to domain semantics without labels, and planning ensures synthetic data is targeted, together enabling competitive ASR with minimal real supervision.",
+        "inspired_by": [
+          {
+            "seed_id": "4d9e4295a8f0",
+            "domain": "CV",
+            "borrowed_aspect": "global attention maps mixed with self-attention to encode reusable structure"
+          },
+          {
+            "seed_id": "eedb9fef0129",
+            "domain": "CV",
+            "borrowed_aspect": "semantic stacking consistency loss to denoise representations"
+          },
+          {
+            "seed_id": "cdb65a898b67",
+            "domain": "IR_REC",
+            "borrowed_aspect": "listwise ranking distillation using differentiable rank losses"
+          },
+          {
+            "seed_id": "ac9d79a4fd87",
+            "domain": "IR_REC",
+            "borrowed_aspect": "LLM-based filtering to remove false negatives from candidate sets"
+          },
+          {
+            "seed_id": "8c68da056026",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "look-ahead planning with coarse success models to choose actions"
+          },
+          {
+            "seed_id": "d54cefc9ff77",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "attention-based relevance localization to emphasize task-relevant regions"
+          }
+        ],
+        "novelty_score": 5,
+        "novelty_reasoning": "The searches reveal no published work that combines all four components of RAPSODY together, nor any single paper that matches even two of the core novel mechanisms jointly applied to ASR. The GTPA module is a direct adaptation of the \"Low-Resource Vision Challenges for Foundation Models\" global attention template idea to speech/Conformer encoders — this cross-modal transfer is non-trivial and unsurfaced for ASR. Rendition-Stack Consistency (multi-rendition TTS stacks with cosine consistency loss at multiple layers) has no direct match; the closest is S2S2 for medical segmentation and standard TTS augmentation, but not this specific formulation for ASR. Listwise Hypothesis Distillation using LLM-scored n-best with a differentiable Plackett-Luce/RankNet loss to train the acoustic model (not just rescore) is distinct from HyPoradise/GER correction and WSNeuRescore (which use weak supervision for rescoring, not acoustic model training via listwise loss). Look-ahead curriculum planning for synthetic TTS generation has no surfaced match. The combination of four distinct novel mechanisms — none of which has been jointly published for this problem — matches the Score 5 anchor: new named components not present in surfaced literature, with no end-to-end near-clone found.\n\nPrior works:\n  - Low-Resource Vision Challenges for Foundation Models (2024): Global attention template mechanism that GTPA directly adapts to speech — same mechanism, different modality/problem.\n  - WSNeuRescore / Multimodal N-best List Rescoring with Weakly Supervised Pre-training (2021): Listwise neural rescoring of n-best with weak supervision, but for rescoring only, not acoustic model training via differentiable listwise loss.\n  - HyPoradise / LLMs for ASR N-best correction (2023): LLM-based correction of n-best hypotheses, but generative correction paradigm, not listwise distillation into acoustic model.\n  - S2S2: Semantic Stacking for Robust Semantic Segmentation (2024): Stack-based consistency loss across same-label images — analogous to Rendition-Stack Consistency but for vision segmentation, not ASR.\n  - UniSpeech (2021): Unified supervised+self-supervised pretraining for low-resource ASR transfer — related training paradigm but no stack consistency or listwise distillation.",
+        "prior_works": [
+          "Low-Resource Vision Challenges for Foundation Models (2024): Global attention template mechanism that GTPA directly adapts to speech — same mechanism, different modality/problem.",
+          "WSNeuRescore / Multimodal N-best List Rescoring with Weakly Supervised Pre-training (2021): Listwise neural rescoring of n-best with weak supervision, but for rescoring only, not acoustic model training via differentiable listwise loss.",
+          "HyPoradise / LLMs for ASR N-best correction (2023): LLM-based correction of n-best hypotheses, but generative correction paradigm, not listwise distillation into acoustic model.",
+          "S2S2: Semantic Stacking for Robust Semantic Segmentation (2024): Stack-based consistency loss across same-label images — analogous to Rendition-Stack Consistency but for vision segmentation, not ASR.",
+          "UniSpeech (2021): Unified supervised+self-supervised pretraining for low-resource ASR transfer — related training paradigm but no stack consistency or listwise distillation."
+        ],
+        "feedback_used": "Your previous synthesis received a novelty score of 3/5 from a held-out novelty judge that ran a Semantic Scholar search.\n\nThe judge surfaced the following prior work that substantively covers your proposed mechanisms:\n  - UniSpeech: Unified Speech Representation Learning with Labeled and Unlabeled Data (2021): Directly covers the joint CTC + phonetically-aware contrastive self-supervised pretraining component for cross-lingual low-resource ASR.\n  - Semi-supervised ASR based on Iterative Joint Training with Discrete Speech Synthesis (2022): Covers iterative joint training with discrete speech synthesis and pseudo-labeling for low-resource ASR.\n  - Speaker Augmentation for Low Resource Speech Recognition (2020): Covers TTS-based data augmentation with speaker diversity for low-resource ASR.\n  - Doing More with Less: Data Augmentation for Sudanese Dialect ASR (2026): Combines TTS augmentation and self-training pseudo-labels for low-resource ASR fine-tuning.\n  - Better Synthetic Data by Retrieving and Transforming Existing Datasets (2024): Covers dataset retrieval and transformation pipeline for synthetic training data generation.\n\nJudge's reasoning: The proposed method is a multi-stage pipeline combining: (1) dataset retrieval and transformation for ASR script preparation (similar to DataTune from seed 18, but applied to ASR text normalization), (2) multilingual TTS with codec-based acoustic tokenization for synthetic data generation, (3) joint CTC + contrastive self-supervised pretraining (essentially UniSpeech, seed 16), and (4) curriculum-based pseudo-labeling with synthetic data annealing and domain LM shallow fusion. UniSpeech (2021) directly covers the core pretraining mechanism (joint CTC + phonetically-aware contrastive SSL). TTS-based augmentation for low-resource ASR is well-established. The iterative pseudo-labeling with teacher-student approach is also known. However, the specific combination of: codec-based multilingual TTS transfer + dataset retrieval/transformation pipeline for ASR scripts + UniSpeech-style pretraining + curriculum pseudo-labeling with synthetic annealing as a unified end-to-end system has not been surfaced as a single published work. The individual components are all known, and some pairs (TTS augmentation + self-supervised pretraining, pseudo-labeling + domain LM) appear in related work, but the full combination with the specific codec-based TTS transfer and dataset retrieval pipeline is not directly matched. This matches the Score 3 anchor — combining 2-3 known mechanisms with prior published joint application to this problem family, where searches surface papers pairing the same mechanisms for closely related problems.\n\nPrior works:\n  - UniSpeech: Unified Speech Representation Learning with Labeled and Unlabeled Data (2021): Directly covers the joint CTC + phonetically-aware contrastive self-supervised pretraining component for cross-lingual low-resource ASR.\n  - Semi-supervised ASR based on Iterative Joint Training with Discrete Speech Synthesis (2022): Covers iterative joint training with discrete speech synthesis and pseudo-labeling for low-resource ASR.\n  - Speaker Augmentation for Low Resource Speech Recognition (2020): Covers TTS-based data augmentation with speaker diversity for low-resource ASR.\n  - Doing More with Less: Data Augmentation for Sudanese Dialect ASR (2026): Combines TTS augmentation and self-training pseudo-labels for low-resource ASR fine-tuning.\n  - Better Synthetic Data by Retrieving and Transforming Existing Datasets (2024): Covers dataset retrieval and transformation pipeline for synthetic training data generation.\n\nPlease synthesize a substantially more novel method for the same research problem. You may use the same retrieved seeds in non-obvious ways, or introduce new mechanism families absent from the surfaced literature. The goal is a method whose mechanism combination is not already established."
+      }
+    ],
+    "final_method": "We propose RAPSODY, a low-label ASR training recipe that pairs a structure-aware encoder with two nonstandard supervision signals and a look-ahead synthetic curriculum. First, we insert a Global Temporal Prior Attention (GTPA) module into a mid layer of a Conformer/Transformer encoder. GTPA learns a small bank of reusable attention templates over time that encode language- and domain-agnostic temporal relations (e.g., local context, syllable-scale spans, onset–nucleus–coda and long-range vowel/consonant dependencies). For each frame t, we crop an aligned h×h sub-map from each global template, normalize it into token-to-token weights, apply it to values, and mix the result with multi-head self-attention via learned gates. This adds few parameters, regularizes attention toward speech-appropriate structures, and reduces overfitting in low-resource transfer.\n\nSecond, we replace standard pseudo-label pretraining with Rendition-Stack Consistency. For each text segment, we form a stack of heterogeneous audio renditions: diverse multi-speaker TTS, speed/pitch/noise perturbations, and optional voice-converted in-domain utterances aligned to that text. We enforce a denoising consistency objective that pulls encoder and decoder hidden states for all items in a stack toward a shared text-conditioned prototype (computed as the moving-average feature of a random pair in the stack), using a cosine similarity loss at multiple layers. The supervised head (CTC or transducer) is trained on the small real labeled set only; stacks do not require frame-level alignments. This consolidates speaker, channel, and prosody variation while keeping content fixed, yielding invariant features that transfer across accents and domains with minimal labels.\n\nThird, we introduce Listwise Hypothesis Distillation without ground truth to exploit unlabeled in-domain audio. The current ASR produces n-best hypotheses per utterance. A composite scorer (domain LM, pronunciation/lexicon prior, and an LLM judge scoring semantic plausibility for the target domain) induces a strict ranking over the n-best. We optimize the acoustic model and fusion weights with a differentiable listwise loss (e.g., weighted RankNet/Plackett–Luce) so that the model’s scores respect the external ranking. To avoid hurting partially correct hypotheses, we filter “negatives” with an LLM that flags hypotheses containing correct substrings/entities as ambiguous rather than incorrect; only truly irrelevant hypotheses contribute as negatives. This converts readily-available priors into powerful, label-free supervision that goes beyond top-1 pseudo-labels.\n\nFinally, we drive synthetic data generation with Look-ahead Curriculum Planning. We define coverage goals (“skills”) over phoneme n-grams, tones/prosody patterns, morphology, and domain entity pronunciation variants. Simple regressors estimate the expected WER improvement from adding a candidate synthetic batch given the model’s current confusion profile and the batch’s coverage statistics. A short-horizon tree search samples generation actions (speaker/pace/noise profiles, lexicon variants, entity lists), prunes low-value branches via success predictors, and chooses the next synthetic batch to materialize from TTS/VC. We alternate planning–generation–training rounds, annealing the synthetic mix as the model’s uncertainty shrinks. Throughout, GTPA parameters are shared across languages and updated jointly, enabling cross-lingual transfer of temporal priors even when labeled target data is scarce.\n\nTraining schedule: warm-start the encoder on any public speech with masked prediction only to stabilize features; insert GTPA and fine-tune briefly on the small labeled set to set the supervised head; then alternate (a) Rendition-Stack Consistency on synthetic stacks, (b) Listwise Hypothesis Distillation on unlabeled in-domain audio, and (c) Look-ahead Curriculum Planning to choose the next synthetic tranche. Decode with a light domain LM (or shallow fusion) during the listwise phase; remove or down-weight it at the end if end-to-end decoding is desired. This end-to-end process reaches competitive accuracy with minimal real labels by combining structure priors, label-free listwise supervision, and planned synthetic coverage.",
+    "final_rationale": "GTPA injects reusable, speech-appropriate attention structure into the encoder, improving generalization when labeled target data is limited and reducing the burden on data to teach long- and mid-range temporal dependencies. Rendition-Stack Consistency exploits abundant synthetic variation anchored to identical text to explicitly disentangle content from nuisance factors, providing stronger invariance than standard augmentation alone while consuming no additional labels. Listwise Hypothesis Distillation turns readily available external knowledge (domain LM, lexicon, LLM semantic judgments) into a dense supervision signal on unlabeled audio, leveraging the full n-best list rather than brittle top-1 pseudo-labels and guarding against false-negative penalties.\n\nThe look-ahead synthetic curriculum addresses the core inefficiency of naive TTS augmentation: not all synthetic utterances are equally useful. By planning over phonetic/prosodic/entity coverage with simple, learned improvement predictors, the system preferentially generates batches that close the model’s current weaknesses, yielding faster gains under a fixed synthetic budget. These mechanisms are complementary: structure priors ease transfer, stack consistency builds robust representations, listwise distillation aligns scoring to domain semantics without labels, and planning ensures synthetic data is targeted, together enabling competitive ASR with minimal real supervision.",
+    "final_inspired_by": [
+      {
+        "seed_id": "4d9e4295a8f0",
+        "domain": "CV",
+        "borrowed_aspect": "global attention maps mixed with self-attention to encode reusable structure"
+      },
+      {
+        "seed_id": "eedb9fef0129",
+        "domain": "CV",
+        "borrowed_aspect": "semantic stacking consistency loss to denoise representations"
+      },
+      {
+        "seed_id": "cdb65a898b67",
+        "domain": "IR_REC",
+        "borrowed_aspect": "listwise ranking distillation using differentiable rank losses"
+      },
+      {
+        "seed_id": "ac9d79a4fd87",
+        "domain": "IR_REC",
+        "borrowed_aspect": "LLM-based filtering to remove false negatives from candidate sets"
+      },
+      {
+        "seed_id": "8c68da056026",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "look-ahead planning with coarse success models to choose actions"
+      },
+      {
+        "seed_id": "d54cefc9ff77",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "attention-based relevance localization to emphasize task-relevant regions"
+      }
+    ],
+    "wall_clock_s": 304.2,
+    "cost": {
+      "gen_prompt_tokens": 13686,
+      "gen_completion_tokens": 11357,
+      "judge_prompt_tokens": 184916,
+      "judge_completion_tokens": 2282,
+      "gen_cost_usd": 0.1307,
+      "judge_cost_usd": 0.589,
+      "total_cost_usd": 0.7197
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Start from a strong self-supervised ASR backbone (e.g., a multilingual wav2vec-style encoder with a CTC/Transducer head) and keep it largely frozen. Insert lightweight, domain- and language-specific adapters in several transformer blocks, and add a single global, learnable acoustic prompt in the front end (a small time–frequency convolutional residual that perturbs inputs). Train only the adapters, the prompt, and the final prediction head on a few hours of real transcribed audio to anchor the mapping for the target language/domain. Maintain a small held-out dev set for thresholding and early stopping.\n\nCreate abundant paired data by synthesizing speech from large in-domain text. Use multi-speaker TTS when available; otherwise rely on cross-lingual TTS/voice conversion or a phoneme-based TTS seeded by grapheme-to-phoneme rules shared with related languages. Match target acoustics via augmentation and style transfer (reverberation, noise, channel, speaking rate, accent perturbations). Jointly train with two auxiliary objectives that do not need transcripts: masked acoustic modeling on unlabeled audio to stabilize the frozen backbone’s features, and a mix-and-separate branch trained on synthetic source mixtures to learn to suppress interferers and noise. Train or adapt a small domain language model on the same text for shallow fusion at decode time.\n\nLeverage unlabeled in-domain audio with teacher-guided self-training. Generate pseudo-transcripts using a strong external teacher ASR and score each utterance and token for confidence. Equip the student with a cheap deterministic uncertainty head that reads pre-logit representations and outputs per-utterance confidence; filter or down-weight pseudo-labels using the minimum of teacher and student confidence. Aggregate data iteratively in a DAgger-like loop: each round, add high-confidence pseudo-labeled segments and a budget of disagreement-focused segments where the teacher is confident but the student errs, so learning targets the student’s blind spots. Balance batches across gold, synthetic, and pseudo data, gradually shifting weight toward confident in-domain pseudo data as training progresses.\n\nReduce domain mismatch with feature-level adversarial alignment between target-domain unlabeled audio and the synthetic/limited labeled pool, applied on the shared encoder features while keeping the backbone frozen. For low-confidence segments, replace hard labels with consistency regularization: enforce prediction stability under strong acoustic augmentations rather than trusting noisy text. Update the global acoustic prompt with an uncertainty-guided EMA so it adapts more on hard, uncertain samples and stabilizes on easy ones. To prevent confirmation bias, keep the external teacher fixed (or use a slow EMA teacher distinct from the student), gate all threshold updates on the held-out dev set, and stop self-training rounds when dev WER plateaus.\n\nAt inference, enable the learned acoustic prompt and target adapters, decode with beam search and shallow-fused domain LM, and optionally run the separation-enhancement branch for noisy inputs. This configuration preserves the pretrained model’s generalization, adds only small domain-specific parameters, and exploits synthetic text and unlabeled audio to approach competitive accuracy with minimal real transcripts.",
+        "rationale": "The backbone contributes powerful acoustic-linguistic representations; adapting only small adapters and a global acoustic prompt exploits that capacity with few labeled examples, reflecting evidence that much task ability is already present in pretrained networks. Synthetic TTS pairs inject large, domain-relevant supervision while auxiliary masked modeling and mix-and-separate training improve robustness to noise and overlapping speech without extra labels. A teacher-driven, confidence-weighted self-training loop converts unlabeled audio into useful supervision and focuses learning where the student most needs it, while deterministic uncertainty filtering and dev-set gating curb self-training bias. Adversarial alignment and uncertainty-guided prompt updates further close the domain gap with minimal additional parameters.\n\nTogether, these pieces turn abundant unlabeled audio and text into effective training signals, keep the finetuning footprint small, and mitigate the failure modes of naive pseudo-labeling. The result is a practical path to competitive ASR accuracy in low-resource languages or specialized domains using only a few hours of real transcriptions.",
+        "inspired_by": [
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "learnable input prompts with uncertainty-guided EMA and adversarial alignment"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "DAgger-style pseudo-target aggregation to reduce distribution shift"
+          },
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "reliance on pretrained backbones with minimal task-specific tuning"
+          },
+          {
+            "seed_id": "f41ac7143cfe",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "auxiliary mix-and-separate training to strengthen audio disambiguation"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "deterministic uncertainty head for fast confidence estimation"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "mitigation of self-training bias via external evaluation and fixed teacher"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared backbone with domain-specific components"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method is a complex multi-component system combining: (1) frozen SSL backbone + adapters for low-resource ASR (well-established, surfaced multiple papers), (2) learnable acoustic/input prompt (INTapt uses adversarial prompt tuning for ASR; Front-End Adapter paper; UniPET-SPK combines adapters+prompts), (3) TTS synthetic data augmentation (surfaced in multiple papers), (4) masked acoustic modeling + mix-and-separate auxiliary objectives (partially related to wav2vec masking), (5) teacher-student self-training with confidence filtering (DUST paper surfaces this for ASR), (6) DAgger-like disagreement-focused sampling loop (not directly surfaced for ASR), (7) adversarial domain alignment on encoder features (not directly surfaced for ASR in this combination), and (8) uncertainty-guided EMA prompt updates (VPLU from seed 8 does this for vision, not ASR). No single paper combines all these mechanisms. The closest individual components are covered, but the specific combination of uncertainty-guided EMA acoustic prompt updates + DAgger-like disagreement sampling + adversarial alignment + mix-and-separate auxiliary training for low-resource ASR has not been surfaced as a joint published method. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this exact problem, with several named design choices (uncertainty-guided EMA prompt, DAgger-like disagreement loop) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - Efficient Adapter Transfer of Self-Supervised Speech Models for ASR (2022): adapter tuning of wav2vec 2.0 for ASR with frozen backbone\n  - Meta-Adapter for Self-Supervised Speech Models (2024): adapter-based low-resource ASR adaptation\n  - INTapt: Information-Theoretic Adversarial Prompt Tuning for Non-Native ASR (2023): adversarial input prompt tuning for ASR without updating backbone weights\n  - On Unsupervised Uncertainty-Driven Speech Pseudo-Label Filtering (DUST) (2022): uncertainty-based pseudo-label filtering for self-training in ASR\n  - Cloud-Device Collaborative Adaptation (VPLU) (2022): uncertainty-guided EMA prompt updates + adversarial alignment + pseudo-label filtering for vision domain adaptation (same mechanism family, different modality)\n  - GigaSpeech 2 (2024): iterative noisy student training with pseudo-label refinement for low-resource ASR\n  - Doing More with Less: Sudanese ASR (2026): combined self-training + TTS augmentation for low-resource ASR",
+        "prior_works": [
+          "Efficient Adapter Transfer of Self-Supervised Speech Models for ASR (2022): adapter tuning of wav2vec 2.0 for ASR with frozen backbone",
+          "Meta-Adapter for Self-Supervised Speech Models (2024): adapter-based low-resource ASR adaptation",
+          "INTapt: Information-Theoretic Adversarial Prompt Tuning for Non-Native ASR (2023): adversarial input prompt tuning for ASR without updating backbone weights",
+          "On Unsupervised Uncertainty-Driven Speech Pseudo-Label Filtering (DUST) (2022): uncertainty-based pseudo-label filtering for self-training in ASR",
+          "Cloud-Device Collaborative Adaptation (VPLU) (2022): uncertainty-guided EMA prompt updates + adversarial alignment + pseudo-label filtering for vision domain adaptation (same mechanism family, different modality)",
+          "GigaSpeech 2 (2024): iterative noisy student training with pseudo-label refinement for low-resource ASR",
+          "Doing More with Less: Sudanese ASR (2026): combined self-training + TTS augmentation for low-resource ASR"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Start from a strong self-supervised ASR backbone (e.g., a multilingual wav2vec-style encoder with a CTC/Transducer head) and keep it largely frozen. Insert lightweight, domain- and language-specific adapters in several transformer blocks, and add a single global, learnable acoustic prompt in the front end (a small time–frequency convolutional residual that perturbs inputs). Train only the adapters, the prompt, and the final prediction head on a few hours of real transcribed audio to anchor the mapping for the target language/domain. Maintain a small held-out dev set for thresholding and early stopping.\n\nCreate abundant paired data by synthesizing speech from large in-domain text. Use multi-speaker TTS when available; otherwise rely on cross-lingual TTS/voice conversion or a phoneme-based TTS seeded by grapheme-to-phoneme rules shared with related languages. Match target acoustics via augmentation and style transfer (reverberation, noise, channel, speaking rate, accent perturbations). Jointly train with two auxiliary objectives that do not need transcripts: masked acoustic modeling on unlabeled audio to stabilize the frozen backbone’s features, and a mix-and-separate branch trained on synthetic source mixtures to learn to suppress interferers and noise. Train or adapt a small domain language model on the same text for shallow fusion at decode time.\n\nLeverage unlabeled in-domain audio with teacher-guided self-training. Generate pseudo-transcripts using a strong external teacher ASR and score each utterance and token for confidence. Equip the student with a cheap deterministic uncertainty head that reads pre-logit representations and outputs per-utterance confidence; filter or down-weight pseudo-labels using the minimum of teacher and student confidence. Aggregate data iteratively in a DAgger-like loop: each round, add high-confidence pseudo-labeled segments and a budget of disagreement-focused segments where the teacher is confident but the student errs, so learning targets the student’s blind spots. Balance batches across gold, synthetic, and pseudo data, gradually shifting weight toward confident in-domain pseudo data as training progresses.\n\nReduce domain mismatch with feature-level adversarial alignment between target-domain unlabeled audio and the synthetic/limited labeled pool, applied on the shared encoder features while keeping the backbone frozen. For low-confidence segments, replace hard labels with consistency regularization: enforce prediction stability under strong acoustic augmentations rather than trusting noisy text. Update the global acoustic prompt with an uncertainty-guided EMA so it adapts more on hard, uncertain samples and stabilizes on easy ones. To prevent confirmation bias, keep the external teacher fixed (or use a slow EMA teacher distinct from the student), gate all threshold updates on the held-out dev set, and stop self-training rounds when dev WER plateaus.\n\nAt inference, enable the learned acoustic prompt and target adapters, decode with beam search and shallow-fused domain LM, and optionally run the separation-enhancement branch for noisy inputs. This configuration preserves the pretrained model’s generalization, adds only small domain-specific parameters, and exploits synthetic text and unlabeled audio to approach competitive accuracy with minimal real transcripts.",
+    "final_rationale": "The backbone contributes powerful acoustic-linguistic representations; adapting only small adapters and a global acoustic prompt exploits that capacity with few labeled examples, reflecting evidence that much task ability is already present in pretrained networks. Synthetic TTS pairs inject large, domain-relevant supervision while auxiliary masked modeling and mix-and-separate training improve robustness to noise and overlapping speech without extra labels. A teacher-driven, confidence-weighted self-training loop converts unlabeled audio into useful supervision and focuses learning where the student most needs it, while deterministic uncertainty filtering and dev-set gating curb self-training bias. Adversarial alignment and uncertainty-guided prompt updates further close the domain gap with minimal additional parameters.\n\nTogether, these pieces turn abundant unlabeled audio and text into effective training signals, keep the finetuning footprint small, and mitigate the failure modes of naive pseudo-labeling. The result is a practical path to competitive ASR accuracy in low-resource languages or specialized domains using only a few hours of real transcriptions.",
+    "final_inspired_by": [
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "learnable input prompts with uncertainty-guided EMA and adversarial alignment"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "DAgger-style pseudo-target aggregation to reduce distribution shift"
+      },
+      {
+        "seed_id": "a9647aa8fe5e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "reliance on pretrained backbones with minimal task-specific tuning"
+      },
+      {
+        "seed_id": "f41ac7143cfe",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "auxiliary mix-and-separate training to strengthen audio disambiguation"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "deterministic uncertainty head for fast confidence estimation"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "mitigation of self-training bias via external evaluation and fixed teacher"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared backbone with domain-specific components"
+      }
+    ],
+    "wall_clock_s": 119.18,
+    "cost": {
+      "gen_prompt_tokens": 4801,
+      "gen_completion_tokens": 4389,
+      "judge_prompt_tokens": 130539,
+      "judge_completion_tokens": 1310,
+      "gen_cost_usd": 0.0499,
+      "judge_cost_usd": 0.4113,
+      "total_cost_usd": 0.4612
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel elements are the Global Temporal Prior Attention (GTPA) module with reusable attention templates encoding speech-structural priors, the Rendition-Stack Consistency objective that pulls encoder/decoder states toward a text-conditioned prototype across heterogeneous audio renditions, and especially the Listwise Hypothesis Distillation using an LLM judge with a differentiable listwise ranking loss and LLM-based negative filtering — these are non-trivial combinations not easily found in existing literature. The Look-ahead Curriculum Planning via tree search over synthetic generation actions is also a distinctive mechanism. Method B combines well-established techniques: adapter fine-tuning, acoustic prompting, TTS-based data augmentation, masked acoustic modeling, adversarial domain alignment, DAgger-style self-training with teacher-student confidence filtering, and EMA-based prompt updates. While Method B is a competent and coherent system, each of its components has clear precedents in the literature (adapter tuning for ASR, pseudo-label filtering, adversarial alignment, DAgger). Method A introduces at least two genuinely novel mechanisms (GTPA and Listwise Hypothesis Distillation with LLM-guided negative filtering) that would be hard to surface in prior work in this exact form."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is the lack of transcribed audio for low-resource languages or specialized domains, requiring mechanisms that leverage synthetic data and/or transfer learning to reach competitive accuracy with minimal real labeled data. Method A addresses this through: (1) a temporal prior attention module that regularizes attention for low-resource transfer, (2) rendition-stack consistency that uses heterogeneous synthetic audio renditions to learn invariant features without frame-level alignments, (3) listwise hypothesis distillation that converts unlabeled audio into supervision via external ranking signals, and (4) look-ahead curriculum planning that strategically generates synthetic data targeting coverage gaps. Method B addresses this through: (1) frozen pretrained backbone with lightweight adapters trained on minimal real data, (2) TTS-based synthetic data generation with acoustic augmentation, (3) teacher-guided self-training with confidence filtering on unlabeled audio, and (4) adversarial feature alignment to reduce domain mismatch. Both methods directly engage the failure mode with traceable causal pathways from the problem (lack of transcribed audio) to specific method steps. Method B's mechanisms are more directly and cleanly tied to the core failure mode: the frozen backbone preserves pretrained knowledge while adapters minimize the labeled data needed, synthetic TTS directly substitutes for missing transcribed audio, and the self-training loop with confidence filtering directly exploits unlabeled in-domain audio. Method A's mechanisms are also valid but involve more peripheral components (e.g., the GTPA module addresses overfitting rather than the data scarcity problem directly). Both are comparably direct, but Method B's overall architecture is more tightly organized around the specific failure mode of minimal labeled data."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A introduces several novel components (GTPA, Rendition-Stack Consistency, Listwise Hypothesis Distillation, Look-ahead Curriculum Planning) that each have internal logic, but the combination creates coherence concerns. The Look-ahead Curriculum Planning step requires \"simple regressors\" to predict WER improvement from synthetic batches and a \"short-horizon tree search\" over generation actions — these components presuppose labeled evaluation data sufficient to train such regressors, which contradicts the low-resource premise. Additionally, the Listwise Hypothesis Distillation step uses an LLM judge to rank n-best hypotheses and filter ambiguous negatives, but the interaction between the LLM filtering and the differentiable listwise loss is underspecified (how LLM categorical judgments feed into a differentiable loss is not explained). Method B is more straightforward: freeze a pretrained backbone, add adapters and a learnable prompt, synthesize data via TTS, use teacher-student self-training with confidence filtering, and apply adversarial domain alignment. Each step has clear prerequisites and outputs that feed naturally into the next. The main potential coherence issue — applying masked acoustic modeling to \"stabilize the frozen backbone's features\" when the backbone is frozen — is a minor inconsistency, but the overall pipeline is implementable without redesigning components. Method A's tree-search curriculum planner and the LLM-to-differentiable-loss interface represent more serious coherence gaps than anything in Method B."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6360,
+    "judge_completion_tokens": 1006,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0342,
+    "total_cost_usd": 0.0342
+  }
+}

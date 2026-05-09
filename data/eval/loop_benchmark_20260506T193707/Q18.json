@@ -1,0 +1,324 @@
+{
+  "query_id": "Q18",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Large generalist models are accurate but expensive; smaller\nspecialists are cheap but worse on the specialist's own\ndomain; how can we transfer the relevant generalist capability\nto a small specialist?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Skill-Sliced, Confidence-Weighted Distillation (S2CWD): an end-to-end pipeline that identifies the subset of a large generalist’s competencies that actually help on the target domain, and transfers them into a compact specialist via hypernetwork-generated adapters trained under multi-granularity supervision. The pipeline has four stages: (1) capability discovery and selection from the generalist, (2) parameter-efficient student architecture with skill adapters, (3) structured, multi-objective distillation with width-slicing, and (4) data-mix reweighting and deployment policy.\n\nStage 1 — Capability discovery and selection: Run the generalist on a specialist development set to extract per-instance signals: logits, intermediate features, optional expert/router activations (if MoE), and a calibrated confidence for each prediction. Treat candidate “skills” as teacher sub-components (experts/layers/prompts) or elicitation modes (instruction templates). Score each skill on (i) relevance to the specialist task and (ii) complementarity to already chosen skills. Formulate skill set selection as greedy maximization of a submodular objective that rewards relevance and diversity; use the teacher’s confidence to weight instance contributions and optionally discard low-confidence transfer signals. This yields a compact, diverse bank of K skills to transfer, avoiding negative transfer from weak or redundant teacher components.\n\nStage 2 — Student with hyper-adapter skill bank: Start from a small specialist backbone and insert lightweight adapters (e.g., LoRA/adapter blocks and attention prefixes) at a few layers. Rather than training a separate adapter per skill, use a tiny hypernetwork that takes a learned “skill token” (one per selected teacher skill) and generates the adapter/prefix weights on the fly. Inputs that activate different skills thus apply different adapter weights while keeping base parameters mostly frozen. A small routing head selects one or a few skills per instance using student-accessible signals (e.g., input features), defaulting to a static prior if routing is disallowed at inference.\n\nStage 3 — Structured, multi-granularity distillation: Train the student with a composite loss. (a) Confidence-weighted soft distillation: KL between student and teacher logits with temperature scaling, reweighted by the teacher’s calibrated confidence and restricted to the selected skill views. (b) Listwise/structured distillation where applicable (ranking, generation with preference lists): optimize a differentiable listwise loss against teacher-provided orderings or preferences. (c) Language-grounded auxiliaries: attach a small text head and train CLIP-style contrastive and a lightweight generative loss that align inputs with short “capability sketches” (skill- or task-descriptions) derived from the selected skills, anchoring the student’s latent space to portable semantics. (d) Matryoshka width-slicing: apply structured masking so the student is supervised at multiple smaller widths in the same pass, adding explicit losses for each slice to ensure robustness under tight latency budgets.\n\nStage 4 — Data-mix reweighting and deployment: Build a unified training mix from specialist-domain data and a curated, capability-matched subset of generalist data. Compute per-source sampling weights from a balanced dev set by minimizing held-out perplexity/loss under a lightweight interpolation model, then resample accordingly during training. At inference, deploy the smallest width that meets latency, with static hyper-adapter weights materialized for the top-M skills or on-the-fly generation if memory allows. A confidence-aware gate can disable skill adapters on inputs where the student is already certain, preserving efficiency.",
+        "rationale": "The core challenge is to import only the useful parts of a strong generalist into a compact model without inheriting its full cost or unrelated behaviors. S2CWD tackles this by first selecting a small, diverse subset of generalist skills that demonstrably transfer on the target domain, explicitly avoiding negative transfer. It then injects those skills through parameter-efficient hyper-adapters, so the small specialist gains targeted capacity where it matters while keeping most weights frozen and latency low.\n\nStructured, confidence-weighted distillation preserves fine-grained teacher behavior (including orderings and preferences) and emphasizes reliable signals, while language-grounded auxiliary objectives provide a modality- and task-agnostic scaffold that helps the compact model retain generalist-style abstractions. Finally, Matryoshka width-slicing ensures the student is accurate even at reduced widths, and data-mix reweighting stabilizes training across domain and capability sources—together delivering a specialist that surpasses its baseline on-domain performance with only the relevant generalist capabilities transferred.",
+        "inspired_by": [
+          {
+            "seed_id": "57c5f2ddafa9",
+            "domain": "IR_REC",
+            "borrowed_aspect": "nested multi-width supervision via structured masking (Matryoshka training)"
+          },
+          {
+            "seed_id": "3a488de3ce14",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "hypernetwork-generated adapters and prefixes to modulate a frozen backbone"
+          },
+          {
+            "seed_id": "34be59a6706d",
+            "domain": "CV",
+            "borrowed_aspect": "submodular selection of a diverse, high-gain subset (skill selection)"
+          },
+          {
+            "seed_id": "1f5ed9324f38",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "confidence-aware expert selection and weighting"
+          },
+          {
+            "seed_id": "cdb65a898b67",
+            "domain": "IR_REC",
+            "borrowed_aspect": "listwise distillation from teacher-provided orderings"
+          },
+          {
+            "seed_id": "236e8a49f8f1",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "language-grounded contrastive and generative auxiliary objectives"
+          },
+          {
+            "seed_id": "66b64d69856d",
+            "domain": "SPEECH",
+            "borrowed_aspect": "data sampling reweighting across applications using dev-set interpolation"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal that individual components of S2CWD exist in prior work: hypernetwork-generated adapters for multi-task learning (HyperLoader, Hyper-X), submodular source model selection for ensemble transfer (the inspired seed on OSBORN), Matryoshka/width-slicing for recommendation (fMRLRec seed), confidence-weighted distillation (various), and language-grounded contrastive auxiliary losses (FuSe seed, MedAlign). However, no search surfaced any paper that combines all or even most of these mechanisms — submodular skill selection from a generalist, hypernetwork-generated skill-specific adapters, confidence-weighted multi-granularity distillation with Matryoshka width-slicing, and language-grounded capability-sketch contrastive losses — into a unified generalist-to-specialist transfer pipeline. The closest individual overlaps are HyperLoader (hypernetwork adapters for multi-task) and the submodular ensemble selection work, but neither combines these with confidence-weighted distillation and Matryoshka slicing for the generalist-to-specialist problem. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms found separately but not their combination as proposed. The one element that might push toward 5 is the \"capability sketch\" language-grounded contrastive auxiliary, but this has partial precedent in FuSe. Overall this is a strong Score 4.\n\nPrior works:\n  - HyperLoader (2024): hypernetwork generates LoRA/adapter weights per task in multi-task transformers — overlaps with Stage 2 hypernetwork adapter bank\n  - Hyper-X (2022): hypernetwork generates adapter weights conditioned on task and language embeddings for multilingual multi-task transfer — overlaps with Stage 2\n  - Building a Winning Team / OSBORN (2023): submodular greedy selection of source model subsets for ensemble transfer, avoiding negative transfer — overlaps with Stage 1 submodular skill selection\n  - fMRLRec (2024): Matryoshka width-slicing with multi-granularity losses in a single training pass — overlaps with Stage 3 width-slicing\n  - FuSe (2025): language-grounded contrastive + generative auxiliary losses for cross-modal distillation — overlaps with Stage 3 language-grounded auxiliaries\n  - MedAlign (2025): CLIP-style distillation with spatial and attention losses from domain-specific teacher to VLM — overlaps with Stage 3 contrastive distillation",
+        "prior_works": [
+          "HyperLoader (2024): hypernetwork generates LoRA/adapter weights per task in multi-task transformers — overlaps with Stage 2 hypernetwork adapter bank",
+          "Hyper-X (2022): hypernetwork generates adapter weights conditioned on task and language embeddings for multilingual multi-task transfer — overlaps with Stage 2",
+          "Building a Winning Team / OSBORN (2023): submodular greedy selection of source model subsets for ensemble transfer, avoiding negative transfer — overlaps with Stage 1 submodular skill selection",
+          "fMRLRec (2024): Matryoshka width-slicing with multi-granularity losses in a single training pass — overlaps with Stage 3 width-slicing",
+          "FuSe (2025): language-grounded contrastive + generative auxiliary losses for cross-modal distillation — overlaps with Stage 3 language-grounded auxiliaries",
+          "MedAlign (2025): CLIP-style distillation with spatial and attention losses from domain-specific teacher to VLM — overlaps with Stage 3 contrastive distillation"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Skill-Sliced, Confidence-Weighted Distillation (S2CWD): an end-to-end pipeline that identifies the subset of a large generalist’s competencies that actually help on the target domain, and transfers them into a compact specialist via hypernetwork-generated adapters trained under multi-granularity supervision. The pipeline has four stages: (1) capability discovery and selection from the generalist, (2) parameter-efficient student architecture with skill adapters, (3) structured, multi-objective distillation with width-slicing, and (4) data-mix reweighting and deployment policy.\n\nStage 1 — Capability discovery and selection: Run the generalist on a specialist development set to extract per-instance signals: logits, intermediate features, optional expert/router activations (if MoE), and a calibrated confidence for each prediction. Treat candidate “skills” as teacher sub-components (experts/layers/prompts) or elicitation modes (instruction templates). Score each skill on (i) relevance to the specialist task and (ii) complementarity to already chosen skills. Formulate skill set selection as greedy maximization of a submodular objective that rewards relevance and diversity; use the teacher’s confidence to weight instance contributions and optionally discard low-confidence transfer signals. This yields a compact, diverse bank of K skills to transfer, avoiding negative transfer from weak or redundant teacher components.\n\nStage 2 — Student with hyper-adapter skill bank: Start from a small specialist backbone and insert lightweight adapters (e.g., LoRA/adapter blocks and attention prefixes) at a few layers. Rather than training a separate adapter per skill, use a tiny hypernetwork that takes a learned “skill token” (one per selected teacher skill) and generates the adapter/prefix weights on the fly. Inputs that activate different skills thus apply different adapter weights while keeping base parameters mostly frozen. A small routing head selects one or a few skills per instance using student-accessible signals (e.g., input features), defaulting to a static prior if routing is disallowed at inference.\n\nStage 3 — Structured, multi-granularity distillation: Train the student with a composite loss. (a) Confidence-weighted soft distillation: KL between student and teacher logits with temperature scaling, reweighted by the teacher’s calibrated confidence and restricted to the selected skill views. (b) Listwise/structured distillation where applicable (ranking, generation with preference lists): optimize a differentiable listwise loss against teacher-provided orderings or preferences. (c) Language-grounded auxiliaries: attach a small text head and train CLIP-style contrastive and a lightweight generative loss that align inputs with short “capability sketches” (skill- or task-descriptions) derived from the selected skills, anchoring the student’s latent space to portable semantics. (d) Matryoshka width-slicing: apply structured masking so the student is supervised at multiple smaller widths in the same pass, adding explicit losses for each slice to ensure robustness under tight latency budgets.\n\nStage 4 — Data-mix reweighting and deployment: Build a unified training mix from specialist-domain data and a curated, capability-matched subset of generalist data. Compute per-source sampling weights from a balanced dev set by minimizing held-out perplexity/loss under a lightweight interpolation model, then resample accordingly during training. At inference, deploy the smallest width that meets latency, with static hyper-adapter weights materialized for the top-M skills or on-the-fly generation if memory allows. A confidence-aware gate can disable skill adapters on inputs where the student is already certain, preserving efficiency.",
+    "final_rationale": "The core challenge is to import only the useful parts of a strong generalist into a compact model without inheriting its full cost or unrelated behaviors. S2CWD tackles this by first selecting a small, diverse subset of generalist skills that demonstrably transfer on the target domain, explicitly avoiding negative transfer. It then injects those skills through parameter-efficient hyper-adapters, so the small specialist gains targeted capacity where it matters while keeping most weights frozen and latency low.\n\nStructured, confidence-weighted distillation preserves fine-grained teacher behavior (including orderings and preferences) and emphasizes reliable signals, while language-grounded auxiliary objectives provide a modality- and task-agnostic scaffold that helps the compact model retain generalist-style abstractions. Finally, Matryoshka width-slicing ensures the student is accurate even at reduced widths, and data-mix reweighting stabilizes training across domain and capability sources—together delivering a specialist that surpasses its baseline on-domain performance with only the relevant generalist capabilities transferred.",
+    "final_inspired_by": [
+      {
+        "seed_id": "57c5f2ddafa9",
+        "domain": "IR_REC",
+        "borrowed_aspect": "nested multi-width supervision via structured masking (Matryoshka training)"
+      },
+      {
+        "seed_id": "3a488de3ce14",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "hypernetwork-generated adapters and prefixes to modulate a frozen backbone"
+      },
+      {
+        "seed_id": "34be59a6706d",
+        "domain": "CV",
+        "borrowed_aspect": "submodular selection of a diverse, high-gain subset (skill selection)"
+      },
+      {
+        "seed_id": "1f5ed9324f38",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "confidence-aware expert selection and weighting"
+      },
+      {
+        "seed_id": "cdb65a898b67",
+        "domain": "IR_REC",
+        "borrowed_aspect": "listwise distillation from teacher-provided orderings"
+      },
+      {
+        "seed_id": "236e8a49f8f1",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "language-grounded contrastive and generative auxiliary objectives"
+      },
+      {
+        "seed_id": "66b64d69856d",
+        "domain": "SPEECH",
+        "borrowed_aspect": "data sampling reweighting across applications using dev-set interpolation"
+      }
+    ],
+    "wall_clock_s": 165.94,
+    "cost": {
+      "gen_prompt_tokens": 7276,
+      "gen_completion_tokens": 7103,
+      "judge_prompt_tokens": 94807,
+      "judge_completion_tokens": 1162,
+      "gen_cost_usd": 0.0801,
+      "judge_cost_usd": 0.3019,
+      "total_cost_usd": 0.382
+    }
+  },
+  "d_loop": {
+    "rounds": 2,
+    "converged": true,
+    "final_score": 5,
+    "round_scores": [
+      3,
+      5
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Targeted Capability Distillation with Scaffolding (TCD-S): a budget-aware teacher–student transfer pipeline that moves only the generalist subskills relevant to a given specialist domain into a compact model. Start with a frozen large generalist teacher T and a small specialist student S. Assemble a modest labeled in-domain set L and a large unlabeled in-domain pool U. First, locate what to transfer: run layer-wise linear probes on T to identify intermediate representations that are maximally predictive of the specialist task, producing a prioritized set of teacher subspaces. Factor S’s representation into a shared capability subspace z_shared and a domain idiosyncrasy subspace z_dom; attach lightweight adapters/prompts on the shared path so z_shared is the receptacle for generalist knowledge while z_dom remains free to capture in-domain quirks.\n\nPerform parameter-efficient transfer into S via three aligned channels. (1) Representation alignment: map S’s z_shared to the probed teacher subspaces using a small set of adapters/prompts trained with a feature-matching loss, and an adversarial discriminator with gradient reversal to make S’s shared features indistinguishable from T’s in-domain features. (2) Prediction distillation: for selected examples, minimize a temperature-scaled KL between S and T, using T’s soft targets (and optional rationales) while preserving S’s domain head for calibration. (3) Uncertainty-guided updates: maintain an EMA of prompt/adapter parameters where the update weights grow with example uncertainty, so the limited capacity is preferentially spent on hard, capability-bearing cases without overfitting to easy ones.\n\nControl teacher budget with an active, two-stage data selection loop. Train a lightweight selector (or use S with a deterministic uncertainty head) to propose \"core\" samples from U that are both uncertain for S and diverse; then request T’s supervision only on this core set. Optionally prioritize samples where T and S disagree. This produces compact, high-leverage supervision batches where T’s generalist strengths matter most. Combine pseudo-labels (high-confidence T) and soft labels (temperature-scaled T) with confidence filtering. Optimize S with a multi-objective loss balancing representation alignment, distillation, and supervised loss on L, and learn the adapters/prompts jointly.\n\nAdopt a scaffolding schedule that gradually removes reliance on T. Early rounds allocate a generous teacher budget and higher distillation weight; subsequent rounds shrink both, and freeze portions of z_shared once alignment stabilizes. Continue fine-tuning z_dom against L to preserve domain idiosyncrasies. Use a held-out evaluation set and external metrics to guard against style-only gains. Stop once S matches or exceeds T’s in-domain accuracy under the target compute envelope. Optionally keep a tiny inference-time fallback: if S’s uncertainty surpasses a threshold and budget allows, route the instance to T; otherwise, run S alone for maximal efficiency.\n\nDeployment consists solely of S plus its small adapters/prompts and an uncertainty head. This design cleanly separates transferred generalist capability (z_shared + adapters/prompts) from specialist nuance (z_dom), concentrates teacher supervision on the most informative in-domain samples, and phases out teacher dependence as S internalizes the relevant skills.",
+        "rationale": "The core challenge is to capture only the generalist abilities that help within the specialist’s domain, without bloating the small model. TCD-S addresses this by (a) identifying teacher layers that encode domain-relevant signals via probing, (b) dedicating a compact shared subspace in the student to receive those signals, and (c) using parameter-efficient modules (prompts/adapters) plus adversarial alignment to import the representations rather than wholesale copying. Active, uncertainty-driven selection focuses the limited teacher budget on the few in-domain cases where generalist knowledge actually moves the needle, and confidence filtering prevents propagating teacher mistakes.\n\nA curriculum-like scaffolding then reduces teacher assistance over time, ensuring the student becomes self-sufficient. Finally, explicit uncertainty estimation and external evaluation mitigate self-bias during training and enable an optional, bounded fallback at inference. Together, these design choices transfer the relevant generalist capability into a small specialist that is accurate on its own domain and cheap to run.",
+        "inspired_by": [
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "layer-wise linear probing to locate transferable knowledge"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "latent factorization into shared and domain-specific components"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "parameter-efficient prompts and uncertainty-guided updates with adversarial feature alignment and pseudo-label transfer"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector to focus supervision on core informative samples"
+          },
+          {
+            "seed_id": "a680f4fc4baf",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "scaffolding curriculum that gradually removes assistance"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "deterministic uncertainty head for cheap sample selection and gating"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "anti-bias evaluation to avoid self-reinforcing but spurious improvements"
+          }
+        ],
+        "novelty_score": 3,
+        "novelty_reasoning": "TCD-S combines: (1) layer-wise probing to identify teacher subspaces, (2) shared/domain-specific subspace decomposition in the student, (3) adversarial feature alignment with GRL, (4) uncertainty-guided EMA updates for prompts/adapters, (5) active data selection from unlabeled pool, and (6) scaffolding curriculum reducing teacher dependence. The Cloud-Device Collaborative Adaptation paper (U-VPA/VPLU, CVPR 2022) is the closest single prior work — it covers uncertainty-guided EMA updates, adversarial feature alignment, pseudo-label transfer, and visual prompts for large-to-small model transfer. ELAD (ACL 2024) and active LLM-KD papers cover active learning + uncertainty-based sample selection for distillation. However, no single paper combines all of: layer-wise probing for teacher subspace identification, explicit shared/domain subspace decomposition in the student, adversarial alignment, uncertainty-guided EMA, active selection from unlabeled pool, AND scaffolding curriculum together. The VPLU paper covers a substantial subset (adversarial alignment + uncertainty EMA + pseudo-labels + prompts), making TCD-S a combination of known mechanisms with some novel additions (layer-wise probing for subspace identification, explicit z_shared/z_dom decomposition). This matches the Score 3-4 boundary. Since VPLU covers the core mechanisms (adversarial + uncertainty EMA + prompts + pseudo-labels) and active LLM-KD covers the active selection component, but no paper combines all these for the specific \"generalist-to-specialist\" framing with layer-wise probing and subspace decomposition, this sits at Score 3 — the combination of the same mechanism families has been applied to closely related problems (cloud-to-device transfer), even if not in this exact configuration.\n\nPrior works:\n  - Cloud-Device Collaborative Adaptation to Continual Changing Environments in the Real-World (2022): covers uncertainty-guided EMA prompt updates, adversarial feature alignment with GRL, pseudo-label transfer from large cloud model to small device model — the core mechanism cluster of TCD-S\n  - ELAD: Explanation-Guided Large Language Models Active Distillation (2024): combines active learning with uncertainty-based sample selection for LLM-to-small-model distillation\n  - Active LLM-based Knowledge Distillation for Session-based Recommendation (2024): active learning strategy selecting informative instances for LLM-to-student distillation with budget constraints\n  - LLM on a Budget: Active Knowledge Distillation for Efficient Classification (2025): uncertainty-based active sampling to reduce teacher API calls in LLM distillation",
+        "prior_works": [
+          "Cloud-Device Collaborative Adaptation to Continual Changing Environments in the Real-World (2022): covers uncertainty-guided EMA prompt updates, adversarial feature alignment with GRL, pseudo-label transfer from large cloud model to small device model — the core mechanism cluster of TCD-S",
+          "ELAD: Explanation-Guided Large Language Models Active Distillation (2024): combines active learning with uncertainty-based sample selection for LLM-to-small-model distillation",
+          "Active LLM-based Knowledge Distillation for Session-based Recommendation (2024): active learning strategy selecting informative instances for LLM-to-student distillation with budget constraints",
+          "LLM on a Budget: Active Knowledge Distillation for Efficient Classification (2025): uncertainty-based active sampling to reduce teacher API calls in LLM distillation"
+        ],
+        "feedback_used": null
+      },
+      {
+        "round_num": 2,
+        "method": "We propose CAGE-KD: Capability-Graph-Gated, EKF-Controlled Knowledge Distillation. The key idea is to first restructure a large generalist’s behavior on the specialist domain into a small, discrete set of transferable micro-capabilities, then equip a compact student with (a) lightweight capability gates that modulate a few late layers using a per-instance global attribute, and (b) a prototype layer that anchors the student’s decision regions around those capabilities. A tiny evidence selector identifies the core, task-relevant evidence from each input; only that evidence conditions the student’s gates and the teacher queries. We distill not only logits but also pairwise preference constraints that capture the generalist’s fine-grained ranking or choice behavior, using O(K) teacher calls over the top-K candidates.\n\nCapability discovery and scheduling are explicit. We build a directed capability graph whose nodes represent prerequisite skills uncovered from the generalist’s behavior under small evidence perturbations (identified by the selector) and its induced preference flips. Rather than running full probabilistic inference on this graph, we train a lightweight Bayesian network over capabilities with a sampling-based gradient estimator; this lets us (i) attribute which capabilities are currently gating performance and (ii) choose, at each step, the cheapest counterfactual intervention (mask/augment a specific evidence fragment) most likely to improve the student. During training rollouts, a pseudo-intervention demonstrator queries the generalist only on those targeted counterfactuals and on adjacent pairwise preferences among the top-K candidates, yielding efficient supervision that emphasizes the capability bottlenecks.\n\nThe student is augmented in two places. First, we add 2–3 late-layer capability gates: a small attention readout over the selected evidence produces a global attribute z_g that multiplicatively modulates those layers and is also fed into the final readout. Second, we insert a prototype discrimination layer before logits: a set of trainable prototypes each corresponds to a capability node, learning a discriminative latent geometry that provides single-pass uncertainty. Training optimizes three losses: (1) a standard KD loss on logits conditioned on the selected evidence; (2) a pairwise ranking loss derived from adjacent-swap constraints over the top-K items; and (3) a capability-consistency loss aligning the prototype activations with the capability BN’s current belief. We treat the adapter and prototype parameters as a controlled dynamical system and update them online with a Kalman-style optimizer that adaptively tunes step sizes to the stochasticity of the teacher signals, ensuring stable, fast convergence under tight query budgets.\n\nTo avoid drifting toward style-only or spurious gains, we integrate capability regression tests into the loop: for a subset of batches, the selector swaps or removes a single core evidence fragment predicted by the capability graph to be necessary/sufficient; the student must flip or preserve its decision accordingly. Failures down-weight the corresponding capability’s supervision and trigger additional pairwise constraints, mitigating self-evaluation bias. At inference, the pipeline uses only the tiny selector, the student with capability gates and prototypes, and no teacher calls; the global attribute and prototype uncertainty act as cheap, per-instance controllers to specialize behavior on the fly, preserving generalist-derived competence where it matters for the domain.",
+        "rationale": "CAGE-KD transfers the relevant generalist capability rather than raw outputs by (i) factorizing behavior into a capability graph discovered from counterfactual preference flips on core evidence, (ii) embedding those capabilities directly into the student’s representation via global-attribute gates and capability prototypes, and (iii) scheduling supervision toward the current capability bottlenecks. The pairwise-adjacent preference distillation captures the generalist’s fine-grained rankings with linear query complexity, while the prototype layer provides deterministic uncertainty to weight supervision toward reliable teacher signals and to regularize decision regions around capabilities.\n\nMechanistically, this differs from prior prompt/adversarial or uncertainty-EMA approaches: we use control-theoretic, Kalman-style online updates for stable, budget-aware adaptation; we learn and use a capability Bayesian network with sampling-based gradients to drive targeted counterfactual supervision without full inference; we compress preference structure via efficient adjacent-swap constraints; and we inject a per-instance global attribute to modulate select late layers, avoiding heavy prompts or GRL alignment. The result is a small specialist that retains the generalist’s high-value skills on its domain, with minimal runtime overhead and no dependence on the teacher at inference.",
+        "inspired_by": [
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector that extracts core, question-relevant evidence before expensive reasoning"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global attribute injected into intermediate updates and final readout to condition predictions"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "adjacent-swap pairwise ranking to distill preferences with O(K) comparisons"
+          },
+          {
+            "seed_id": "663d598bb0b9",
+            "domain": "CV",
+            "borrowed_aspect": "Kalman-style optimizer with momentum and adaptive noise for stable online parameter updates"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "sampling-based gradient estimator for Bayesian networks to learn and schedule capability dependencies without full inference"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based discriminative latent space with single-pass deterministic uncertainty"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "pseudo-interactive demonstrator concept to pick targeted counterfactual interventions during training rollouts"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "guardrails against self-improvement bias via tests that separate fluency/style from task-grounded capability changes"
+          }
+        ],
+        "novelty_score": 5,
+        "novelty_reasoning": "The proposed CAGE-KD method combines multiple mechanisms: (1) a capability graph discovered via counterfactual evidence perturbations and preference flips, (2) a Bayesian network with sampling-based gradients for capability scheduling, (3) Kalman/EKF-style optimizer for stable online KD updates, (4) global-attribute capability gates on late layers, (5) prototype discrimination layer for uncertainty, (6) adjacent-swap pairwise preference distillation with O(K) teacher queries, and (7) capability regression tests to mitigate self-evaluation bias. Searches surfaced GRKD (pairwise preference ranking in KD), GLIMPSE (adjacent-swap ranking), LDU (prototype discrimination for uncertainty), KOALA (Kalman optimizer), and the BN sampling-based gradient estimator from RL scheduling — but no paper combines these mechanisms together for generalist-to-specialist KD. The individual components are known, but their joint application in this specific framing (capability graph + BN scheduling + Kalman optimizer + gated global attributes + prototype uncertainty + adjacent-swap preference distillation) has no surfaced near-clone. This matches the Score 4-5 boundary: multiple mechanism families are combined with no surfaced joint application, and several named design choices (capability-graph-gated late layers, BN-driven counterfactual intervention scheduling, capability regression tests) are not present as such in any surfaced paper. The absence of any end-to-end match across all searches, combined with the novel named components (CAGE gates, capability BN scheduler, capability regression tests), supports a Score 5.\n\nPrior works:\n  - Group Relative Knowledge Distillation / GRKD (2025): pairwise preference ranking distillation from teacher to student, overlaps with the pairwise ranking loss component\n  - GLIMPSE (2024): adjacent-swap O(K) pairwise ranking for efficient inference, overlaps with the adjacent-swap preference distillation component\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): prototype discrimination layer for single-pass uncertainty, overlaps with the prototype layer component\n  - KOALA (2021): Kalman/momentum-based optimizer for neural network training, overlaps with the Kalman-style optimizer component\n  - Inductive-bias-driven RL scheduling with BN sampling-based gradients (2019): Bayesian network with sampling-based gradient estimator for scheduling, overlaps with the capability BN component\n  - SCOTT (2023): counterfactual reasoning objective in knowledge distillation for faithful rationale transfer, partial overlap with counterfactual supervision\n  - ActDistill (2025): graph-structured knowledge distillation from large VLA teacher to lightweight student, partial overlap with capability graph distillation",
+        "prior_works": [
+          "Group Relative Knowledge Distillation / GRKD (2025): pairwise preference ranking distillation from teacher to student, overlaps with the pairwise ranking loss component",
+          "GLIMPSE (2024): adjacent-swap O(K) pairwise ranking for efficient inference, overlaps with the adjacent-swap preference distillation component",
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): prototype discrimination layer for single-pass uncertainty, overlaps with the prototype layer component",
+          "KOALA (2021): Kalman/momentum-based optimizer for neural network training, overlaps with the Kalman-style optimizer component",
+          "Inductive-bias-driven RL scheduling with BN sampling-based gradients (2019): Bayesian network with sampling-based gradient estimator for scheduling, overlaps with the capability BN component",
+          "SCOTT (2023): counterfactual reasoning objective in knowledge distillation for faithful rationale transfer, partial overlap with counterfactual supervision",
+          "ActDistill (2025): graph-structured knowledge distillation from large VLA teacher to lightweight student, partial overlap with capability graph distillation"
+        ],
+        "feedback_used": "Your previous synthesis received a novelty score of 3/5 from a held-out novelty judge that ran a Semantic Scholar search.\n\nThe judge surfaced the following prior work that substantively covers your proposed mechanisms:\n  - Cloud-Device Collaborative Adaptation to Continual Changing Environments in the Real-World (2022): covers uncertainty-guided EMA prompt updates, adversarial feature alignment with GRL, pseudo-label transfer from large cloud model to small device model — the core mechanism cluster of TCD-S\n  - ELAD: Explanation-Guided Large Language Models Active Distillation (2024): combines active learning with uncertainty-based sample selection for LLM-to-small-model distillation\n  - Active LLM-based Knowledge Distillation for Session-based Recommendation (2024): active learning strategy selecting informative instances for LLM-to-student distillation with budget constraints\n  - LLM on a Budget: Active Knowledge Distillation for Efficient Classification (2025): uncertainty-based active sampling to reduce teacher API calls in LLM distillation\n\nJudge's reasoning: TCD-S combines: (1) layer-wise probing to identify teacher subspaces, (2) shared/domain-specific subspace decomposition in the student, (3) adversarial feature alignment with GRL, (4) uncertainty-guided EMA updates for prompts/adapters, (5) active data selection from unlabeled pool, and (6) scaffolding curriculum reducing teacher dependence. The Cloud-Device Collaborative Adaptation paper (U-VPA/VPLU, CVPR 2022) is the closest single prior work — it covers uncertainty-guided EMA updates, adversarial feature alignment, pseudo-label transfer, and visual prompts for large-to-small model transfer. ELAD (ACL 2024) and active LLM-KD papers cover active learning + uncertainty-based sample selection for distillation. However, no single paper combines all of: layer-wise probing for teacher subspace identification, explicit shared/domain subspace decomposition in the student, adversarial alignment, uncertainty-guided EMA, active selection from unlabeled pool, AND scaffolding curriculum together. The VPLU paper covers a substantial subset (adversarial alignment + uncertainty EMA + pseudo-labels + prompts), making TCD-S a combination of known mechanisms with some novel additions (layer-wise probing for subspace identification, explicit z_shared/z_dom decomposition). This matches the Score 3-4 boundary. Since VPLU covers the core mechanisms (adversarial + uncertainty EMA + prompts + pseudo-labels) and active LLM-KD covers the active selection component, but no paper combines all these for the specific \"generalist-to-specialist\" framing with layer-wise probing and subspace decomposition, this sits at Score 3 — the combination of the same mechanism families has been applied to closely related problems (cloud-to-device transfer), even if not in this exact configuration.\n\nPrior works:\n  - Cloud-Device Collaborative Adaptation to Continual Changing Environments in the Real-World (2022): covers uncertainty-guided EMA prompt updates, adversarial feature alignment with GRL, pseudo-label transfer from large cloud model to small device model — the core mechanism cluster of TCD-S\n  - ELAD: Explanation-Guided Large Language Models Active Distillation (2024): combines active learning with uncertainty-based sample selection for LLM-to-small-model distillation\n  - Active LLM-based Knowledge Distillation for Session-based Recommendation (2024): active learning strategy selecting informative instances for LLM-to-student distillation with budget constraints\n  - LLM on a Budget: Active Knowledge Distillation for Efficient Classification (2025): uncertainty-based active sampling to reduce teacher API calls in LLM distillation\n\nPlease synthesize a substantially more novel method for the same research problem. You may use the same retrieved seeds in non-obvious ways, or introduce new mechanism families absent from the surfaced literature. The goal is a method whose mechanism combination is not already established."
+      }
+    ],
+    "final_method": "We propose CAGE-KD: Capability-Graph-Gated, EKF-Controlled Knowledge Distillation. The key idea is to first restructure a large generalist’s behavior on the specialist domain into a small, discrete set of transferable micro-capabilities, then equip a compact student with (a) lightweight capability gates that modulate a few late layers using a per-instance global attribute, and (b) a prototype layer that anchors the student’s decision regions around those capabilities. A tiny evidence selector identifies the core, task-relevant evidence from each input; only that evidence conditions the student’s gates and the teacher queries. We distill not only logits but also pairwise preference constraints that capture the generalist’s fine-grained ranking or choice behavior, using O(K) teacher calls over the top-K candidates.\n\nCapability discovery and scheduling are explicit. We build a directed capability graph whose nodes represent prerequisite skills uncovered from the generalist’s behavior under small evidence perturbations (identified by the selector) and its induced preference flips. Rather than running full probabilistic inference on this graph, we train a lightweight Bayesian network over capabilities with a sampling-based gradient estimator; this lets us (i) attribute which capabilities are currently gating performance and (ii) choose, at each step, the cheapest counterfactual intervention (mask/augment a specific evidence fragment) most likely to improve the student. During training rollouts, a pseudo-intervention demonstrator queries the generalist only on those targeted counterfactuals and on adjacent pairwise preferences among the top-K candidates, yielding efficient supervision that emphasizes the capability bottlenecks.\n\nThe student is augmented in two places. First, we add 2–3 late-layer capability gates: a small attention readout over the selected evidence produces a global attribute z_g that multiplicatively modulates those layers and is also fed into the final readout. Second, we insert a prototype discrimination layer before logits: a set of trainable prototypes each corresponds to a capability node, learning a discriminative latent geometry that provides single-pass uncertainty. Training optimizes three losses: (1) a standard KD loss on logits conditioned on the selected evidence; (2) a pairwise ranking loss derived from adjacent-swap constraints over the top-K items; and (3) a capability-consistency loss aligning the prototype activations with the capability BN’s current belief. We treat the adapter and prototype parameters as a controlled dynamical system and update them online with a Kalman-style optimizer that adaptively tunes step sizes to the stochasticity of the teacher signals, ensuring stable, fast convergence under tight query budgets.\n\nTo avoid drifting toward style-only or spurious gains, we integrate capability regression tests into the loop: for a subset of batches, the selector swaps or removes a single core evidence fragment predicted by the capability graph to be necessary/sufficient; the student must flip or preserve its decision accordingly. Failures down-weight the corresponding capability’s supervision and trigger additional pairwise constraints, mitigating self-evaluation bias. At inference, the pipeline uses only the tiny selector, the student with capability gates and prototypes, and no teacher calls; the global attribute and prototype uncertainty act as cheap, per-instance controllers to specialize behavior on the fly, preserving generalist-derived competence where it matters for the domain.",
+    "final_rationale": "CAGE-KD transfers the relevant generalist capability rather than raw outputs by (i) factorizing behavior into a capability graph discovered from counterfactual preference flips on core evidence, (ii) embedding those capabilities directly into the student’s representation via global-attribute gates and capability prototypes, and (iii) scheduling supervision toward the current capability bottlenecks. The pairwise-adjacent preference distillation captures the generalist’s fine-grained rankings with linear query complexity, while the prototype layer provides deterministic uncertainty to weight supervision toward reliable teacher signals and to regularize decision regions around capabilities.\n\nMechanistically, this differs from prior prompt/adversarial or uncertainty-EMA approaches: we use control-theoretic, Kalman-style online updates for stable, budget-aware adaptation; we learn and use a capability Bayesian network with sampling-based gradients to drive targeted counterfactual supervision without full inference; we compress preference structure via efficient adjacent-swap constraints; and we inject a per-instance global attribute to modulate select late layers, avoiding heavy prompts or GRL alignment. The result is a small specialist that retains the generalist’s high-value skills on its domain, with minimal runtime overhead and no dependence on the teacher at inference.",
+    "final_inspired_by": [
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector that extracts core, question-relevant evidence before expensive reasoning"
+      },
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global attribute injected into intermediate updates and final readout to condition predictions"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "adjacent-swap pairwise ranking to distill preferences with O(K) comparisons"
+      },
+      {
+        "seed_id": "663d598bb0b9",
+        "domain": "CV",
+        "borrowed_aspect": "Kalman-style optimizer with momentum and adaptive noise for stable online parameter updates"
+      },
+      {
+        "seed_id": "69f9d4fc5e68",
+        "domain": "RL",
+        "borrowed_aspect": "sampling-based gradient estimator for Bayesian networks to learn and schedule capability dependencies without full inference"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based discriminative latent space with single-pass deterministic uncertainty"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "pseudo-interactive demonstrator concept to pick targeted counterfactual interventions during training rollouts"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "guardrails against self-improvement bias via tests that separate fluency/style from task-grounded capability changes"
+      }
+    ],
+    "wall_clock_s": 314.11,
+    "cost": {
+      "gen_prompt_tokens": 10409,
+      "gen_completion_tokens": 9804,
+      "judge_prompt_tokens": 232168,
+      "judge_completion_tokens": 2645,
+      "gen_cost_usd": 0.1111,
+      "judge_cost_usd": 0.7362,
+      "total_cost_usd": 0.8472
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the combination of a directed capability graph with a Bayesian network over micro-capabilities, a pseudo-intervention demonstrator that queries the teacher only on targeted counterfactuals, and a Kalman-style optimizer treating adapter parameters as a controlled dynamical system — this specific ensemble of mechanisms (capability-graph-gated distillation with EKF-style online control and pairwise preference constraints) does not appear as a published combination. Method B's strongest novel element is the hypernetwork-generated skill adapters conditioned on learned skill tokens, combined with Matryoshka width-slicing and language-grounded capability sketches for anchoring latent space — individually these components (hypernetworks for adapters, Matryoshka distillation, CLIP-style contrastive alignment) are well-established and their combination, while reasonable, is more easily surfaced in prior literature. Method A introduces a more original framing (capability graph + counterfactual intervention scheduling + EKF optimizer) that is harder to find as a prior published combination, whereas Method B assembles known techniques in a sensible but less surprising way."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is the gap between large generalist models (accurate but expensive) and small specialists (cheap but worse even on their own domain) — specifically, how to transfer the *relevant* generalist capability to a small model efficiently. Both methods address this, but the question is which engages the core failure mode more directly. Method A introduces an elaborate capability graph, EKF optimizer, pseudo-intervention demonstrator, and Kalman-style updates — these mechanisms are complex and somewhat indirect, with the causal pathway from \"generalist capability transfer\" to specific method steps obscured by layers of machinery (capability graphs, Bayesian networks, dynamical systems). Method B's pipeline more directly traces the failure mode: Stage 1 explicitly identifies which generalist competencies help on the target domain (addressing negative transfer and irrelevant capability transfer), Stage 2 uses hypernetwork-generated adapters to efficiently instantiate those skills in a small model, and Stage 3 applies confidence-weighted distillation that directly transfers the generalist's relevant signals while discarding weak ones. The causal pathway in Method B — discover relevant skills → embed them efficiently in a small model → distill with structured supervision weighted by teacher confidence — is more traceable and directly addresses why small specialists underperform (they lack the relevant generalist competencies)."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A is a well-structured distillation pipeline with internally consistent stages. The main coherence concern is the hypernetwork-generated adapters combined with per-instance routing: the routing head requires student-accessible signals to select skills at inference, which is plausible but the interaction between the hypernetwork, routing, and width-slicing adds complexity that could create implementation ambiguities. However, each component (LoRA adapters, hypernetworks, confidence-weighted KD, Matryoshka slicing) is a known technique and their combination is described with sufficient clarity to be implementable. Method B introduces a \"Kalman-style optimizer\" (EKF) to update adapter and prototype parameters, treating them as a controlled dynamical system. This is a significant coherence issue: applying an Extended Kalman Filter to update neural network parameters online is computationally infeasible at scale (EKF requires O(n²) covariance matrices for parameter vectors), and the method does not explain how this is made tractable. Additionally, the capability Bayesian network with sampling-based gradient estimators, the pseudo-intervention demonstrator, and the capability regression tests form a complex interdependent system where the prerequisites for each component are not fully established. The combination of EKF-based optimization with a Bayesian capability graph and prototype layers creates paradigm-mixing that lacks clear reconciliation. Method A has minor complexity concerns but no fundamental coherence flaws, while Method B has a core infeasibility in its EKF optimizer and several underspecified interdependencies."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6093,
+    "judge_completion_tokens": 892,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0317,
+    "total_cost_usd": 0.0317
+  }
+}

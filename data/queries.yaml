@@ -1,0 +1,306 @@
+# 30 evaluation queries for Stage 2 (retrieval) and Stage 3 (ideation).
+# Format: <gap/challenge>; how can we <research question>?  (25-40 words)
+# N=30 is sized for paired ablation: detects d≥0.5 at α=0.05, power 0.8.
+# Categories used by the type field:
+#   primary         — primary research focus (inference efficiency)
+#   domain_specific — single-domain baseline (no paraphrase benefit expected)
+#   cross_domain    — paraphrase stress test (multi-domain transfer expected)
+
+queries:
+
+  # ---- Primary (5) ----------------------------------------------------------
+  - id: Q01
+    type: primary
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, IR_REC, RL]
+    text: |
+      Sequential LLM decoding is slow because each token needs a full
+      large-model forward pass; how can a small draft model propose
+      tokens in parallel that the large model verifies without quality
+      loss?
+
+  - id: Q02
+    type: primary
+    natural_domain: MULTIMODAL
+    expected_paraphrase_domains: [MULTIMODAL, CV, LLM_NLP]
+    text: |
+      VLM inference latency scales with visual token count but most
+      tokens are redundant; how can we identify and remove or merge
+      low-information visual tokens at inference without retraining
+      the encoder?
+
+  - id: Q03
+    type: primary
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, MULTIMODAL, CV]
+    text: |
+      Inputs to generative models vary in complexity but standard
+      decoding allocates fixed compute per token; how can a model
+      adaptively allocate more or fewer computation steps without
+      degrading quality?
+
+  - id: Q04
+    type: primary
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL]
+    text: |
+      Long-context LLMs accumulate large KV caches that dominate
+      memory bandwidth; how can we compress or selectively evict
+      cache entries while preserving the model's ability to attend
+      to distant relevant tokens?
+
+  - id: Q05
+    type: primary
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV]
+    text: |
+      Low-bit quantization preserves perplexity but degrades emergent
+      abilities like in-context learning and chain-of-thought; how
+      can we quantize weights and activations while protecting the
+      components most responsible for these abilities?
+
+  # ---- Domain coverage (7) --------------------------------------------------
+  - id: Q06
+    type: domain_specific
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP]
+    text: |
+      Updating billions of parameters to adapt a pretrained LLM is
+      prohibitive on consumer hardware; how can we adapt the model
+      with a small number of additional parameters and match full
+      fine-tuning performance?
+
+  - id: Q07
+    type: domain_specific
+    natural_domain: MULTIMODAL
+    expected_paraphrase_domains: [MULTIMODAL]
+    text: |
+      Vision-language models trained on web data degrade when images
+      come from a shifted distribution like medical or satellite;
+      how can we maintain cross-modal alignment under unseen domain
+      shift without target-domain labels?
+
+  - id: Q08
+    type: domain_specific
+    natural_domain: CV
+    expected_paraphrase_domains: [CV]
+    text: |
+      Object detectors fail on rare classes with few or no labeled
+      instances; how can we detect and localize long-tail or novel
+      objects without per-class supervision?
+
+  - id: Q09
+    type: domain_specific
+    natural_domain: RL
+    expected_paraphrase_domains: [RL, ROBOTICS]
+    text: |
+      Online RL is expensive but offline data suffers from
+      distribution mismatch between behavior and target policy;
+      how can we learn a strong policy from logs alone while
+      avoiding extrapolation errors?
+
+  - id: Q10
+    type: domain_specific
+    natural_domain: IR_REC
+    expected_paraphrase_domains: [IR_REC]
+    text: |
+      Dense retrieval surfaces topically relevant documents but
+      ranks them poorly when relevance depends on subtle context;
+      how can we rerank candidates using contextual signals
+      without re-encoding the entire corpus?
+
+  - id: Q11
+    type: domain_specific
+    natural_domain: SPEECH
+    expected_paraphrase_domains: [SPEECH, LLM_NLP]
+    text: |
+      Speech recognition for low-resource languages or specialized
+      domains lacks transcribed audio; how can we leverage synthetic
+      data or transfer learning to reach competitive accuracy with
+      minimal real labeled data?
+
+  - id: Q12
+    type: domain_specific
+    natural_domain: ROBOTICS
+    expected_paraphrase_domains: [ROBOTICS, RL, CV]
+    text: |
+      Robot policies trained in simulation often fail on real
+      hardware due to physics, sensor, and dynamics mismatch; how
+      can we transfer visuomotor policies sim-to-real with minimal
+      real-world demonstrations?
+
+  # ---- Cross-domain probes (14) ---------------------------------------------
+  - id: Q13
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, MULTIMODAL, RL]
+    text: |
+      Models reason over compositional task structure but learned
+      representations are continuous and entangled; how can we
+      induce discrete, reusable components that support
+      compositional reasoning over novel combinations?
+
+  - id: Q14
+    type: cross_domain
+    natural_domain: RL
+    expected_paraphrase_domains: [RL, ROBOTICS, LLM_NLP]
+    text: |
+      Complex sequential tasks have nested goal structure but flat
+      policies struggle with credit assignment over long horizons;
+      how can we learn or impose a hierarchy that decomposes the
+      task and accelerates learning?
+
+  - id: Q15
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, RL, IR_REC]
+    text: |
+      Generating intermediate reasoning steps before the final
+      answer sharply improves LLM accuracy; how can we apply
+      analogous intermediate-computation patterns to vision,
+      reinforcement learning, or recommendation models?
+
+  - id: Q16
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL]
+    text: |
+      Models attending to long contexts (videos, long documents,
+      episodes) suffer from quadratic attention cost and forgetting;
+      how can we maintain effective memory of distant information
+      without exhausting compute?
+
+  - id: Q17
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL]
+    text: |
+      Dense models compute every parameter for every input, wasting
+      compute when only a fraction is needed; how can we conditionally
+      activate only the relevant subnetwork at inference?
+
+  - id: Q18
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL, SPEECH]
+    text: |
+      Large generalist models are accurate but expensive; smaller
+      specialists are cheap but worse on the specialist's own
+      domain; how can we transfer the relevant generalist capability
+      to a small specialist?
+
+  - id: Q19
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL, RL, IR_REC]
+    text: |
+      Test-time distributions diverge from training data along axes
+      the model never saw; how can we make models robust to such
+      shifts without observing the target distribution at training?
+
+  - id: Q20
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL]
+    text: |
+      Spurious correlations make models rely on shortcuts that fail
+      under intervention; how can we generate counterfactual examples
+      that break these shortcuts and induce invariance to non-causal
+      features?
+
+  - id: Q21
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL, RL]
+    text: |
+      Deep models are overconfident even when wrong, making
+      downstream decisions unreliable; how can we calibrate
+      predicted probabilities to reflect actual likelihood,
+      especially under distribution shift?
+
+  - id: Q22
+    type: cross_domain
+    natural_domain: MULTIMODAL
+    expected_paraphrase_domains: [MULTIMODAL, LLM_NLP, CV, SPEECH]
+    text: |
+      Aligned text-image pairs are scarce in some domains while
+      unimodal data is abundant; how can we learn cross-modal
+      representations via contrastive objectives that exploit the
+      abundant unimodal data?
+
+  - id: Q23
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, SPEECH]
+    text: |
+      Masked-prediction pretraining transformed language and vision;
+      how can we adapt the same principle to other data types like
+      graphs, time series, or sensor streams, and what objective
+      design choices matter?
+
+  - id: Q24
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, MULTIMODAL]
+    text: |
+      Pretraining at scale is expensive; can we replace some real
+      data with synthetic curricula that exercise specific
+      capabilities, and how do we ensure synthetic data improves
+      rather than degrades downstream performance?
+
+  - id: Q25
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV]
+    text: |
+      Internal model components correlate with abilities but
+      correlation is not causation; how can we identify which
+      components causally implement a given capability and use that
+      for editing or interpretation?
+
+  - id: Q26
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV]
+    text: |
+      Learned representations are opaque and hard to debug or edit;
+      how can we reverse-engineer what specific circuits compute,
+      decompose representations into human-interpretable features,
+      and verify those decompositions?
+
+  - id: Q27
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, CV, RL, IR_REC]
+    text: |
+      Models forget previously learned skills when fine-tuned on new
+      tasks; how can we update a model with new data without
+      catastrophic forgetting and without retaining all prior data?
+
+  - id: Q28
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, MULTIMODAL, RL, SPEECH]
+    text: |
+      Model outputs filtered by a quality signal can serve as new
+      training data, but this risks reinforcing existing errors; how
+      can we bootstrap improvement from self-generated data while
+      avoiding distributional collapse?
+
+  - id: Q29
+    type: cross_domain
+    natural_domain: CV
+    expected_paraphrase_domains: [CV, MULTIMODAL, LLM_NLP, SPEECH]
+    text: |
+      Models are brittle to adversarial perturbations imperceptible to
+      humans; how can pretraining objectives or data augmentation make
+      models robust without expensive test-time defenses?
+
+  - id: Q30
+    type: cross_domain
+    natural_domain: LLM_NLP
+    expected_paraphrase_domains: [LLM_NLP, RL, ROBOTICS]
+    text: |
+      Reward models for alignment require large preference datasets,
+      but high-quality human labels are scarce; how can we learn
+      reliable reward models from limited or noisy preferences?

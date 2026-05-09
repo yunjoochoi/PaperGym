@@ -1,0 +1,239 @@
+{
+  "query_id": "Q20",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Spurious correlations make models rely on shortcuts that fail\nunder intervention; how can we generate counterfactual examples\nthat break these shortcuts and induce invariance to non-causal\nfeatures?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Counterfactual Shortcut Breaking (CSB), a three-stage, modality-agnostic pipeline that discovers shortcut features, synthesizes calibrated counterfactuals that selectively toggle those features while holding causal evidence fixed, and trains with a paired invariance objective. Stage A (shortcut discovery) builds a candidate set of non-causal features at both the concept level and the input-variable level. For text, we prompt an LLM to annotate frequent, label-irrelevant concepts and compute a concept-bias score to rank candidates. For vision/VQA, we localize causal evidence using question-guided relevance maps to identify the pixels/patches that must be preserved, optionally supplemented with supervision from datasets that link questions/answers to exact segmentation masks. For generic inputs (including tabular), we run one-variable-at-a-time perturbation tests: ablate or randomize a single input dimension and measure whether the model’s decision changes while the ground-truth label remains; variables that cause decision flips without affecting the task semantics are marked as shortcut candidates.\n\nStage B (counterfactual synthesis) creates paired examples (x, x_cf) that differ only in suspected shortcuts. For text, we perform targeted rewriting that toggles a flagged concept’s presence/absence while constraining label consistency via an NLI check and a perplexity bound; we generate both removal and insertion variants to decorrelate concept and label. For images, we edit non-evidence regions: swap or restyle backgrounds, overlay distractor objects, or replace correlated context patches, while preserving the evidence mask at pixel level; for VQA this keeps the question-relevant region unchanged. For tabular, we resample shortcut columns conditionally from other records that share similar causal attributes but different shortcut values, or draw from an estimated p(feature | causal attributes). When historic logs contain natural interventions (e.g., the same item shown under different UIs/rankers), we harvest implicit counterfactuals by pairing the same content across contexts using assignment weights that balance exposure.\n\nTo make counterfactual severity uniform and training-stable, we calibrate each edit’s strength by matching a target logit KL-divergence between the model’s predictions on x and x_cf. Edits are iteratively adjusted (e.g., degree of style transfer, intensity of token rewrite, noise scale in tabular resampling) until the measured KL hits a prescribed band. We additionally support representation-space counterfactuals by intervening on internal features believed to encode shortcuts (e.g., zeroing or nudging specific features) while calibrating intervention strength via the same target KL, yielding activation-level counterfactuals when input edits are hard.\n\nStage C (invariance training) optimizes a paired objective on the counterfactual tuples: L = L_sup(x, y) + L_sup(x_cf, y) + λ KL(pθ(y | x) || pθ(y | x_cf)) + β ||φθ(x) − φθ(x_cf)||², where φθ is a mid-layer representation. We sample batches to balance concepts and shortcut values, prioritize concepts with high measured bias, and use a mild curriculum on the target-KL to progress from weak to stronger edits. Periodically, we refresh the shortcut set by rerunning discovery on the current model to chase newly emerged shortcuts. Evaluation reports both overall metrics and slice metrics by concept/shortcut presence to verify invariance.",
+        "rationale": "Shortcut features are attractive to learners because they correlate with labels in the training distribution but are not invariant to interventions. By explicitly discovering such features and constructing counterfactual pairs that toggle only the shortcut while preserving causal evidence, we create supervision that directly penalizes shortcut reliance: the label is unchanged, yet the non-causal signal varies. The paired KL/feature-consistency losses make the model’s predictions and internal representations stable across these non-causal shifts, pushing learning toward features that remain predictive when shortcuts are broken.\n\nConcept-level discovery focuses counterfactual generation on high-impact, semantically meaningful shortcuts, while evidence localization in vision/VQA prevents label drift during image edits by holding the true visual cause fixed. Calibrating intervention strength with a target logit KL yields counterfactuals of comparable difficulty so training is neither dominated by trivial edits nor destabilized by extreme shifts. Together, these ingredients transform counterfactual data into an invariance-inducing curriculum that improves robustness under interventions.",
+        "inspired_by": [
+          {
+            "seed_id": "a8f70f1bc169",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "LLM-based concept annotation and concept-bias quantification to surface spurious concepts"
+          },
+          {
+            "seed_id": "d54cefc9ff77",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "GradCAM-style question-guided patch relevance to localize causal visual evidence for counterfactual edits"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "Explicit evidence segmentations linking questions to answer-bearing regions to preserve causes during image edits"
+          },
+          {
+            "seed_id": "5329bc1aa788",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "One-variable-at-a-time interventions to identify input dimensions that the policy/model truly relies on"
+          },
+          {
+            "seed_id": "0a49806327f2",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "Per-feature intervention strength calibration via target KL-divergence at the logits"
+          },
+          {
+            "seed_id": "03f26ea245f1",
+            "domain": "IR_REC",
+            "borrowed_aspect": "Harvesting implicit interventions across historic systems to form natural counterfactual pairs"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surface several relevant papers on counterfactual data augmentation for spurious correlations (ICDA, CoBA, concept-level spurious correlation work), but none combine all the distinctive elements of CSB: (1) a unified multi-modal shortcut discovery stage using LLM concept annotation + evidence localization + one-variable perturbation testing, (2) KL-divergence-calibrated counterfactual synthesis across text/image/tabular/representation-space, and (3) a paired invariance objective combining supervised loss + KL consistency + representation-space L2 with curriculum on target-KL and iterative shortcut refresh. The closest works (ICDA, CoBA, concept-level spurious correlation paper) each cover one or two of these mechanisms but not their combination. No paper was found that jointly applies KL-calibrated intervention strength, multi-modal shortcut discovery, and paired representation-level invariance loss as a single pipeline. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms present in prior work but not their combination.\n\nPrior works:\n  - Implicit Counterfactual Data Augmentation for Robust Learning (2023): counterfactual feature augmentation with surrogate robust loss for spurious correlation mitigation, overlaps with Stage C invariance training but lacks KL calibration and multi-modal discovery.\n  - Explore Spurious Correlations at the Concept Level in Language Models for Text Classification (2023): LLM-based concept annotation and Bias@C metric for shortcut discovery, overlaps with Stage A concept-level discovery but lacks counterfactual synthesis pipeline and invariance training.\n  - CoBA: Counterbias Text Augmentation for Mitigating Various Spurious Correlations via Semantic Triples (2025): semantic-triple-level counterfactual text rewriting for spurious correlation mitigation, overlaps with Stage B text rewriting but lacks multi-modal scope and KL calibration.\n  - On Counterfactual Data Augmentation Under Confounding (2023): causal viewpoint on counterfactual image augmentation for invariant feature learning, overlaps with Stage B image editing but lacks discovery stage and calibration mechanism.\n  - Shortcut Invariance: Targeted Jacobian Regularization in Disentangled Latent Space (2025): latent-space shortcut axis identification and invariance regularization, overlaps with representation-space counterfactuals in Stage B but uses different mechanism (anisotropic noise vs. KL-calibrated intervention).",
+        "prior_works": [
+          "Implicit Counterfactual Data Augmentation for Robust Learning (2023): counterfactual feature augmentation with surrogate robust loss for spurious correlation mitigation, overlaps with Stage C invariance training but lacks KL calibration and multi-modal discovery.",
+          "Explore Spurious Correlations at the Concept Level in Language Models for Text Classification (2023): LLM-based concept annotation and Bias@C metric for shortcut discovery, overlaps with Stage A concept-level discovery but lacks counterfactual synthesis pipeline and invariance training.",
+          "CoBA: Counterbias Text Augmentation for Mitigating Various Spurious Correlations via Semantic Triples (2025): semantic-triple-level counterfactual text rewriting for spurious correlation mitigation, overlaps with Stage B text rewriting but lacks multi-modal scope and KL calibration.",
+          "On Counterfactual Data Augmentation Under Confounding (2023): causal viewpoint on counterfactual image augmentation for invariant feature learning, overlaps with Stage B image editing but lacks discovery stage and calibration mechanism.",
+          "Shortcut Invariance: Targeted Jacobian Regularization in Disentangled Latent Space (2025): latent-space shortcut axis identification and invariance regularization, overlaps with representation-space counterfactuals in Stage B but uses different mechanism (anisotropic noise vs. KL-calibrated intervention)."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Counterfactual Shortcut Breaking (CSB), a three-stage, modality-agnostic pipeline that discovers shortcut features, synthesizes calibrated counterfactuals that selectively toggle those features while holding causal evidence fixed, and trains with a paired invariance objective. Stage A (shortcut discovery) builds a candidate set of non-causal features at both the concept level and the input-variable level. For text, we prompt an LLM to annotate frequent, label-irrelevant concepts and compute a concept-bias score to rank candidates. For vision/VQA, we localize causal evidence using question-guided relevance maps to identify the pixels/patches that must be preserved, optionally supplemented with supervision from datasets that link questions/answers to exact segmentation masks. For generic inputs (including tabular), we run one-variable-at-a-time perturbation tests: ablate or randomize a single input dimension and measure whether the model’s decision changes while the ground-truth label remains; variables that cause decision flips without affecting the task semantics are marked as shortcut candidates.\n\nStage B (counterfactual synthesis) creates paired examples (x, x_cf) that differ only in suspected shortcuts. For text, we perform targeted rewriting that toggles a flagged concept’s presence/absence while constraining label consistency via an NLI check and a perplexity bound; we generate both removal and insertion variants to decorrelate concept and label. For images, we edit non-evidence regions: swap or restyle backgrounds, overlay distractor objects, or replace correlated context patches, while preserving the evidence mask at pixel level; for VQA this keeps the question-relevant region unchanged. For tabular, we resample shortcut columns conditionally from other records that share similar causal attributes but different shortcut values, or draw from an estimated p(feature | causal attributes). When historic logs contain natural interventions (e.g., the same item shown under different UIs/rankers), we harvest implicit counterfactuals by pairing the same content across contexts using assignment weights that balance exposure.\n\nTo make counterfactual severity uniform and training-stable, we calibrate each edit’s strength by matching a target logit KL-divergence between the model’s predictions on x and x_cf. Edits are iteratively adjusted (e.g., degree of style transfer, intensity of token rewrite, noise scale in tabular resampling) until the measured KL hits a prescribed band. We additionally support representation-space counterfactuals by intervening on internal features believed to encode shortcuts (e.g., zeroing or nudging specific features) while calibrating intervention strength via the same target KL, yielding activation-level counterfactuals when input edits are hard.\n\nStage C (invariance training) optimizes a paired objective on the counterfactual tuples: L = L_sup(x, y) + L_sup(x_cf, y) + λ KL(pθ(y | x) || pθ(y | x_cf)) + β ||φθ(x) − φθ(x_cf)||², where φθ is a mid-layer representation. We sample batches to balance concepts and shortcut values, prioritize concepts with high measured bias, and use a mild curriculum on the target-KL to progress from weak to stronger edits. Periodically, we refresh the shortcut set by rerunning discovery on the current model to chase newly emerged shortcuts. Evaluation reports both overall metrics and slice metrics by concept/shortcut presence to verify invariance.",
+    "final_rationale": "Shortcut features are attractive to learners because they correlate with labels in the training distribution but are not invariant to interventions. By explicitly discovering such features and constructing counterfactual pairs that toggle only the shortcut while preserving causal evidence, we create supervision that directly penalizes shortcut reliance: the label is unchanged, yet the non-causal signal varies. The paired KL/feature-consistency losses make the model’s predictions and internal representations stable across these non-causal shifts, pushing learning toward features that remain predictive when shortcuts are broken.\n\nConcept-level discovery focuses counterfactual generation on high-impact, semantically meaningful shortcuts, while evidence localization in vision/VQA prevents label drift during image edits by holding the true visual cause fixed. Calibrating intervention strength with a target logit KL yields counterfactuals of comparable difficulty so training is neither dominated by trivial edits nor destabilized by extreme shifts. Together, these ingredients transform counterfactual data into an invariance-inducing curriculum that improves robustness under interventions.",
+    "final_inspired_by": [
+      {
+        "seed_id": "a8f70f1bc169",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "LLM-based concept annotation and concept-bias quantification to surface spurious concepts"
+      },
+      {
+        "seed_id": "d54cefc9ff77",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "GradCAM-style question-guided patch relevance to localize causal visual evidence for counterfactual edits"
+      },
+      {
+        "seed_id": "7f79d5d52bbc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "Explicit evidence segmentations linking questions to answer-bearing regions to preserve causes during image edits"
+      },
+      {
+        "seed_id": "5329bc1aa788",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "One-variable-at-a-time interventions to identify input dimensions that the policy/model truly relies on"
+      },
+      {
+        "seed_id": "0a49806327f2",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "Per-feature intervention strength calibration via target KL-divergence at the logits"
+      },
+      {
+        "seed_id": "03f26ea245f1",
+        "domain": "IR_REC",
+        "borrowed_aspect": "Harvesting implicit interventions across historic systems to form natural counterfactual pairs"
+      }
+    ],
+    "wall_clock_s": 188.82,
+    "cost": {
+      "gen_prompt_tokens": 7523,
+      "gen_completion_tokens": 8081,
+      "judge_prompt_tokens": 109400,
+      "judge_completion_tokens": 1192,
+      "gen_cost_usd": 0.0902,
+      "judge_cost_usd": 0.3461,
+      "total_cost_usd": 0.4363
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose C3: Causal-Consistent Counterfactuals. First, learn a factorized representation that separates causal content from shortcut cues. An encoder maps each input x to (z_c, z_s), where z_c is encouraged to be domain-invariant and label-predictive, and z_s captures environment/style/background factors. A decoder reconstructs x from (z_c, z_s). Training uses reconstruction, label prediction from z_c, an adversarial or divergence penalty that makes z_c uninformative about domain, and a complementary penalty that makes z_s predictable from domain. Cross-reconstruction is performed by swapping z_s between same-label pairs to force the decoder to render plausible variations of non-causal attributes while keeping causal structure intact.\n\nA counterfactual generator then produces interventions targeted at z_s. For each x, we either swap in a donor z_s from another cluster/domain or apply lightweight, pixel-level visual prompts that alter style, texture, color, or background while masking the object/causal region. The generator enforces cycle and region-preservation constraints (e.g., perceptual similarity within the masked causal region) and uses an external validator to accept counterfactuals only if causal content is preserved: for vision, a detector/segmenter checks object identity within the mask and a label-consistency check on the masked crop; for text, a task-specific verifier or entailment model ensures the label remains valid while style/register shifts.\n\nTraining the predictor with these counterfactuals couples three objectives: standard supervision on originals, a consistency objective that predictions match on x and its counterfactuals that differ only in z_s, and a worst-group optimization over pseudo-domains formed by clustering z_s or prompt styles to reduce reliance on any single shortcut. To make counterfactual mining efficient and targeted, we score examples and edits with a fast, single-pass uncertainty/abnormality head; samples with high confidence yet shortcut-aligned attributions or high post-edit uncertainty are prioritized. Their losses are upweighted via an uncertainty-guided moving average schedule so the model steadily focuses on the most spurious-sensitive cases without destabilizing training.\n\nWe apply a curriculum on intervention strength to avoid label leakage and preserve realism. Start with gentle z_s swaps or mild prompts (small color jitter, weak texture transfer, subtle background replacement) and gradually increase perturbation magnitude and diversity as the model becomes invariant. At inference, we can further stabilize predictions by marginalizing over z_s with a few fast augmentations or prompt variants that leave z_c intact, averaging logits to approximate the interventional prediction E[f(x) | do(z_s)].\n\nMonitoring includes interventional accuracy on counterfactuals, flip rate under z_s edits, invariance of intermediate features to z_s changes, and worst-group accuracy across z_s clusters. The pipeline is modality-agnostic: masks can be semantic segments in images, time–frequency masks in audio, or span masks in text; z_s-targeted edits become background replacement/style transfer, source remixing, or paraphrase style shifts, respectively.",
+        "rationale": "Shortcuts arise when models exploit correlations carried by non-causal attributes. By explicitly disentangling a domain-invariant causal latent from a domain-specific shortcut latent, and then generating counterfactuals that intervene only on the shortcut latent, we create supervised interventional data where the label is fixed but spurious factors vary. Training with prediction consistency and worst-group optimization over these counterfactuals forces the model to discard information in z_s and rely on z_c.\n\nVisual prompts provide a practical, low-dimensional knob to edit non-causal attributes at scale, while an external validator avoids self-confirmation errors by ensuring that edits preserve causal content. Uncertainty-guided sampling concentrates counterfactual generation and training signal where the current model is most vulnerable to shortcuts, and the curriculum on edit strength maintains realism early while still breaking strong spurious cues later.",
+        "inspired_by": [
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "partitioned latent with shared (causal) vs domain-specific priors"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "visual prompts as low-dimensional input perturbations and uncertainty-guided update weighting"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass deterministic uncertainty scoring in the latent space"
+          },
+          {
+            "seed_id": "a680f4fc4baf",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "curriculum that gradually removes scaffolding to increase intervention strength over time"
+          },
+          {
+            "seed_id": "0b42617a036f",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "use of pseudo paired augmentations to improve generalization"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "avoid self-evaluation bias by relying on external, reference-based validation"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surface related work on causal disentanglement for domain adaptation (CiSeg, CausalDisenSeg), counterfactual invariance for specific domains (CIP for TCR-pMHC), and dual-stream feature augmentation with causal masking (DFA), but none combine the full C3 pipeline: (1) factorized (z_c, z_s) encoder with cross-reconstruction via z_s swapping, (2) pixel-level visual prompts targeting z_s with causal-region masking and external validator, (3) uncertainty-guided counterfactual mining with moving-average upweighting, (4) curriculum on intervention strength, and (5) worst-group optimization over z_s clusters, all jointly for spurious correlation robustness. The individual mechanisms (disentangled causal/style latents, counterfactual augmentation, worst-group/IRM, visual prompts, uncertainty-guided sampling, curriculum) are each known, but no surfaced paper combines this specific set for this problem. This matches the Score 4 anchor: combines multiple known mechanism families with no surfaced published joint application for this exact problem, introducing named design choices (uncertainty-guided moving-average upweighting, external causal validator, curriculum on z_s intervention strength) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - CiSeg (2025): disentangles causal/bias latents with adversarial alignment for domain adaptation, overlaps with z_c/z_s factorization and adversarial domain penalty\n  - CausalDisenSeg (2026): CVAE-based causal/style disentanglement with counterfactual reasoning for robustness under missing modalities\n  - Dual-stream Feature Augmentation / DFA (2024): adversarial causal mask disentanglement + uncertainty-guided hard feature generation for domain generalization\n  - ICON (2026): counterfactual context disentanglement via background transplantation + invariance objectives for spurious correlation in person search\n  - CIP / Counterfactual Invariant Prediction (2026): counterfactual edits + invariance loss + contrastive loss for shortcut robustness",
+        "prior_works": [
+          "CiSeg (2025): disentangles causal/bias latents with adversarial alignment for domain adaptation, overlaps with z_c/z_s factorization and adversarial domain penalty",
+          "CausalDisenSeg (2026): CVAE-based causal/style disentanglement with counterfactual reasoning for robustness under missing modalities",
+          "Dual-stream Feature Augmentation / DFA (2024): adversarial causal mask disentanglement + uncertainty-guided hard feature generation for domain generalization",
+          "ICON (2026): counterfactual context disentanglement via background transplantation + invariance objectives for spurious correlation in person search",
+          "CIP / Counterfactual Invariant Prediction (2026): counterfactual edits + invariance loss + contrastive loss for shortcut robustness"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose C3: Causal-Consistent Counterfactuals. First, learn a factorized representation that separates causal content from shortcut cues. An encoder maps each input x to (z_c, z_s), where z_c is encouraged to be domain-invariant and label-predictive, and z_s captures environment/style/background factors. A decoder reconstructs x from (z_c, z_s). Training uses reconstruction, label prediction from z_c, an adversarial or divergence penalty that makes z_c uninformative about domain, and a complementary penalty that makes z_s predictable from domain. Cross-reconstruction is performed by swapping z_s between same-label pairs to force the decoder to render plausible variations of non-causal attributes while keeping causal structure intact.\n\nA counterfactual generator then produces interventions targeted at z_s. For each x, we either swap in a donor z_s from another cluster/domain or apply lightweight, pixel-level visual prompts that alter style, texture, color, or background while masking the object/causal region. The generator enforces cycle and region-preservation constraints (e.g., perceptual similarity within the masked causal region) and uses an external validator to accept counterfactuals only if causal content is preserved: for vision, a detector/segmenter checks object identity within the mask and a label-consistency check on the masked crop; for text, a task-specific verifier or entailment model ensures the label remains valid while style/register shifts.\n\nTraining the predictor with these counterfactuals couples three objectives: standard supervision on originals, a consistency objective that predictions match on x and its counterfactuals that differ only in z_s, and a worst-group optimization over pseudo-domains formed by clustering z_s or prompt styles to reduce reliance on any single shortcut. To make counterfactual mining efficient and targeted, we score examples and edits with a fast, single-pass uncertainty/abnormality head; samples with high confidence yet shortcut-aligned attributions or high post-edit uncertainty are prioritized. Their losses are upweighted via an uncertainty-guided moving average schedule so the model steadily focuses on the most spurious-sensitive cases without destabilizing training.\n\nWe apply a curriculum on intervention strength to avoid label leakage and preserve realism. Start with gentle z_s swaps or mild prompts (small color jitter, weak texture transfer, subtle background replacement) and gradually increase perturbation magnitude and diversity as the model becomes invariant. At inference, we can further stabilize predictions by marginalizing over z_s with a few fast augmentations or prompt variants that leave z_c intact, averaging logits to approximate the interventional prediction E[f(x) | do(z_s)].\n\nMonitoring includes interventional accuracy on counterfactuals, flip rate under z_s edits, invariance of intermediate features to z_s changes, and worst-group accuracy across z_s clusters. The pipeline is modality-agnostic: masks can be semantic segments in images, time–frequency masks in audio, or span masks in text; z_s-targeted edits become background replacement/style transfer, source remixing, or paraphrase style shifts, respectively.",
+    "final_rationale": "Shortcuts arise when models exploit correlations carried by non-causal attributes. By explicitly disentangling a domain-invariant causal latent from a domain-specific shortcut latent, and then generating counterfactuals that intervene only on the shortcut latent, we create supervised interventional data where the label is fixed but spurious factors vary. Training with prediction consistency and worst-group optimization over these counterfactuals forces the model to discard information in z_s and rely on z_c.\n\nVisual prompts provide a practical, low-dimensional knob to edit non-causal attributes at scale, while an external validator avoids self-confirmation errors by ensuring that edits preserve causal content. Uncertainty-guided sampling concentrates counterfactual generation and training signal where the current model is most vulnerable to shortcuts, and the curriculum on edit strength maintains realism early while still breaking strong spurious cues later.",
+    "final_inspired_by": [
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "partitioned latent with shared (causal) vs domain-specific priors"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "visual prompts as low-dimensional input perturbations and uncertainty-guided update weighting"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single-pass deterministic uncertainty scoring in the latent space"
+      },
+      {
+        "seed_id": "a680f4fc4baf",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "curriculum that gradually removes scaffolding to increase intervention strength over time"
+      },
+      {
+        "seed_id": "0b42617a036f",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "use of pseudo paired augmentations to improve generalization"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "avoid self-evaluation bias by relying on external, reference-based validation"
+      }
+    ],
+    "wall_clock_s": 142.8,
+    "cost": {
+      "gen_prompt_tokens": 4803,
+      "gen_completion_tokens": 4257,
+      "judge_prompt_tokens": 99402,
+      "judge_completion_tokens": 1211,
+      "gen_cost_usd": 0.0486,
+      "judge_cost_usd": 0.3164,
+      "total_cost_usd": 0.3649
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the calibrated counterfactual synthesis using a target logit KL-divergence band to normalize edit severity across modalities, combined with periodic shortcut set refresh on the current model. However, the overall pipeline (discover shortcuts, synthesize counterfactuals, train with invariance loss) follows a well-established pattern, and each individual component (LLM annotation, relevance maps, tabular resampling, paired KL regularization) has clear precedents. Method B's strongest novel element is the factorized (z_c, z_s) representation with cross-reconstruction via z_s swapping, combined with an uncertainty/abnormality head that scores and prioritizes spurious-sensitive examples, plus inference-time marginalization over z_s to approximate interventional predictions E[f(x)|do(z_s)]. The inference-time do-calculus approximation via fast z_s augmentation and the uncertainty-guided prioritization schedule together form a more distinctive combination. Both methods are largely assemblages of known components, but Method B's latent factorization with cross-reconstruction, uncertainty-guided curriculum, and inference-time interventional marginalization constitute a slightly more original combination that is harder to find in this exact form."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is models learning spurious correlations (shortcuts) that fail under intervention, requiring counterfactual examples that break these shortcuts and induce invariance to non-causal features. Method A addresses this by learning a factorized representation (z_c, z_s) and generating counterfactuals by swapping z_s components, then training with consistency objectives — the causal pathway from problem to method is traceable but relies heavily on the quality of the learned disentanglement, which is an indirect engagement. Method B addresses the failure mode more directly by first explicitly discovering shortcut features through perturbation tests and concept-bias scoring, then synthesizing counterfactuals that selectively toggle those identified shortcuts while preserving causal evidence, and finally training with a paired invariance objective. Method B's Stage A directly identifies which features are spurious correlates (the core problem), Stage B directly breaks those correlations by toggling them, and Stage C directly induces invariance — each stage maps causally to the failure mode. Method A's approach is valid but more indirect, relying on learned latent separation rather than explicit shortcut identification and targeted toggling."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's most serious coherence weakness is the reliance on a factorized encoder-decoder (z_c, z_s) that must simultaneously satisfy domain-invariance, label-predictiveness, and domain-predictiveness for z_s — this disentanglement is notoriously difficult to achieve reliably, and the method assumes it works well enough to drive downstream counterfactual generation. However, the steps are internally consistent: the encoder feeds the generator, the generator feeds the predictor training, and the curriculum and monitoring components all connect logically. Method B's most serious coherence weakness is the KL-divergence calibration loop in Stage B, which requires iteratively adjusting edits until a target KL band is hit — but this calibration is performed against the current model, creating a circular dependency where the model being trained influences the counterfactuals used to train it, and the method does not clearly resolve how to handle this during training (as opposed to a fixed pre-trained model). Additionally, the \"representation-space counterfactuals\" via zeroing internal features are introduced as a fallback but lack a clear integration path into the same pipeline. Both methods have coherence issues, but Method A's components connect more cleanly without circular dependencies, while Method B's calibration loop introduces a meaningful implementation ambiguity that would require redesign to resolve."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5979,
+    "judge_completion_tokens": 835,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0305,
+    "total_cost_usd": 0.0305
+  }
+}

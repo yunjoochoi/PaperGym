@@ -1,0 +1,218 @@
+{
+  "query_id": "Q12",
+  "natural_domain": "ROBOTICS",
+  "query_text": "Robot policies trained in simulation often fail on real\nhardware due to physics, sensor, and dynamics mismatch; how\ncan we transfer visuomotor policies sim-to-real with minimal\nreal-world demonstrations?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Privileged-to-Visual Meta-Distillation with Flow-Stabilized Perception (PVM-Flow), a sim-to-real pipeline that minimizes real-world supervision while addressing both visual and dynamics gaps. First, build a calibrated digital twin of the task and learn a high-performance privileged (state-based) policy entirely in simulation. Train it across a wide range of randomized dynamics and visual factors so the resulting behavior is robust and diverse; concurrently, meta-train the policy for fast adaptation by optimizing expected return after a few inner-loop updates. This privileged expert is then used to generate a large set of successful trajectories in sim.\n\nSecond, distill the expert into a visuomotor policy by behavior cloning from RGB(+proprio) to actions using the simulated trajectories. During cloning, aggressively randomize cameras, lighting, textures, and distractors, and apply strong visual augmentations. To suppress spurious background cues at train and test time, segment and mask static backgrounds and track the manipulated objects across time. In the visuomotor encoder, stabilize perception by aggregating features over a short window of recent frames: estimate optical flow to warp neighboring-frame features into the current frame and fuse them with spatially varying, similarity-based weights. This flow-guided temporal fusion reduces sensitivity to motion blur and sensor noise without needing extra labels.\n\nThird, incorporate a very small number of real-world rollouts (e.g., 5–20) from the policy to anchor the distribution shift. Mix these real samples with simulated demonstrations at equal sampling probability when training or fine-tuning the visuomotor policy and any value function, which regularizes estimates on real transitions and prevents overreliance on simulated statistics. Keep the visual encoder largely frozen and adapt lightweight adapters or the control head to avoid overfitting. Optionally, use unlabeled real images to run brief self-supervised consistency or augmentation-invariance updates on the encoder to align low-level statistics without requiring annotations.\n\nFinally, perform fast on-robot adaptation at deployment with a few safe inner-loop updates: collect K short episodes, compute on-policy gradients, and update only the control head and dynamics-sensitive layers while freezing most perception. Repeat this receding-horizon meta-update sparingly (e.g., every few episodes) with conservative step sizes and safety constraints. Add newly successful real trajectories to the demo buffer (dataset aggregation) to further improve performance over time, while continuing to leverage the large simulated corpus.",
+        "rationale": "This design separates what simulation does best (training a strong privileged expert over broad dynamics and visuals) from what must be learned from pixels and from hardware (robust perception and quick dynamics adaptation). Privileged-to-visual distillation transfers task knowledge to a vision policy with extensive visual randomization and background masking, shrinking the appearance gap. Mixing a handful of real rollouts at equal sampling combats critic or policy miscalibration on real transitions without requiring many demonstrations.\n\nA MAML-style inner-loop at deployment explicitly targets the remaining dynamics mismatch using only a few safe on-hardware rollouts, while freezing most of perception to preserve visual robustness. Flow-guided temporal feature aggregation makes the visuomotor encoder resilient to real-world sensing artifacts (blur, rolling shutter, flicker) without extra labels, further reducing the need for real demonstrations. Together, these ingredients address both the physics/dynamics and vision gaps with minimal real data.",
+        "inspired_by": [
+          {
+            "seed_id": "5b1967bcefff",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "privileged-to-visual distillation with calibrated digital twins and equal sampling of real and sim demos"
+          },
+          {
+            "seed_id": "ec79896a1fe8",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "MAML-style fast adaptation with few on-robot inner-loop updates"
+          },
+          {
+            "seed_id": "c8d7fce4fdb5",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "heavy domain randomization of rendering and dynamics during sim training"
+          },
+          {
+            "seed_id": "4786c4756090",
+            "domain": "CV",
+            "borrowed_aspect": "flow-guided temporal feature aggregation with adaptive similarity-based fusion"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal that the individual components of PVM-Flow are known: (1) privileged-to-visual distillation for sim-to-real is covered by SimLauncher (seed 12/19), which already includes digital twin, privileged policy → visuomotor BC, background masking, visual augmentation, and real rollout mixing; (2) MAML-style meta-RL for sim-to-real dynamics adaptation is covered by the Meta-RL sim-to-real paper (seed 10/20); (3) flow-guided feature aggregation (FGFA, seed 9) is a known CV technique. However, no search surfaced a paper that combines all three: privileged-to-visual distillation + meta-RL outer-loop training + flow-guided temporal feature fusion for sim-to-real robot transfer. SimLauncher is the closest match, covering the distillation and real-data-mixing components, but lacks the meta-RL training and flow-guided perception stabilization. The flow-guided temporal fusion applied inside a visuomotor encoder for sim-to-real is not surfaced in any robotics paper. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with the flow-stabilized perception being a named design choice not present in the surfaced literature for this problem.\n\nPrior works:\n  - SimLauncher (2507.04452, 2025): Privileged-to-visual distillation pipeline with digital twin, background masking, visual augmentation, and real rollout mixing — covers the core distillation and data-mixing components of PVM-Flow.\n  - Meta Reinforcement Learning for Sim-to-real Domain Adaptation (1909.12906, 2019): MAML-style meta-RL trained across randomized dynamics with inner-loop adaptation at deployment — covers the meta-RL adaptation component.\n  - Flow-Guided Feature Aggregation for Video Object Detection (1703.10025, 2017): Optical flow warping + similarity-weighted feature fusion across frames — covers the flow-guided temporal fusion mechanism used in the visuomotor encoder.\n  - Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World (1703.06907, 2017): Aggressive domain randomization for zero-shot sim-to-real transfer — covers the visual randomization component.",
+        "prior_works": [
+          "SimLauncher (2507.04452, 2025): Privileged-to-visual distillation pipeline with digital twin, background masking, visual augmentation, and real rollout mixing — covers the core distillation and data-mixing components of PVM-Flow.",
+          "Meta Reinforcement Learning for Sim-to-real Domain Adaptation (1909.12906, 2019): MAML-style meta-RL trained across randomized dynamics with inner-loop adaptation at deployment — covers the meta-RL adaptation component.",
+          "Flow-Guided Feature Aggregation for Video Object Detection (1703.10025, 2017): Optical flow warping + similarity-weighted feature fusion across frames — covers the flow-guided temporal fusion mechanism used in the visuomotor encoder.",
+          "Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World (1703.06907, 2017): Aggressive domain randomization for zero-shot sim-to-real transfer — covers the visual randomization component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Privileged-to-Visual Meta-Distillation with Flow-Stabilized Perception (PVM-Flow), a sim-to-real pipeline that minimizes real-world supervision while addressing both visual and dynamics gaps. First, build a calibrated digital twin of the task and learn a high-performance privileged (state-based) policy entirely in simulation. Train it across a wide range of randomized dynamics and visual factors so the resulting behavior is robust and diverse; concurrently, meta-train the policy for fast adaptation by optimizing expected return after a few inner-loop updates. This privileged expert is then used to generate a large set of successful trajectories in sim.\n\nSecond, distill the expert into a visuomotor policy by behavior cloning from RGB(+proprio) to actions using the simulated trajectories. During cloning, aggressively randomize cameras, lighting, textures, and distractors, and apply strong visual augmentations. To suppress spurious background cues at train and test time, segment and mask static backgrounds and track the manipulated objects across time. In the visuomotor encoder, stabilize perception by aggregating features over a short window of recent frames: estimate optical flow to warp neighboring-frame features into the current frame and fuse them with spatially varying, similarity-based weights. This flow-guided temporal fusion reduces sensitivity to motion blur and sensor noise without needing extra labels.\n\nThird, incorporate a very small number of real-world rollouts (e.g., 5–20) from the policy to anchor the distribution shift. Mix these real samples with simulated demonstrations at equal sampling probability when training or fine-tuning the visuomotor policy and any value function, which regularizes estimates on real transitions and prevents overreliance on simulated statistics. Keep the visual encoder largely frozen and adapt lightweight adapters or the control head to avoid overfitting. Optionally, use unlabeled real images to run brief self-supervised consistency or augmentation-invariance updates on the encoder to align low-level statistics without requiring annotations.\n\nFinally, perform fast on-robot adaptation at deployment with a few safe inner-loop updates: collect K short episodes, compute on-policy gradients, and update only the control head and dynamics-sensitive layers while freezing most perception. Repeat this receding-horizon meta-update sparingly (e.g., every few episodes) with conservative step sizes and safety constraints. Add newly successful real trajectories to the demo buffer (dataset aggregation) to further improve performance over time, while continuing to leverage the large simulated corpus.",
+    "final_rationale": "This design separates what simulation does best (training a strong privileged expert over broad dynamics and visuals) from what must be learned from pixels and from hardware (robust perception and quick dynamics adaptation). Privileged-to-visual distillation transfers task knowledge to a vision policy with extensive visual randomization and background masking, shrinking the appearance gap. Mixing a handful of real rollouts at equal sampling combats critic or policy miscalibration on real transitions without requiring many demonstrations.\n\nA MAML-style inner-loop at deployment explicitly targets the remaining dynamics mismatch using only a few safe on-hardware rollouts, while freezing most of perception to preserve visual robustness. Flow-guided temporal feature aggregation makes the visuomotor encoder resilient to real-world sensing artifacts (blur, rolling shutter, flicker) without extra labels, further reducing the need for real demonstrations. Together, these ingredients address both the physics/dynamics and vision gaps with minimal real data.",
+    "final_inspired_by": [
+      {
+        "seed_id": "5b1967bcefff",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "privileged-to-visual distillation with calibrated digital twins and equal sampling of real and sim demos"
+      },
+      {
+        "seed_id": "ec79896a1fe8",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "MAML-style fast adaptation with few on-robot inner-loop updates"
+      },
+      {
+        "seed_id": "c8d7fce4fdb5",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "heavy domain randomization of rendering and dynamics during sim training"
+      },
+      {
+        "seed_id": "4786c4756090",
+        "domain": "CV",
+        "borrowed_aspect": "flow-guided temporal feature aggregation with adaptive similarity-based fusion"
+      }
+    ],
+    "wall_clock_s": 120.67,
+    "cost": {
+      "gen_prompt_tokens": 7164,
+      "gen_completion_tokens": 5421,
+      "judge_prompt_tokens": 78847,
+      "judge_completion_tokens": 1127,
+      "gen_cost_usd": 0.0632,
+      "judge_cost_usd": 0.2534,
+      "total_cost_usd": 0.3166
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Phase 0 — Sim pretraining + real-calibrated sensor rendering (digital twin). Train a visuomotor policy in simulation with broad domain randomization, but render observations through a lightweight digital-twin sensor model fitted from a few minutes of unlabeled real logs. For cameras, estimate intrinsics, rolling-shutter timing, vignetting, color/ISP and noise–blur statistics and plug them into the renderer; for any available tactile/force sensors, calibrate simple transfer functions and noise. This pretraining yields a teacher policy and features already biased toward the real sensor physics without requiring labeled real demonstrations.\n\nPhase 1 — Visual alignment on real via uncertainty-guided visual prompts. Freeze the policy backbone and learn pixel-level visual prompts added to real images so their intermediate features align to the sim-trained distribution. Train prompts with two weak-supervision signals: (a) adversarial feature alignment using a domain discriminator with a gradient reversal layer to make real features indistinguishable from simulated ones; and (b) pseudo-label knowledge transfer from the sim-trained teacher on real frames. Weight each update by a per-sample uncertainty score: confident samples update prompts strongly while uncertain ones are downweighted via an EMA-style scheduler. A small seed of human-labeled demonstrations anchors the objective but most images can be unlabeled.\n\nPhase 2 — Dynamics adaptor with shared vs domain-specific latents. Factor the policy’s action latent into a shared component z_shared and a domain-specific component z_dom. Keep the encoder and decoder largely fixed; learn a compact domain-specific prior over z_dom and a tiny residual in the action decoder using a short set of real rollouts. Regularize with KL to the sim prior on z_shared and keep z_shared frozen so that only dynamics- and actuation-specific variability is absorbed by z_dom. This concentrates real-data sample complexity on the few parameters that model friction, latency, and contact nuances.\n\nPhase 3 — On-policy data aggregation with a pseudo demonstrator. Run the adapted policy on hardware and aggregate data DAgger-style. At each visited state, invoke a pseudo-interactive demonstrator (planner or MPC with privileged maps/geometry when available) to produce target actions. Mix these pseudo-targets with the limited human demonstrations to fine-tune the policy. Gate supervision with uncertainty: accept pseudo-labels only when the policy is confident; otherwise, request a human correction or fall back to a safe controller. This keeps real human interventions minimal while covering the on-policy state distribution.\n\nPhase 4 — Causal multiscale sensor fusion wrapper for deployment. Wrap the high-level visuomotor policy with a discretely-online Neural CDE that fuses low-rate visual embeddings with high-rate proprioception/IMU/force at the control frequency, ensuring strict causality. Fine-tune only the CDE drift/readout on a few minutes of real trajectories (behavior cloning or self-supervised consistency), leaving the visuomotor backbone intact. This multirate, causal fusion compensates residual sensor and dynamics mismatch at run time without substantial additional demonstrations.",
+        "rationale": "The sim-to-real gap splits cleanly into perception and dynamics. A real-calibrated digital-twin renderer narrows the gap before training even starts, and uncertainty-guided visual prompts further pull real images into the sim-trained feature geometry with little or no labeling. On the dynamics side, a shared/domain-specific latent decomposition localizes real-data adaptation to a tiny prior and residual head that capture friction, delay, and contact differences, while a causal Neural CDE layer fuses fast proprioception with vision to stabilize control under real sensor timing and noise.\n\nMinimal demonstrations are achieved by combining weakly supervised adaptation (adversarial alignment and pseudo-label KD), active uncertainty gating to decide when to trust pseudo-labels or request help, and DAgger-style on-policy relabeling with a pseudo demonstrator so that most corrections do not require a human. Constraining real-world learning to small modules (prompts, z_dom prior, and the CDE wrapper) concentrates capacity where the gap lives and keeps the data footprint and risk low.",
+        "inspired_by": [
+          {
+            "seed_id": "c0ef4638400b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "real-to-sim digital twin sensor modeling"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "visual prompt learning with uncertainty-guided updates and adversarial feature alignment"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass deterministic uncertainty for filtering and active selection"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "shared vs domain-specific latent priors across domains"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "DAgger-style pseudo interactive demonstrator for on-policy relabeling"
+          },
+          {
+            "seed_id": "9afe61a7b42b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "discretely-online Neural CDE for causal multirate sensor fusion"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method is a multi-phase pipeline combining: (1) digital-twin sensor calibration + domain randomization pretraining, (2) uncertainty-guided visual prompts with adversarial GRL + pseudo-label KD for sim-to-real feature alignment, (3) shared/domain-specific latent decomposition with KL regularization for dynamics adaptation, and (4) causal Neural CDE wrapper for multirate sensor fusion. Searches found: the VPLU paper (seed 8, cloud-device visual prompts + uncertainty EMA + adversarial GRL + pseudo-label KD) which directly covers Phase 1 mechanisms but for cloud-device adaptation, not robot sim-to-real; the InFuser paper (seed 6) which covers Phase 4's Neural CDE multiscale fusion for robot control; and \"Learning Predictive Models From Observation and Interaction\" (seed 14) which covers the shared/domain-specific latent decomposition. No single paper combines all four phases together for robot sim-to-real transfer, and no paper was found that applies the VPLU-style visual prompt mechanism specifically to robot sim-to-real. The combination of these four distinct mechanism families (digital-twin calibration, uncertainty-guided visual prompts with adversarial alignment, disentangled latent dynamics adaptation, and causal Neural CDE fusion) into a unified sim-to-real pipeline has no direct published counterpart. However, each individual mechanism is drawn from existing work, and the combination is an assembly rather than a new mechanism. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms found in prior work but not their combination as proposed.\n\nPrior works:\n  - Cloud-Device Collaborative Adaptation to Continual Changing Environments (2212.00972, 2022): Visual prompt learning with uncertainty-guided EMA + adversarial GRL + pseudo-label KD — directly covers Phase 1 mechanisms but for cloud-device adaptation, not robot sim-to-real.\n  - Multiscale Sensor Fusion and Continuous Control with Neural CDEs / InFuser (2022): Neural CDE for causal multiscale sensor fusion in robot control — directly covers Phase 4.\n  - Learning Predictive Models From Observation and Interaction (1912.12773, 2019): Shared/domain-specific latent decomposition with domain-dependent priors — directly covers Phase 2 mechanism.\n  - VR-Goggles for Robots (2018): Adversarial domain adaptation for sim-to-real visual robot policy transfer — partial overlap with Phase 1.\n  - SimGAN (2021): Adversarial sim-to-real dynamics identification for robot policy transfer — partial overlap with Phase 2.",
+        "prior_works": [
+          "Cloud-Device Collaborative Adaptation to Continual Changing Environments (2212.00972, 2022): Visual prompt learning with uncertainty-guided EMA + adversarial GRL + pseudo-label KD — directly covers Phase 1 mechanisms but for cloud-device adaptation, not robot sim-to-real.",
+          "Multiscale Sensor Fusion and Continuous Control with Neural CDEs / InFuser (2022): Neural CDE for causal multiscale sensor fusion in robot control — directly covers Phase 4.",
+          "Learning Predictive Models From Observation and Interaction (1912.12773, 2019): Shared/domain-specific latent decomposition with domain-dependent priors — directly covers Phase 2 mechanism.",
+          "VR-Goggles for Robots (2018): Adversarial domain adaptation for sim-to-real visual robot policy transfer — partial overlap with Phase 1.",
+          "SimGAN (2021): Adversarial sim-to-real dynamics identification for robot policy transfer — partial overlap with Phase 2."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Phase 0 — Sim pretraining + real-calibrated sensor rendering (digital twin). Train a visuomotor policy in simulation with broad domain randomization, but render observations through a lightweight digital-twin sensor model fitted from a few minutes of unlabeled real logs. For cameras, estimate intrinsics, rolling-shutter timing, vignetting, color/ISP and noise–blur statistics and plug them into the renderer; for any available tactile/force sensors, calibrate simple transfer functions and noise. This pretraining yields a teacher policy and features already biased toward the real sensor physics without requiring labeled real demonstrations.\n\nPhase 1 — Visual alignment on real via uncertainty-guided visual prompts. Freeze the policy backbone and learn pixel-level visual prompts added to real images so their intermediate features align to the sim-trained distribution. Train prompts with two weak-supervision signals: (a) adversarial feature alignment using a domain discriminator with a gradient reversal layer to make real features indistinguishable from simulated ones; and (b) pseudo-label knowledge transfer from the sim-trained teacher on real frames. Weight each update by a per-sample uncertainty score: confident samples update prompts strongly while uncertain ones are downweighted via an EMA-style scheduler. A small seed of human-labeled demonstrations anchors the objective but most images can be unlabeled.\n\nPhase 2 — Dynamics adaptor with shared vs domain-specific latents. Factor the policy’s action latent into a shared component z_shared and a domain-specific component z_dom. Keep the encoder and decoder largely fixed; learn a compact domain-specific prior over z_dom and a tiny residual in the action decoder using a short set of real rollouts. Regularize with KL to the sim prior on z_shared and keep z_shared frozen so that only dynamics- and actuation-specific variability is absorbed by z_dom. This concentrates real-data sample complexity on the few parameters that model friction, latency, and contact nuances.\n\nPhase 3 — On-policy data aggregation with a pseudo demonstrator. Run the adapted policy on hardware and aggregate data DAgger-style. At each visited state, invoke a pseudo-interactive demonstrator (planner or MPC with privileged maps/geometry when available) to produce target actions. Mix these pseudo-targets with the limited human demonstrations to fine-tune the policy. Gate supervision with uncertainty: accept pseudo-labels only when the policy is confident; otherwise, request a human correction or fall back to a safe controller. This keeps real human interventions minimal while covering the on-policy state distribution.\n\nPhase 4 — Causal multiscale sensor fusion wrapper for deployment. Wrap the high-level visuomotor policy with a discretely-online Neural CDE that fuses low-rate visual embeddings with high-rate proprioception/IMU/force at the control frequency, ensuring strict causality. Fine-tune only the CDE drift/readout on a few minutes of real trajectories (behavior cloning or self-supervised consistency), leaving the visuomotor backbone intact. This multirate, causal fusion compensates residual sensor and dynamics mismatch at run time without substantial additional demonstrations.",
+    "final_rationale": "The sim-to-real gap splits cleanly into perception and dynamics. A real-calibrated digital-twin renderer narrows the gap before training even starts, and uncertainty-guided visual prompts further pull real images into the sim-trained feature geometry with little or no labeling. On the dynamics side, a shared/domain-specific latent decomposition localizes real-data adaptation to a tiny prior and residual head that capture friction, delay, and contact differences, while a causal Neural CDE layer fuses fast proprioception with vision to stabilize control under real sensor timing and noise.\n\nMinimal demonstrations are achieved by combining weakly supervised adaptation (adversarial alignment and pseudo-label KD), active uncertainty gating to decide when to trust pseudo-labels or request help, and DAgger-style on-policy relabeling with a pseudo demonstrator so that most corrections do not require a human. Constraining real-world learning to small modules (prompts, z_dom prior, and the CDE wrapper) concentrates capacity where the gap lives and keeps the data footprint and risk low.",
+    "final_inspired_by": [
+      {
+        "seed_id": "c0ef4638400b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "real-to-sim digital twin sensor modeling"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "visual prompt learning with uncertainty-guided updates and adversarial feature alignment"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single-pass deterministic uncertainty for filtering and active selection"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "shared vs domain-specific latent priors across domains"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "DAgger-style pseudo interactive demonstrator for on-policy relabeling"
+      },
+      {
+        "seed_id": "9afe61a7b42b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "discretely-online Neural CDE for causal multirate sensor fusion"
+      }
+    ],
+    "wall_clock_s": 183.71,
+    "cost": {
+      "gen_prompt_tokens": 4805,
+      "gen_completion_tokens": 4155,
+      "judge_prompt_tokens": 118653,
+      "judge_completion_tokens": 1251,
+      "gen_cost_usd": 0.0476,
+      "judge_cost_usd": 0.3747,
+      "total_cost_usd": 0.4223
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the flow-guided temporal feature fusion (warping neighboring frames via optical flow and fusing with similarity-based weights) combined with meta-learning for fast on-robot adaptation. While each component has precedents (optical flow, MAML-style meta-learning, DAgger), their combination in a privileged-to-visual distillation pipeline is reasonably original, though the overall structure follows well-trodden sim-to-real distillation patterns.\n\nMethod B's strongest novel elements are more distinct: (1) uncertainty-guided pixel-level visual prompts trained with adversarial feature alignment plus pseudo-label transfer to bridge the sim-to-real visual gap without labeled real data, and (2) the factored shared/domain-specific action latent (z_shared/z_dom) for concentrating real-data adaptation on dynamics-specific parameters, and (3) the Neural CDE wrapper for causal multirate sensor fusion. The visual prompt approach applied to policy transfer with uncertainty weighting is a less-explored combination, and the latent factorization for dynamics adaptation is a more principled and novel framing than standard fine-tuning. The Neural CDE for multirate fusion in visuomotor policies is also a genuinely uncommon mechanism.\n\nCompared to Method A, Method B introduces more mechanisms that are harder to find in existing sim-to-real literature in this exact combination, particularly the uncertainty-weighted visual prompts for domain alignment and the structured latent factorization for dynamics adaptation."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is the sim-to-real gap in visuomotor policies caused by physics, sensor, and dynamics mismatch, with minimal real-world demonstrations available. Method A directly addresses each component of this failure mode through a structured multi-phase pipeline: sensor/visual gap via digital-twin calibration and visual prompt alignment (Phases 0-1), dynamics gap via factored latents isolating domain-specific variability (Phase 2), on-policy distribution shift via DAgger with pseudo-demonstrators (Phase 3), and residual sensor/dynamics mismatch via multirate fusion (Phase 4). Each phase has a traceable causal pathway from a specific aspect of the sim-to-real gap to a concrete mechanism. Method B also addresses the failure mode through privileged-to-visual distillation, domain randomization, flow-stabilized perception, real sample mixing, and meta-adaptation, but its mechanisms are somewhat less precisely targeted—for instance, background masking and optical flow fusion address visual noise rather than the core dynamics mismatch, and the meta-learning component addresses adaptation speed rather than the specific physics/dynamics gap. Method A's Phase 2 (factored latents for dynamics) and Phase 4 (multirate fusion for residual mismatch) more directly and traceably engage the dynamics mismatch component, while both methods handle the visual gap comparably. Method A's engagement with the failure mode is more comprehensive and causally traceable across all named sub-problems."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A is largely coherent: it chains privileged policy training, behavior cloning with domain randomization, small real-data mixing, and meta-adaptation in a consistent pipeline. The optical flow-based temporal feature fusion is a well-defined component, and the dataset aggregation loop is standard. The main mild weakness is that meta-training the privileged policy for fast adaptation (MAML-style) and then distilling it into a separate visuomotor policy means the meta-learning objective is applied to a policy that won't directly be deployed, making the meta-adaptation benefit somewhat indirect—but this is not a contradiction, just a design inefficiency.\n\nMethod B introduces several components that create coherence tensions. Phase 1 uses visual prompts trained with adversarial feature alignment plus pseudo-labels from the sim teacher, but the backbone is frozen; adversarial training with a gradient reversal layer requires gradients to flow through the backbone to be effective, so freezing it undermines the standard GRL mechanism—this is a meaningful internal contradiction. Phase 2 introduces a VAE-style latent factorization (z_shared, z_dom) but the encoder and decoder are described as \"largely fixed,\" yet learning a domain-specific prior and residual action decoder requires defining and training these latent components from scratch, which is underspecified given the frozen backbone assumption. Phase 3's pseudo-demonstrator (MPC with privileged maps) is reasonable but assumes privileged geometry is available at deployment, which conflicts with the visuomotor framing. Phase 4 adds a Neural CDE fusion layer, which is a valid component but adds another training stage with its own assumptions. The accumulation of partially contradictory assumptions across phases makes Method B less coherent overall."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5217,
+    "judge_completion_tokens": 1058,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0315,
+    "total_cost_usd": 0.0315
+  }
+}

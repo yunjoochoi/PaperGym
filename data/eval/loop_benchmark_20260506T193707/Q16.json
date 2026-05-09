@@ -1,0 +1,252 @@
+{
+  "query_id": "Q16",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Models attending to long contexts (videos, long documents,\nepisodes) suffer from quadratic attention cost and forgetting;\nhow can we maintain effective memory of distant information\nwithout exhausting compute?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Streaming Query-Conditioned Compressive Memory (SQCM), a modular architecture that separates short-range computation from long-range recall. A lightweight dual-branch encoder processes the incoming stream (text tokens, video frames, or state-action tuples) with cheap local modeling and a tightly windowed global self-attention, while a long-term memory bank is built online as a sparse, query-addressable store. Each stream segment (e.g., 512–1k text tokens, a short video clip, or N steps of an episode) is summarized into a small set of multi-view keys and a tiny cache of core tokens; future steps retrieve only from this bank instead of attending over the full past, keeping compute sub-quadratic and near-constant with stream length.\n\nFor ingestion, each segment produces k multi-view keys by inserting special viewer tokens that learn to capture diverse semantics of the same content. In parallel, we compute token-level importance within the segment using attention/gradient attribution and select a few core tokens along with their positional indices. The memory thus stores a two-tier entry per segment: (1) multi-view keys for fast approximate addressing and (2) a compact value set of core tokens that preserves structure and can be re-inserted into attention when needed. For videos, we maintain a small FIFO of recent segment features and apply motion/ego-compensation to align them before summarization; for text/episodes we retain absolute or section-relative positions to enable structural alignment.\n\nAt inference time, the current model state (decoder state, task head, or explicit query vector) soft-matches against the memory’s viewer keys using a max-pooled similarity over views, retrieving the top-M relevant segments. Only the union of these segments’ core tokens (e.g., 2–4 segments × 16–64 tokens each) is brought into the context via cross-attention, gated by a learned relevance score so that the model pays for long-range computation only when evidence is likely downstream. For streaming video, recalled features are optionally warped into the current frame’s reference before cross-attention to reduce noise; for text, recalled tokens re-use their stored positional indices to preserve syntax/section cues. The local branch handles most computation, while the global branch is reserved for the small recalled set, keeping total attention cost bounded.\n\nMemory maintenance combines consolidation, deduplication, and eviction. We update existing memory entries with an uncertainty-weighted exponential moving average so novel or ambiguous content is written more strongly, while routine content produces smaller updates. To prevent bloat, we filter redundancies by semantic similarity with a recency-aware policy and evict via a relevance–age score. The selector and gates are trained end-to-end with auxiliary supervision that encourages retrieved memory to overlap with gold evidence when available; hard retrieval is approximated with differentiable top-k or Gumbel sampling during training and replaced by ANN search over viewer keys at serving time.\n\nAcross modalities, SQCM drops the need for full O(T^2) attention over long contexts: processing is O(T) for local compute, plus O(log B) for ANN over a bounded memory B and O(M·K) attention on recalled tokens (M segments, K tokens each). Typical settings (e.g., k=8 viewer keys per segment, M≤4, K≤64) provide robust recall of distant evidence while preserving a small, predictable compute budget.",
+        "rationale": "Long-context models struggle because they (a) pay quadratic cost for indiscriminate attention and (b) diffuse attention mass over many irrelevant tokens, causing forgetting of distant but crucial evidence. SQCM attacks both by compressing history into query-addressable, multi-view keys and a tiny set of core tokens, and by retrieving only what the current state deems relevant. Multi-view keys preserve diverse semantics so a single segment can be recalled for many future questions without dense late interaction, while core tokens plus positional indices retain the fine-grained structure needed to reason once retrieved.\n\nStreaming design and alignment maintain fidelity over time: in video, warping reduces temporal drift; in text/episodes, stored indices anchor recalled tokens to their original structure. Uncertainty-weighted consolidation prevents catastrophic overwriting while redundancy filtering keeps memory lean. The dual-branch encoder further reduces compute by reserving expensive global attention for a handful of recalled tokens, letting a cheap local pathway handle most steps. Together, these choices yield effective, scalable memory of distant information under tight compute budgets.",
+        "inspired_by": [
+          {
+            "seed_id": "a4e25ac8cc91",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "token-level summarization and storage with positional indices"
+          },
+          {
+            "seed_id": "0c772415f069",
+            "domain": "CV",
+            "borrowed_aspect": "streaming FIFO memory with motion-compensated feature alignment"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-vector viewer tokens as segment keys with max-pooled similarity"
+          },
+          {
+            "seed_id": "d54cefc9ff77",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "query-conditioned relevance via gradient-based attribution"
+          },
+          {
+            "seed_id": "c98fc8c39605",
+            "domain": "SPEECH",
+            "borrowed_aspect": "parallel local–global branches to bound attention cost"
+          },
+          {
+            "seed_id": "48d62c5ff6fc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "core-frame selection and redundancy filtering by semantic similarity"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "supervised grounding signals to train the selector to retrieve evidence"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA updates for memory consolidation"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "SQCM combines several known mechanisms: (1) multi-view viewer tokens from dense retrieval (Multi-View Document Representation, 2203.08372), (2) core token selection with positional indices from continual learning (Core Tokensets, 2410.05800), (3) streaming FIFO memory with ego-motion compensation from video perception (ViewFormer, 2405.04299), (4) uncertainty-weighted EMA from continual adaptation (VPLU, 2212.00972), and (5) compressive streaming memory with block-level retrieval (CacheFlow, 2025). No single paper combines all these mechanisms — specifically, the application of multi-view viewer keys (from dense retrieval literature) as the addressing mechanism for a streaming compressive memory bank, combined with core token selection with positional indices and uncertainty-weighted consolidation. CacheFlow is the closest end-to-end match but uses a recurrent encoder for retrieval indexing rather than multi-view viewer tokens, and lacks the core token + positional index two-tier structure. The combination of viewer-token-based multi-view keys (from IR) with core tokensets (from continual learning) applied to streaming long-context memory is not surfaced as a joint application in any search result, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application for this problem.\n\nPrior works:\n  - Multi-View Document Representation Learning for Open-Domain Dense Retrieval (2203.08372): introduces viewer tokens producing multi-view document keys with max-pooled similarity for ANN retrieval — directly used as the memory addressing mechanism in SQCM\n  - Core Tokensets for Data-efficient Sequential Training of Transformers (2410.05800): introduces core token selection via attention/gradient attribution with stored positional indices — directly used as the value tier in SQCM's memory entries\n  - CacheFlow: Compressive Streaming Memory for Efficient Long-Form Video Understanding (2025): streaming compressive memory with block-level retrieval index and top-K block retrieval for long-form video — closest end-to-end analog but uses recurrent encoder keys, not multi-view viewer tokens\n  - ViewFormer (2405.04299): streaming FIFO BEV memory with ego-motion compensation via feature warping — used in SQCM's video branch\n  - Cloud-Device Collaborative Adaptation with Uncertainty-Guided Updating (2212.00972): uncertainty-weighted EMA for memory updates — used in SQCM's consolidation mechanism\n  - StreamMem (2025): query-agnostic KV cache memory for streaming video with fixed-size memory and attention-score compression — related streaming memory system",
+        "prior_works": [
+          "Multi-View Document Representation Learning for Open-Domain Dense Retrieval (2203.08372): introduces viewer tokens producing multi-view document keys with max-pooled similarity for ANN retrieval — directly used as the memory addressing mechanism in SQCM",
+          "Core Tokensets for Data-efficient Sequential Training of Transformers (2410.05800): introduces core token selection via attention/gradient attribution with stored positional indices — directly used as the value tier in SQCM's memory entries",
+          "CacheFlow: Compressive Streaming Memory for Efficient Long-Form Video Understanding (2025): streaming compressive memory with block-level retrieval index and top-K block retrieval for long-form video — closest end-to-end analog but uses recurrent encoder keys, not multi-view viewer tokens",
+          "ViewFormer (2405.04299): streaming FIFO BEV memory with ego-motion compensation via feature warping — used in SQCM's video branch",
+          "Cloud-Device Collaborative Adaptation with Uncertainty-Guided Updating (2212.00972): uncertainty-weighted EMA for memory updates — used in SQCM's consolidation mechanism",
+          "StreamMem (2025): query-agnostic KV cache memory for streaming video with fixed-size memory and attention-score compression — related streaming memory system"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Streaming Query-Conditioned Compressive Memory (SQCM), a modular architecture that separates short-range computation from long-range recall. A lightweight dual-branch encoder processes the incoming stream (text tokens, video frames, or state-action tuples) with cheap local modeling and a tightly windowed global self-attention, while a long-term memory bank is built online as a sparse, query-addressable store. Each stream segment (e.g., 512–1k text tokens, a short video clip, or N steps of an episode) is summarized into a small set of multi-view keys and a tiny cache of core tokens; future steps retrieve only from this bank instead of attending over the full past, keeping compute sub-quadratic and near-constant with stream length.\n\nFor ingestion, each segment produces k multi-view keys by inserting special viewer tokens that learn to capture diverse semantics of the same content. In parallel, we compute token-level importance within the segment using attention/gradient attribution and select a few core tokens along with their positional indices. The memory thus stores a two-tier entry per segment: (1) multi-view keys for fast approximate addressing and (2) a compact value set of core tokens that preserves structure and can be re-inserted into attention when needed. For videos, we maintain a small FIFO of recent segment features and apply motion/ego-compensation to align them before summarization; for text/episodes we retain absolute or section-relative positions to enable structural alignment.\n\nAt inference time, the current model state (decoder state, task head, or explicit query vector) soft-matches against the memory’s viewer keys using a max-pooled similarity over views, retrieving the top-M relevant segments. Only the union of these segments’ core tokens (e.g., 2–4 segments × 16–64 tokens each) is brought into the context via cross-attention, gated by a learned relevance score so that the model pays for long-range computation only when evidence is likely downstream. For streaming video, recalled features are optionally warped into the current frame’s reference before cross-attention to reduce noise; for text, recalled tokens re-use their stored positional indices to preserve syntax/section cues. The local branch handles most computation, while the global branch is reserved for the small recalled set, keeping total attention cost bounded.\n\nMemory maintenance combines consolidation, deduplication, and eviction. We update existing memory entries with an uncertainty-weighted exponential moving average so novel or ambiguous content is written more strongly, while routine content produces smaller updates. To prevent bloat, we filter redundancies by semantic similarity with a recency-aware policy and evict via a relevance–age score. The selector and gates are trained end-to-end with auxiliary supervision that encourages retrieved memory to overlap with gold evidence when available; hard retrieval is approximated with differentiable top-k or Gumbel sampling during training and replaced by ANN search over viewer keys at serving time.\n\nAcross modalities, SQCM drops the need for full O(T^2) attention over long contexts: processing is O(T) for local compute, plus O(log B) for ANN over a bounded memory B and O(M·K) attention on recalled tokens (M segments, K tokens each). Typical settings (e.g., k=8 viewer keys per segment, M≤4, K≤64) provide robust recall of distant evidence while preserving a small, predictable compute budget.",
+    "final_rationale": "Long-context models struggle because they (a) pay quadratic cost for indiscriminate attention and (b) diffuse attention mass over many irrelevant tokens, causing forgetting of distant but crucial evidence. SQCM attacks both by compressing history into query-addressable, multi-view keys and a tiny set of core tokens, and by retrieving only what the current state deems relevant. Multi-view keys preserve diverse semantics so a single segment can be recalled for many future questions without dense late interaction, while core tokens plus positional indices retain the fine-grained structure needed to reason once retrieved.\n\nStreaming design and alignment maintain fidelity over time: in video, warping reduces temporal drift; in text/episodes, stored indices anchor recalled tokens to their original structure. Uncertainty-weighted consolidation prevents catastrophic overwriting while redundancy filtering keeps memory lean. The dual-branch encoder further reduces compute by reserving expensive global attention for a handful of recalled tokens, letting a cheap local pathway handle most steps. Together, these choices yield effective, scalable memory of distant information under tight compute budgets.",
+    "final_inspired_by": [
+      {
+        "seed_id": "a4e25ac8cc91",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "token-level summarization and storage with positional indices"
+      },
+      {
+        "seed_id": "0c772415f069",
+        "domain": "CV",
+        "borrowed_aspect": "streaming FIFO memory with motion-compensated feature alignment"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-vector viewer tokens as segment keys with max-pooled similarity"
+      },
+      {
+        "seed_id": "d54cefc9ff77",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "query-conditioned relevance via gradient-based attribution"
+      },
+      {
+        "seed_id": "c98fc8c39605",
+        "domain": "SPEECH",
+        "borrowed_aspect": "parallel local–global branches to bound attention cost"
+      },
+      {
+        "seed_id": "48d62c5ff6fc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "core-frame selection and redundancy filtering by semantic similarity"
+      },
+      {
+        "seed_id": "7f79d5d52bbc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "supervised grounding signals to train the selector to retrieve evidence"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA updates for memory consolidation"
+      }
+    ],
+    "wall_clock_s": 170.27,
+    "cost": {
+      "gen_prompt_tokens": 7132,
+      "gen_completion_tokens": 7427,
+      "judge_prompt_tokens": 131111,
+      "judge_completion_tokens": 1165,
+      "gen_cost_usd": 0.0832,
+      "judge_cost_usd": 0.4108,
+      "total_cost_usd": 0.494
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose a dual‑scale streaming transformer with a sparse Evidence Capsule Memory (ECM) that keeps long‑range information available at constant compute. The model processes inputs in short causal chunks with standard local attention, while long‑range information is represented by a compact set of capsules (B≈32–128) and a global attribute vector. Each capsule stores a key (embedding), a lightweight payload (short textual/event summary or compressed KV), and metadata (time, uncertainty, TTL). The model only cross‑attends to the top‑M capsules (e.g., M=8) that are dynamically retrieved per chunk; all other long tokens are summarized into capsules offline from the main attention path, so end‑to‑end complexity grows roughly linearly with sequence length (windowed attention + sparse cross‑attention), not quadratically.\n\nCapsule formation is event‑centric and modality‑aware. For videos, a tiny frame‑selector produces 2–3 core frames per segment and a lightweight captioner generates progress‑aware per‑frame captions; adjacent captions are compared to detect event boundaries, and only frames around boundaries are passed to the heavy LVLM while the rest are summarized into capsules. For long documents, a small sidecar head performs boundary detection (section shifts, entity/state changes) and emits succinct progress‑style summaries that become capsule payloads. Each candidate capsule receives an embedding from the backbone; novelty and salience are computed with respect to existing memory and the current query state.\n\nMemory is kept compact, diverse, and up‑to‑date via prototype‑guided consolidation and efficient re‑ranking. A discriminative prototype layer clusters candidate and resident capsules by cosine similarity, enforcing distinction so capsules cover different topics/events and providing a confidence score to prioritize ambiguous yet important content. When the memory is full, we maintain a top‑K replacement shortlist and apply lightweight adjacent‑swap pairwise comparisons to refine which capsules to admit/evict using a scorer that balances relevance (to current/anticipated queries), novelty (diversity vs existing capsules), and stability (confidence/TTL). In parallel, a global attribute vector is updated each chunk by attending over the current capsules conditioned on the last token/hidden state; this attribute is injected back into token updates (e.g., as a special token or conditioning gate) so the backbone always carries a compact summary of distant context.\n\nAt inference, each chunk runs: (1) local windowed attention; (2) retrieval of top‑M capsules by fast similarity search over capsule keys followed by the efficient pairwise RTL refinement; (3) one or two layers of cross‑attention from tokens to those M capsules; and (4) a global‑attribute update that is fed back into all layers via residual conditioning. For videos, only selector‑chosen core frames are fed to the LVLM; non‑selected frames contribute via their capsules. For text or mixed episodes, only boundary‑level summaries persist; raw distant tokens are discarded. This preserves access to far‑past evidence with bounded compute while mitigating forgetting through both the persistent capsules and the continually refreshed global attribute.\n\nTraining proceeds in two stages. First, pretrain the capsule extractor and selector with self‑supervised signals (next‑sentence/temporal order, masked span prediction) and weak supervision for evidence localization (e.g., supervision from QA rationales or distillation from short‑context full‑attention runs) so capsules capture answer‑bearing facts and event transitions. Second, jointly fine‑tune the re‑ranking scorer and cross‑attention using task losses, with budgeted memory curricula (vary B and M) to make retrieval robust. An aging/TTL objective and prototype separation loss stabilize the memory over long horizons. The entire pipeline remains causal and streaming, enabling deployment on very long documents, episodes, and videos without exhausting compute.",
+        "rationale": "The method replaces costly global attention with a compact, query‑adaptive memory that summarizes distant content into a small set of event‑centric capsules. Local computation remains dense only within a sliding window, while long‑range access is achieved through sparse cross‑attention to M≪N capsules, keeping complexity near‑linear in sequence length. Progress‑aware boundary detection and lightweight frame selection ensure capsules capture the right moments, preventing drift and redundancy.\n\nForgetting is alleviated in two ways: (1) a persistent set of discriminative, prototype‑diverse capsules maintains stable representations of distinct long‑range facts/events, and (2) a global attribute vector—updated by attending over capsules and injected into token updates—carries a compact, always‑present summary that conditions the model even when no capsules are explicitly retrieved. Efficient adjacent‑swap re‑ranking lets the system maintain and refresh memory under strict budgets with minimal overhead, so distant information remains findable and usable without quadratic cost.",
+        "inspired_by": [
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "core frame selection for efficient video reasoning"
+          },
+          {
+            "seed_id": "4a9de5f8c7ec",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "progress-aware per-frame captions to mark event boundaries"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global attribute updated via attention and injected into updates"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "efficient adjacent-swap top-k re-ranking under compute budget"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based discriminative latent space with confidence scoring"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines several mechanisms: (1) windowed local attention + sparse cross-attention to a compact set of capsules (B≈32–128, top-M retrieved), (2) event-centric capsule formation with progress-aware captioning and boundary detection, (3) prototype-guided consolidation with diversity enforcement and TTL/aging-based eviction, (4) adjacent-swap pairwise RTL re-ranking (borrowed from GLIMPSE for news recommendation), and (5) a global attribute vector updated by attending over capsules and injected back into token updates. Searches found related work on compressive/memory-augmented transformers (Memformer, Compressive Transformer, R3Mem, ELMUR), sparse attention for long contexts, and progress-aware video captioning (VideoEspresso seed), but no paper combines all these mechanisms together — specifically the prototype-diverse capsule memory with TTL aging, the global attribute vector conditioning loop, the event-centric boundary-triggered capsule formation, and the RTL pairwise re-ranking applied to capsule eviction in a streaming transformer. The closest works address subsets: ELMUR uses external memory with cross-attention layers; R3Mem uses compressed memory tokens; VideoEspresso uses frame selection with lightweight captioners. The specific combination of discriminative prototype-guided capsule consolidation + TTL eviction + global attribute conditioning + RTL pairwise re-ranking for streaming long-context transformers has no direct published match. This matches the Score 4-5 range — the individual mechanisms are known but their combination as proposed has not been surfaced. Given the multiple novel design choices (prototype separation loss, TTL-based aging, global attribute loop, RTL re-ranking applied to capsule eviction) with no end-to-end match found, this sits at Score 4, as some component pairings (sparse cross-attention to compressed memory, event boundary detection for video) have partial precedents in the literature.\n\nPrior works:\n  - Memformer (2020): External dynamic memory slots with cross-attention for linear-complexity sequence modeling — overlaps with the capsule cross-attention mechanism.\n  - ELMUR: External Layer Memory with Update/Rewrite for Long-Horizon RL (2025): Layer-local external memory with cross-attention and LRU eviction — overlaps with capsule memory and eviction policy.\n  - R3Mem: Bridging Memory Retention and Retrieval via Reversible Compression (2025): Hierarchical compressed memory tokens with retrieval for long-context LLMs — overlaps with capsule payload compression.\n  - VideoEspresso: Large-Scale Chain-of-Thought Dataset for Fine-Grained Video Reasoning via Core Frame Selection (2024): Lightweight frame selector + captioner for core frame selection — overlaps with the video frame selection component.\n  - Progress-Aware Video Frame Captioning (2024): Progress-aware per-frame captions for event boundary detection and frame selection — overlaps with the captioning and boundary detection component.\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2024): RTL adjacent-swap pairwise re-ranking — overlaps with the capsule re-ranking mechanism.\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): Prototype-based cosine similarity discrimination layer — overlaps with the prototype-guided consolidation component.",
+        "prior_works": [
+          "Memformer (2020): External dynamic memory slots with cross-attention for linear-complexity sequence modeling — overlaps with the capsule cross-attention mechanism.",
+          "ELMUR: External Layer Memory with Update/Rewrite for Long-Horizon RL (2025): Layer-local external memory with cross-attention and LRU eviction — overlaps with capsule memory and eviction policy.",
+          "R3Mem: Bridging Memory Retention and Retrieval via Reversible Compression (2025): Hierarchical compressed memory tokens with retrieval for long-context LLMs — overlaps with capsule payload compression.",
+          "VideoEspresso: Large-Scale Chain-of-Thought Dataset for Fine-Grained Video Reasoning via Core Frame Selection (2024): Lightweight frame selector + captioner for core frame selection — overlaps with the video frame selection component.",
+          "Progress-Aware Video Frame Captioning (2024): Progress-aware per-frame captions for event boundary detection and frame selection — overlaps with the captioning and boundary detection component.",
+          "GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2024): RTL adjacent-swap pairwise re-ranking — overlaps with the capsule re-ranking mechanism.",
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): Prototype-based cosine similarity discrimination layer — overlaps with the prototype-guided consolidation component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose a dual‑scale streaming transformer with a sparse Evidence Capsule Memory (ECM) that keeps long‑range information available at constant compute. The model processes inputs in short causal chunks with standard local attention, while long‑range information is represented by a compact set of capsules (B≈32–128) and a global attribute vector. Each capsule stores a key (embedding), a lightweight payload (short textual/event summary or compressed KV), and metadata (time, uncertainty, TTL). The model only cross‑attends to the top‑M capsules (e.g., M=8) that are dynamically retrieved per chunk; all other long tokens are summarized into capsules offline from the main attention path, so end‑to‑end complexity grows roughly linearly with sequence length (windowed attention + sparse cross‑attention), not quadratically.\n\nCapsule formation is event‑centric and modality‑aware. For videos, a tiny frame‑selector produces 2–3 core frames per segment and a lightweight captioner generates progress‑aware per‑frame captions; adjacent captions are compared to detect event boundaries, and only frames around boundaries are passed to the heavy LVLM while the rest are summarized into capsules. For long documents, a small sidecar head performs boundary detection (section shifts, entity/state changes) and emits succinct progress‑style summaries that become capsule payloads. Each candidate capsule receives an embedding from the backbone; novelty and salience are computed with respect to existing memory and the current query state.\n\nMemory is kept compact, diverse, and up‑to‑date via prototype‑guided consolidation and efficient re‑ranking. A discriminative prototype layer clusters candidate and resident capsules by cosine similarity, enforcing distinction so capsules cover different topics/events and providing a confidence score to prioritize ambiguous yet important content. When the memory is full, we maintain a top‑K replacement shortlist and apply lightweight adjacent‑swap pairwise comparisons to refine which capsules to admit/evict using a scorer that balances relevance (to current/anticipated queries), novelty (diversity vs existing capsules), and stability (confidence/TTL). In parallel, a global attribute vector is updated each chunk by attending over the current capsules conditioned on the last token/hidden state; this attribute is injected back into token updates (e.g., as a special token or conditioning gate) so the backbone always carries a compact summary of distant context.\n\nAt inference, each chunk runs: (1) local windowed attention; (2) retrieval of top‑M capsules by fast similarity search over capsule keys followed by the efficient pairwise RTL refinement; (3) one or two layers of cross‑attention from tokens to those M capsules; and (4) a global‑attribute update that is fed back into all layers via residual conditioning. For videos, only selector‑chosen core frames are fed to the LVLM; non‑selected frames contribute via their capsules. For text or mixed episodes, only boundary‑level summaries persist; raw distant tokens are discarded. This preserves access to far‑past evidence with bounded compute while mitigating forgetting through both the persistent capsules and the continually refreshed global attribute.\n\nTraining proceeds in two stages. First, pretrain the capsule extractor and selector with self‑supervised signals (next‑sentence/temporal order, masked span prediction) and weak supervision for evidence localization (e.g., supervision from QA rationales or distillation from short‑context full‑attention runs) so capsules capture answer‑bearing facts and event transitions. Second, jointly fine‑tune the re‑ranking scorer and cross‑attention using task losses, with budgeted memory curricula (vary B and M) to make retrieval robust. An aging/TTL objective and prototype separation loss stabilize the memory over long horizons. The entire pipeline remains causal and streaming, enabling deployment on very long documents, episodes, and videos without exhausting compute.",
+    "final_rationale": "The method replaces costly global attention with a compact, query‑adaptive memory that summarizes distant content into a small set of event‑centric capsules. Local computation remains dense only within a sliding window, while long‑range access is achieved through sparse cross‑attention to M≪N capsules, keeping complexity near‑linear in sequence length. Progress‑aware boundary detection and lightweight frame selection ensure capsules capture the right moments, preventing drift and redundancy.\n\nForgetting is alleviated in two ways: (1) a persistent set of discriminative, prototype‑diverse capsules maintains stable representations of distinct long‑range facts/events, and (2) a global attribute vector—updated by attending over capsules and injected into token updates—carries a compact, always‑present summary that conditions the model even when no capsules are explicitly retrieved. Efficient adjacent‑swap re‑ranking lets the system maintain and refresh memory under strict budgets with minimal overhead, so distant information remains findable and usable without quadratic cost.",
+    "final_inspired_by": [
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "core frame selection for efficient video reasoning"
+      },
+      {
+        "seed_id": "4a9de5f8c7ec",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "progress-aware per-frame captions to mark event boundaries"
+      },
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global attribute updated via attention and injected into updates"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "efficient adjacent-swap top-k re-ranking under compute budget"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based discriminative latent space with confidence scoring"
+      }
+    ],
+    "wall_clock_s": 134.18,
+    "cost": {
+      "gen_prompt_tokens": 4800,
+      "gen_completion_tokens": 4055,
+      "judge_prompt_tokens": 139148,
+      "judge_completion_tokens": 1321,
+      "gen_cost_usd": 0.0466,
+      "judge_cost_usd": 0.4373,
+      "total_cost_usd": 0.4838
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the Evidence Capsule Memory with prototype-guided consolidation, discriminative prototype clustering for diversity enforcement, TTL/aging objectives, and a global attribute vector that is continuously refreshed and injected back into all layers as a residual conditioning signal. The event-centric, modality-aware capsule formation with a frame-selector and progress-aware captioning adds further specificity. Method B's strongest novel element is the \"multi-view keys\" mechanism using special viewer tokens that learn to capture diverse semantics of the same content, combined with a two-tier memory entry (multi-view keys + core tokens) and uncertainty-weighted EMA updates. Both methods combine compressive memory with sparse retrieval and cross-attention in broadly similar architectures. Method A's prototype-guided consolidation with pairwise re-ranking and the global attribute vector feedback loop is a more distinctly named and mechanistically specific combination. Method B's viewer-token multi-view key generation is also non-trivial but resembles existing multi-head/multi-query attention variants applied to memory addressing. On balance, Method A introduces a slightly more original named mechanism (ECM with prototype separation loss, TTL, and global attribute conditioning) that would be harder to find as a prior published combination."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is quadratic attention cost and forgetting over long contexts. Both methods address this by replacing full O(T²) attention with local windowed attention plus sparse retrieval from a compact memory store, keeping compute sub-quadratic. Method A uses capsule-based memory with event-centric boundary detection, prototype-guided consolidation, and cross-attention to top-M capsules, with a traceable pathway from the quadratic cost problem to windowed local attention + sparse capsule cross-attention. Method B uses a dual-branch encoder with multi-view keys and core token retrieval, also replacing full attention with local compute plus ANN retrieval over a bounded memory bank. Both methods directly engage the failure mode with comparable mechanisms: local attention for recency, compressed memory for distant information, and sparse retrieval to bound compute. The causal pathways in both cases are equally traceable and direct—neither offers a meaningfully more direct engagement with the core failure mode than the other."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A has several coherence concerns. The \"adjacent-swap pairwise comparisons\" for capsule re-ranking is vaguely specified and its interaction with the retrieval pipeline is unclear. The two-stage training procedure introduces a \"prototype separation loss\" and \"aging/TTL objective\" that are mentioned but not defined in terms of how they integrate with the main task loss. The modality-specific components (frame selector, lightweight captioner, sidecar boundary detection head) are described as separate modules without clear specification of how they are trained jointly or connected to the backbone. These gaps would require an implementer to invent missing components. Method B is also complex but its components are more consistently defined and connected: the dual-branch encoder, multi-view keys via viewer tokens, importance-based core token selection, uncertainty-weighted EMA updates, and differentiable top-k training are all standard or well-grounded techniques. The training approach (end-to-end with auxiliary supervision, Gumbel sampling approximation for hard retrieval) is coherent and implementable. The main weakness in Method B is that \"motion/ego-compensation\" for video alignment before summarization is mentioned without specification, but this is a minor gap compared to Method A's multiple undefined components and unclear integration points."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6420,
+    "judge_completion_tokens": 781,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.031,
+    "total_cost_usd": 0.031
+  }
+}

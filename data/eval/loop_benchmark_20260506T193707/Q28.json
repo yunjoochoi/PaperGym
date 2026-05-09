@@ -1,0 +1,211 @@
+{
+  "query_id": "Q28",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Model outputs filtered by a quality signal can serve as new\ntraining data, but this risks reinforcing existing errors; how\ncan we bootstrap improvement from self-generated data while\navoiding distributional collapse?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Cross-Judged, Compute-Aware Self-Training (C-CAST), a bootstrapping pipeline that turns model-generated outputs into training data without collapsing onto its existing mistakes. For each unlabeled input, we generate a diverse set of candidates by sampling with varied decoding parameters and using multiple checkpoints/snapshots to widen support. Each candidate is scored on a graded scale by an auxiliary reward/quality model trained with robust pairwise preference methods, and its score is further cross-checked by complementary judges (e.g., smaller models, task-specific heuristics, or an LLM verifier) to reduce single-judge bias. Rather than a binary accept/reject, candidates (and partial segments within them, when applicable) receive confidence weights; we also compute a novelty score that measures dissimilarity to the current training distribution to guard against over-concentration on frequent patterns.\n\nFrom these graded and novelty-aware signals, we construct mixed-quality pools and sample for training with probabilities proportional to a tempered function of quality times a novelty bonus. To prevent over-reliance on a small high-quality subset, we schedule the mixture over time using compute-aware filtering laws: each pool has a repetition half-life and utility parameter that decay its sampling weight as similar examples are seen repeatedly. This yields an explicit curriculum that prioritizes high-value data early but smoothly shifts mass to underused pools as their marginal utility rises, maintaining breadth. Within each minibatch, we enforce coverage by diversity-aware selection (e.g., clustering or DPP-lite subsampling) so the effective training set spans modes rather than collapsing to a few easy templates.\n\nThe model is trained with a multi-task objective: a primary supervised loss with confidence weighting from the graded scores, plus auxiliary consistency/verification losses that encode task-specific constraints or cross-view agreements. Pseudo-labels are updated online: after each epoch, we re-run the model on the unlabeled inputs and fuse these fresh predictions with stored pseudo-labels according to their respective confidences, so the supervision adapts to the learner rather than ossifying early errors. To stabilize optimization and avert reward hacking or verbosity drift, we add a trust-region KL constraint to a reference model and an entropy regularizer, and we refresh the reward/quality model periodically with a small batch of human-calibrated preferences.\n\nC-CAST runs in cycles. Each cycle regenerates candidates with exploration-friendly settings, re-scores them via the robust ensemble of judges, updates pool utilities and half-lives given the available compute budget, and retrains with the scheduled mixture. A stratified, gold-labeled validation set monitors head and tail performance; if tail metrics degrade, the next cycle allocates more generation to targeted inputs/prompts for those slices. This closed loop—graded cross-judgment, compute-aware scheduling, diversity-aware sampling, online pseudo-label refinement, and guardrails against over-optimization—bootstraps quality while preserving distributional coverage.",
+        "rationale": "Distributional collapse typically arises when self-training relies on a single judge, binary thresholds, and repeated passes over a narrow high-score subset. C-CAST addresses each failure mode directly: graded scoring preserves informative partial successes, ensemble judging with a robust reward model dampens single-judge biases and reward hacking, and novelty-aware, compute-calibrated sampling limits overexposure to any pool while ensuring fresh, diverse supervision.\n\nOnline pseudo-label refinement and auxiliary consistency losses prevent early pseudo-label errors from hardening, allowing the supervision signal to track the improving model. Finally, trust-region regularization and targeted regeneration for underperforming slices provide additional safety valves against drift and mode collapse. Together, these components enable reliable self-bootstrapping that improves quality without sacrificing coverage.",
+        "inspired_by": [
+          {
+            "seed_id": "4491645e8737",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "graded reward model with proportional sampling to retain partial progress"
+          },
+          {
+            "seed_id": "ea5c88f759fa",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "compute-aware data filtering with utility exponents and repetition half-lives for mixture scheduling"
+          },
+          {
+            "seed_id": "61b11163e7e6",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "robust reward modeling to reduce proxy exploitation and verbosity bias"
+          },
+          {
+            "seed_id": "ac9d79a4fd87",
+            "domain": "IR_REC",
+            "borrowed_aspect": "cross-model fusion and external judging to eliminate self-scoring bias"
+          },
+          {
+            "seed_id": "7cd57a990ff8",
+            "domain": "CV",
+            "borrowed_aspect": "auxiliary-task co-training with online pseudo-label refinement"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "C-CAST combines multiple known mechanisms — graded reward scoring (seen in OS-Genesis/TRM), compute-aware scaling laws with repetition half-life (seen in the data filtering scaling laws paper), ensemble/cross-judging to reduce single-judge bias, novelty-aware sampling with a novelty bonus, DPP-lite diversity-aware minibatch selection, online pseudo-label fusion, trust-region KL constraint, and cyclic regeneration with tail-slice targeting. Searches surfaced: SCoRe (multi-turn RL self-correction with KL regularization), RLCCF (ensemble voting for LLM RL), Middo (closed-loop dynamic data optimization), IterIT (iterative complexity+diversity data selection), and the compute-aware scaling laws paper. None of these individually or jointly cover the full C-CAST pipeline — specifically, no paper combines compute-aware pool scheduling with repetition half-lives, cross-judge ensemble graded scoring, novelty-aware sampling bonus, DPP-lite diversity selection, and online pseudo-label fusion in a single self-training bootstrapping framework for LLMs. The individual mechanisms are known but their specific combination as proposed has not been surfaced as a joint application. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing named design choices (novelty bonus, compute-aware half-life scheduling, cross-judge ensemble) not present together in any surfaced paper.\n\nPrior works:\n  - SCoRe: Training Language Models to Self-Correct via Reinforcement Learning (2024): self-training with KL regularization to prevent collapse, multi-turn RL on self-generated data — overlaps with trust-region and self-training aspects.\n  - RLCCF: Wisdom of the Crowd: Reinforcement Learning from Coevolutionary Collective Feedback (2025): ensemble of LLM judges with weighted voting for reward signal — overlaps with cross-judge ensemble aspect.\n  - Middo: Model-Informed Dynamic Data Optimization for Enhanced LLM Fine-Tuning (2025): closed-loop dynamic data selection using complexity, diversity, and quality signals — overlaps with iterative quality-diversity data selection.\n  - IterIT: Boosting LLM via Learning from Data Iteratively and Selectively (2024): iterative complexity+diversity scoring for instruction tuning data selection — overlaps with diversity-aware and quality-aware sampling.\n  - Scaling Laws for Data Filtering: Data Curation cannot be Compute Agnostic (2024): compute-aware scaling laws with repetition half-life and pool utility parameters — directly overlaps with the compute-aware scheduling component.",
+        "prior_works": [
+          "SCoRe: Training Language Models to Self-Correct via Reinforcement Learning (2024): self-training with KL regularization to prevent collapse, multi-turn RL on self-generated data — overlaps with trust-region and self-training aspects.",
+          "RLCCF: Wisdom of the Crowd: Reinforcement Learning from Coevolutionary Collective Feedback (2025): ensemble of LLM judges with weighted voting for reward signal — overlaps with cross-judge ensemble aspect.",
+          "Middo: Model-Informed Dynamic Data Optimization for Enhanced LLM Fine-Tuning (2025): closed-loop dynamic data selection using complexity, diversity, and quality signals — overlaps with iterative quality-diversity data selection.",
+          "IterIT: Boosting LLM via Learning from Data Iteratively and Selectively (2024): iterative complexity+diversity scoring for instruction tuning data selection — overlaps with diversity-aware and quality-aware sampling.",
+          "Scaling Laws for Data Filtering: Data Curation cannot be Compute Agnostic (2024): compute-aware scaling laws with repetition half-life and pool utility parameters — directly overlaps with the compute-aware scheduling component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Cross-Judged, Compute-Aware Self-Training (C-CAST), a bootstrapping pipeline that turns model-generated outputs into training data without collapsing onto its existing mistakes. For each unlabeled input, we generate a diverse set of candidates by sampling with varied decoding parameters and using multiple checkpoints/snapshots to widen support. Each candidate is scored on a graded scale by an auxiliary reward/quality model trained with robust pairwise preference methods, and its score is further cross-checked by complementary judges (e.g., smaller models, task-specific heuristics, or an LLM verifier) to reduce single-judge bias. Rather than a binary accept/reject, candidates (and partial segments within them, when applicable) receive confidence weights; we also compute a novelty score that measures dissimilarity to the current training distribution to guard against over-concentration on frequent patterns.\n\nFrom these graded and novelty-aware signals, we construct mixed-quality pools and sample for training with probabilities proportional to a tempered function of quality times a novelty bonus. To prevent over-reliance on a small high-quality subset, we schedule the mixture over time using compute-aware filtering laws: each pool has a repetition half-life and utility parameter that decay its sampling weight as similar examples are seen repeatedly. This yields an explicit curriculum that prioritizes high-value data early but smoothly shifts mass to underused pools as their marginal utility rises, maintaining breadth. Within each minibatch, we enforce coverage by diversity-aware selection (e.g., clustering or DPP-lite subsampling) so the effective training set spans modes rather than collapsing to a few easy templates.\n\nThe model is trained with a multi-task objective: a primary supervised loss with confidence weighting from the graded scores, plus auxiliary consistency/verification losses that encode task-specific constraints or cross-view agreements. Pseudo-labels are updated online: after each epoch, we re-run the model on the unlabeled inputs and fuse these fresh predictions with stored pseudo-labels according to their respective confidences, so the supervision adapts to the learner rather than ossifying early errors. To stabilize optimization and avert reward hacking or verbosity drift, we add a trust-region KL constraint to a reference model and an entropy regularizer, and we refresh the reward/quality model periodically with a small batch of human-calibrated preferences.\n\nC-CAST runs in cycles. Each cycle regenerates candidates with exploration-friendly settings, re-scores them via the robust ensemble of judges, updates pool utilities and half-lives given the available compute budget, and retrains with the scheduled mixture. A stratified, gold-labeled validation set monitors head and tail performance; if tail metrics degrade, the next cycle allocates more generation to targeted inputs/prompts for those slices. This closed loop—graded cross-judgment, compute-aware scheduling, diversity-aware sampling, online pseudo-label refinement, and guardrails against over-optimization—bootstraps quality while preserving distributional coverage.",
+    "final_rationale": "Distributional collapse typically arises when self-training relies on a single judge, binary thresholds, and repeated passes over a narrow high-score subset. C-CAST addresses each failure mode directly: graded scoring preserves informative partial successes, ensemble judging with a robust reward model dampens single-judge biases and reward hacking, and novelty-aware, compute-calibrated sampling limits overexposure to any pool while ensuring fresh, diverse supervision.\n\nOnline pseudo-label refinement and auxiliary consistency losses prevent early pseudo-label errors from hardening, allowing the supervision signal to track the improving model. Finally, trust-region regularization and targeted regeneration for underperforming slices provide additional safety valves against drift and mode collapse. Together, these components enable reliable self-bootstrapping that improves quality without sacrificing coverage.",
+    "final_inspired_by": [
+      {
+        "seed_id": "4491645e8737",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "graded reward model with proportional sampling to retain partial progress"
+      },
+      {
+        "seed_id": "ea5c88f759fa",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "compute-aware data filtering with utility exponents and repetition half-lives for mixture scheduling"
+      },
+      {
+        "seed_id": "61b11163e7e6",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "robust reward modeling to reduce proxy exploitation and verbosity bias"
+      },
+      {
+        "seed_id": "ac9d79a4fd87",
+        "domain": "IR_REC",
+        "borrowed_aspect": "cross-model fusion and external judging to eliminate self-scoring bias"
+      },
+      {
+        "seed_id": "7cd57a990ff8",
+        "domain": "CV",
+        "borrowed_aspect": "auxiliary-task co-training with online pseudo-label refinement"
+      }
+    ],
+    "wall_clock_s": 160.49,
+    "cost": {
+      "gen_prompt_tokens": 6950,
+      "gen_completion_tokens": 6106,
+      "judge_prompt_tokens": 119422,
+      "judge_completion_tokens": 1249,
+      "gen_cost_usd": 0.0697,
+      "judge_cost_usd": 0.377,
+      "total_cost_usd": 0.4467
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Decoupled-Critic Data Aggregation (DeC-DAgger), a bootstrapped training loop that separates generation, evaluation, and supervision to prevent error reinforcement. Maintain three roles: (1) a generator G_t that produces outputs on inputs sampled from the current deployment distribution; (2) an external critic C_t that scores outputs using task-grounded signals calibrated on a small, periodically refreshed gold set; and (3) a pseudo-demonstrator D_t that can construct improved targets for hard cases using extra information or alternative solution procedures. Crucially, C_t and D_t are architecturally and objective-wise decoupled from G_t to avoid self-approval and style drift.\n\nAt each iteration, draw a batch of inputs. For coverage, stratify sampling across slices of the input space (by topic/domain clusters in an embedding space) and maintain per-slice quotas to prevent collapse onto easy or frequent modes. For each input x, sample up to k diverse candidates from G_t (stochastic decoding with diversity penalties), but cap k to a small number and evaluate with pairwise duels to mitigate pool-size bias. Score candidates with C_t and compute G_t’s epistemic signal using a lightweight uncertainty head (single-pass latent discriminant uncertainty). Retain a candidate only if it passes (a) critic-thresholded quality, (b) low generator uncertainty, and (c) augmentation-stability: minor input perturbations or paraphrases yield semantically equivalent outputs per a content-focused checker. Weight retained pairs (x, y^) by w = softclip(C_t(y^)) × (1 − u_G(y^)), normalize within each slice, and admit them to a replay buffer D_p with diversity control (reject near-duplicates in embedding space) to keep support wide.\n\nFor inputs that fail the filter yet are high-value (uncertain, underrepresented slices, or business-critical), route to a pseudo-demonstrator D_t. D_t is allowed stronger tools than G_t: retrieval-augmented re-solving, constraint checking, or a more informed policy that optimizes task-specific objectives unavailable to G_t (e.g., global search, simulators, or verifiers). When D_t provides a target, add it with a higher trust weight w_e. Mix supervision from three sources during student training: gold data D_h, high-trust pseudo targets from D_t, and filtered self-generated data D_p. Optimize a weighted loss L = λ_h L(D_h) + λ_e E_{(x,y_e)}[w_e ℓ(x,y_e)] + λ_p E_{(x,y^)}[w ℓ(x,y^)], with per-slice temperature scaling to keep the effective sample sizes stable across slices.\n\nUpdate the deployed generator by distilling a student S_t on the mixed data while keeping a slow-moving teacher T_t = EMA(T_{t−1}, S_t). Use uncertainty-guided momentum: increase the EMA update rate on parameters primarily responsible for confidently correct samples and damp updates where the teacher shows persistent uncertainty, preventing over-commitment to brittle patterns. Between rounds, recalibrate C_t on a small active set drawn from the decision boundary (high critic variance or generator–critic disagreements), and add a handful of human labels to anchor the critic. Monitor anti-collapse metrics on a held-out gold validation set: slice-level accuracy, calibration, and support coverage (e.g., MMD between current and baseline feature distributions). If drift is detected, tighten critic thresholds, lower k, increase λ_h/λ_e, and widen sampling quotas for degraded slices.\n\nFinally, guard against style over-optimization by structuring C_t around substance-first checks. Prefer reference-based or constraint-satisfaction signals over purely stylistic features, incorporate pairwise preference testing over absolute self-scores, and require evidence attestation where applicable (e.g., retrieval citations or executable checks). This decoupled, stratified, and uncertainty-aware aggregation expands the data frontier without collapsing onto the model’s current biases.",
+        "rationale": "Self-training fails when the model both proposes and judges its own outputs; this amplifies stylistic preferences and perceived fluency rather than true task gains. DeC-DAgger breaks this loop by decoupling the critic from the generator, limiting candidate pool bias, and relying on substance-first evaluation, directly addressing known self-bias failure modes. Uncertainty and stability filters further ensure that only reliable, semantically consistent self-labels are admitted, while stratified sampling and diversity control maintain coverage and prevent the dataset from collapsing to easy regions.\n\nWhere the model is weak, a pseudo-demonstrator supplies stronger supervision using additional information or algorithms, akin to an interactive expert in data-aggregation methods. Mixing gold, demonstrator, and filtered self-generated data with calibrated weights, plus a slow uncertainty-guided teacher update, yields steady improvement while constraining drift. Periodic critic recalibration and active sampling around the boundary keep the quality signal honest, providing a robust bootstrap that grows training data without reinforcing existing errors or narrowing the distribution.",
+        "inspired_by": [
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "decoupling evaluator from generator to counter self-evaluation bias and limiting candidate pool amplification"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided updating and high-confidence pseudo-label filtering to mitigate drift"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "DAgger-style data aggregation with a pseudo demonstrator and balanced expert–on-policy mixing"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass deterministic uncertainty head for scalable per-sample confidence weighting"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "DeC-DAgger combines multiple mechanisms: (1) DAgger-style data aggregation with a pseudo-demonstrator, (2) an architecturally decoupled external critic calibrated on a gold set, (3) stratified input-space sampling with per-slice quotas, (4) augmentation-stability filtering, (5) LDU-based uncertainty weighting, (6) uncertainty-guided EMA momentum updates, and (7) mixed supervision from gold/demonstrator/self-generated data. Searches surfaced related work on individual components — ReST/ReST-MCTS* (self-training with process rewards), self-rewarding LMs (self-evaluation bias), importance weighting for self-improvement, DCES (dynamic sampling against collapse), and ReLook (decoupled MLLM critic for RL) — but no paper combines all these mechanisms together for the bootstrapped self-training problem. The closest individual overlaps are: decoupled critic (ReLook, but for RL/web coding), DAgger with pseudo-demonstrator (DUET's PID, but for VLN navigation), and uncertainty-filtered self-training (various). The specific combination of DAgger-style aggregation + decoupled external critic + stratified slice-aware sampling + augmentation-stability filter + uncertainty-guided EMA teacher for LLM self-improvement has no direct published match, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application for this problem, with several named design choices not present in the surfaced literature.\n\nPrior works:\n  - ReST-MCTS* (2024): LLM self-training with process reward model and tree search; overlaps on filtered self-generated data training loop but lacks decoupled critic, stratified sampling, pseudo-demonstrator, and uncertainty-guided EMA.\n  - Self-Rewarding Language Models / Pride and Prejudice: LLM Amplifies Self-Bias in Self-Refinement (2024): identifies self-evaluation bias in self-training loops; motivates but does not implement the decoupled critic solution proposed here.\n  - DUET / Think Global Act Local (2022): uses pseudo-interactive demonstrator (PID) akin to DAgger for VLN navigation; overlaps on pseudo-demonstrator concept but different domain and no decoupled critic or uncertainty filtering.\n  - ReLook (2025): decoupled MLLM critic at inference for RL-based web coding; overlaps on critic decoupling but not the full bootstrapped self-training loop with stratified sampling and uncertainty-guided EMA.\n  - DCES / Countering Model Collapse in Iterative Self-Training (2026): dynamic center-edge sampling to prevent collapse; overlaps on anti-collapse sampling but lacks decoupled critic, pseudo-demonstrator, and uncertainty-guided EMA.\n  - Importance Weighting Can Help LLMs Self-Improve (2024): importance-weighted filtering of self-generated data; overlaps on weighted data selection but lacks stratified sampling, decoupled critic, and pseudo-demonstrator.\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): single-pass uncertainty estimation used as a component in DeC-DAgger's uncertainty head.",
+        "prior_works": [
+          "ReST-MCTS* (2024): LLM self-training with process reward model and tree search; overlaps on filtered self-generated data training loop but lacks decoupled critic, stratified sampling, pseudo-demonstrator, and uncertainty-guided EMA.",
+          "Self-Rewarding Language Models / Pride and Prejudice: LLM Amplifies Self-Bias in Self-Refinement (2024): identifies self-evaluation bias in self-training loops; motivates but does not implement the decoupled critic solution proposed here.",
+          "DUET / Think Global Act Local (2022): uses pseudo-interactive demonstrator (PID) akin to DAgger for VLN navigation; overlaps on pseudo-demonstrator concept but different domain and no decoupled critic or uncertainty filtering.",
+          "ReLook (2025): decoupled MLLM critic at inference for RL-based web coding; overlaps on critic decoupling but not the full bootstrapped self-training loop with stratified sampling and uncertainty-guided EMA.",
+          "DCES / Countering Model Collapse in Iterative Self-Training (2026): dynamic center-edge sampling to prevent collapse; overlaps on anti-collapse sampling but lacks decoupled critic, pseudo-demonstrator, and uncertainty-guided EMA.",
+          "Importance Weighting Can Help LLMs Self-Improve (2024): importance-weighted filtering of self-generated data; overlaps on weighted data selection but lacks stratified sampling, decoupled critic, and pseudo-demonstrator.",
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): single-pass uncertainty estimation used as a component in DeC-DAgger's uncertainty head."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Decoupled-Critic Data Aggregation (DeC-DAgger), a bootstrapped training loop that separates generation, evaluation, and supervision to prevent error reinforcement. Maintain three roles: (1) a generator G_t that produces outputs on inputs sampled from the current deployment distribution; (2) an external critic C_t that scores outputs using task-grounded signals calibrated on a small, periodically refreshed gold set; and (3) a pseudo-demonstrator D_t that can construct improved targets for hard cases using extra information or alternative solution procedures. Crucially, C_t and D_t are architecturally and objective-wise decoupled from G_t to avoid self-approval and style drift.\n\nAt each iteration, draw a batch of inputs. For coverage, stratify sampling across slices of the input space (by topic/domain clusters in an embedding space) and maintain per-slice quotas to prevent collapse onto easy or frequent modes. For each input x, sample up to k diverse candidates from G_t (stochastic decoding with diversity penalties), but cap k to a small number and evaluate with pairwise duels to mitigate pool-size bias. Score candidates with C_t and compute G_t’s epistemic signal using a lightweight uncertainty head (single-pass latent discriminant uncertainty). Retain a candidate only if it passes (a) critic-thresholded quality, (b) low generator uncertainty, and (c) augmentation-stability: minor input perturbations or paraphrases yield semantically equivalent outputs per a content-focused checker. Weight retained pairs (x, y^) by w = softclip(C_t(y^)) × (1 − u_G(y^)), normalize within each slice, and admit them to a replay buffer D_p with diversity control (reject near-duplicates in embedding space) to keep support wide.\n\nFor inputs that fail the filter yet are high-value (uncertain, underrepresented slices, or business-critical), route to a pseudo-demonstrator D_t. D_t is allowed stronger tools than G_t: retrieval-augmented re-solving, constraint checking, or a more informed policy that optimizes task-specific objectives unavailable to G_t (e.g., global search, simulators, or verifiers). When D_t provides a target, add it with a higher trust weight w_e. Mix supervision from three sources during student training: gold data D_h, high-trust pseudo targets from D_t, and filtered self-generated data D_p. Optimize a weighted loss L = λ_h L(D_h) + λ_e E_{(x,y_e)}[w_e ℓ(x,y_e)] + λ_p E_{(x,y^)}[w ℓ(x,y^)], with per-slice temperature scaling to keep the effective sample sizes stable across slices.\n\nUpdate the deployed generator by distilling a student S_t on the mixed data while keeping a slow-moving teacher T_t = EMA(T_{t−1}, S_t). Use uncertainty-guided momentum: increase the EMA update rate on parameters primarily responsible for confidently correct samples and damp updates where the teacher shows persistent uncertainty, preventing over-commitment to brittle patterns. Between rounds, recalibrate C_t on a small active set drawn from the decision boundary (high critic variance or generator–critic disagreements), and add a handful of human labels to anchor the critic. Monitor anti-collapse metrics on a held-out gold validation set: slice-level accuracy, calibration, and support coverage (e.g., MMD between current and baseline feature distributions). If drift is detected, tighten critic thresholds, lower k, increase λ_h/λ_e, and widen sampling quotas for degraded slices.\n\nFinally, guard against style over-optimization by structuring C_t around substance-first checks. Prefer reference-based or constraint-satisfaction signals over purely stylistic features, incorporate pairwise preference testing over absolute self-scores, and require evidence attestation where applicable (e.g., retrieval citations or executable checks). This decoupled, stratified, and uncertainty-aware aggregation expands the data frontier without collapsing onto the model’s current biases.",
+    "final_rationale": "Self-training fails when the model both proposes and judges its own outputs; this amplifies stylistic preferences and perceived fluency rather than true task gains. DeC-DAgger breaks this loop by decoupling the critic from the generator, limiting candidate pool bias, and relying on substance-first evaluation, directly addressing known self-bias failure modes. Uncertainty and stability filters further ensure that only reliable, semantically consistent self-labels are admitted, while stratified sampling and diversity control maintain coverage and prevent the dataset from collapsing to easy regions.\n\nWhere the model is weak, a pseudo-demonstrator supplies stronger supervision using additional information or algorithms, akin to an interactive expert in data-aggregation methods. Mixing gold, demonstrator, and filtered self-generated data with calibrated weights, plus a slow uncertainty-guided teacher update, yields steady improvement while constraining drift. Periodic critic recalibration and active sampling around the boundary keep the quality signal honest, providing a robust bootstrap that grows training data without reinforcing existing errors or narrowing the distribution.",
+    "final_inspired_by": [
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "decoupling evaluator from generator to counter self-evaluation bias and limiting candidate pool amplification"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided updating and high-confidence pseudo-label filtering to mitigate drift"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "DAgger-style data aggregation with a pseudo demonstrator and balanced expert–on-policy mixing"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single-pass deterministic uncertainty head for scalable per-sample confidence weighting"
+      }
+    ],
+    "wall_clock_s": 160.55,
+    "cost": {
+      "gen_prompt_tokens": 4805,
+      "gen_completion_tokens": 3316,
+      "judge_prompt_tokens": 121922,
+      "judge_completion_tokens": 1423,
+      "gen_cost_usd": 0.0392,
+      "judge_cost_usd": 0.3871,
+      "total_cost_usd": 0.4263
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the \"uncertainty-guided momentum\" EMA update that modulates parameter-level update rates based on confidence, combined with the explicit \"pseudo-demonstrator\" role that uses stronger tools (retrieval, verifiers, simulators) than the generator itself—this DAgger-inspired decoupled three-role architecture (generator/critic/demonstrator) with augmentation-stability filtering is a reasonably distinctive combination. Method B's strongest novel element is the \"compute-aware filtering laws\" with repetition half-lives and utility decay parameters that schedule mixture weights over time as a function of how many similar examples have been seen—this explicit curriculum scheduling based on marginal utility decay is somewhat original. However, both methods are largely assemblages of known components (DAgger, EMA teachers, diversity sampling, reward models, KL constraints, pseudo-labeling). Method A's three-role decoupling with augmentation-stability as a filter criterion and uncertainty-guided momentum on EMA parameters is a more distinctive named combination than Method B's compute-aware scheduling, which resembles existing data curriculum and replay buffer literature fairly closely. Neither is highly novel, but Method A's architectural decoupling principle and augmentation-stability filter represent a slightly more original framing."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is distributional collapse when bootstrapping from self-generated data — specifically, the risk that filtering by a quality signal reinforces existing errors and narrows the training distribution. Method A addresses this through novelty scoring, compute-aware scheduling with repetition half-lives, diversity-aware minibatch selection, and online pseudo-label refresh — all of which directly target the collapse problem. Method B addresses it through decoupled critic/generator roles (preventing self-approval), stratified input sampling with per-slice quotas, augmentation-stability checks, a pseudo-demonstrator for hard cases, and explicit anti-collapse monitoring metrics. Both methods engage the failure mode directly, but Method B's core architectural choice — decoupling the critic from the generator to prevent self-approval and style drift — is a more direct causal response to the named failure mode of \"reinforcing existing errors,\" since the root cause is the model judging its own outputs. Method A's mechanisms are more focused on distributional breadth but treat the self-reinforcement problem more indirectly through ensemble judges and KL constraints. However, Method B also adds the pseudo-demonstrator mechanism that provides genuinely external supervision for hard cases, which more directly breaks the self-reinforcement loop. Both are comparably direct overall, with Method B slightly more targeted at the error-reinforcement aspect and Method A slightly more targeted at distributional collapse."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A (C-CAST) is internally consistent and its components are compatible, but it has some coherence weaknesses. The \"compute-aware filtering laws\" with \"repetition half-life and utility parameters\" are described conceptually but never formally defined enough to be implementable without invention. The \"DPP-lite subsampling\" is mentioned without specification. The online pseudo-label fusion mechanism is described at a high level but the exact fusion rule is unspecified. These are gaps but not contradictions.\n\nMethod B (DeC-DAgger) is also largely coherent. The three-role separation (generator, critic, pseudo-demonstrator) is a clean architectural choice. The weighted loss with three sources is well-specified. However, the \"uncertainty-guided momentum\" for EMA updates—specifically \"increase the EMA update rate on parameters primarily responsible for confidently correct samples\"—requires identifying which parameters are \"responsible for\" specific samples, which is not a standard or well-defined operation and would require significant additional design work to implement. The \"lightweight uncertainty head (single-pass latent discriminant uncertainty)\" is also underspecified. These are real coherence gaps but similar in severity to Method A's gaps.\n\nBoth methods have underspecified components, but Method A's gaps are more numerous (half-life decay laws, DPP-lite, fusion rule) while Method B's most serious gap (parameter-level uncertainty attribution for EMA) is more fundamentally problematic as it requires a non-standard mechanism. Overall the methods are close, but Method A's gaps are more numerous whereas Method B's central EMA mechanism is more deeply incoherent. On balance, Method A is slightly more coherent overall."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6297,
+    "judge_completion_tokens": 958,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0333,
+    "total_cost_usd": 0.0333
+  }
+}

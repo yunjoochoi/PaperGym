@@ -1,0 +1,250 @@
+{
+  "query_id": "Q23",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Masked-prediction pretraining transformed language and vision;\nhow can we adapt the same principle to other data types like\ngraphs, time series, or sensor streams, and what objective\ndesign choices matter?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose a unified masked-prediction framework for non-text, non-image data called Structure- and Alignment-aware Masked Modeling (SAMM). SAMM treats graphs, time series, and heterogeneous sensor streams as token sequences enriched with structure. Tokenization is modality-specific but follows a common interface: each token carries a value embedding, a position/structure embedding, and a type embedding. For time series and sensor streams, we form variable-length temporal patches via change-point detection or fixed windows (with overlap) and optionally add frequency-domain tokens from short-time Fourier or wavelet transforms. For graphs, both nodes and edges become tokens, and attention is biased by graph distances and edge types; we also allow subgraph tokens produced by a lightweight pooling operator. Tokens from all sources are projected with shallow, modality-specific linear layers into a single fusion transformer, avoiding heavy encoders while preserving modality identity via type and structure embeddings.\n\nMasking is a mixture of random, structure-aware, and importance-aware policies. In streams, we mask contiguous spans, full channels, and frequency bands; in graphs, we mask nodes, edges, and coherent subgraphs (communities or k-hop balls). To make masking informative rather than arbitrary, we maintain a fast rationale scorer that estimates per-token importance from current representations; we sample a fixed budget of hard masks from high-importance tokens and fill the remainder with random or structure-contiguous masks to cover both critical and background context. We also apply modality dropout at sequence level (e.g., blank all tactile tokens while keeping vision) to force cross-sensor prediction.\n\nPrediction targets are chosen to avoid regression-to-the-mean and to match measurement noise. For continuous values, we predict discrete latent codes produced by a small vector-quantizer trained jointly with dequantization noise, plus an auxiliary residual head for fine error correction. Stream decoders predict both time-domain tokens and spectro-temporal tokens to capture local dynamics and periodicity; graph decoders predict masked node/edge attributes and edge existence. We optimize a multitask objective: masked-token cross-entropy on codes and L1/L2 on residuals; a cross-sensor contrastive alignment that brings co-temporal segments from different modalities together and pushes negatives apart; a pairwise matching loss that discriminates correctly synchronized pairs from time-shifted or modality-mismatched pairs; and a temporal-ordering loss on shuffled spans. For paired modalities with expected near-monotonic timing (e.g., audio–text, audio–vibration), we compute a soft alignment path from cross-modal similarities and add a regularizer that increases path sharpness and monotonicity while allowing small warps.\n\nArchitecturally, SAMM uses a single fusion transformer with relative position encodings for time and attention biases for graph topology. Lightweight per-modality heads share the backbone and are linked by cross-attention during decoding so that predictions for one stream can directly condition on hidden states from another when it is unmasked. Training follows a curriculum: begin with shorter spans, lower mask ratios, and mostly random masks; ramp up to higher ratios with larger contiguous blocks, more structure-aware subgraph masks, and more frequent modality dropouts. A compute-aware data scheduler mixes datasets and sensor pools based on learned utility and repetition half-lives, allocating training steps where they yield the greatest marginal improvement. At finetuning time, we freeze most of the backbone and attach small task heads (forecasting, anomaly detection, link prediction, node classification, imputation), optionally continuing masked objectives at low weight for stability.\n\nIn deployment, SAMM enables: imputation under missing sensors by reconstructing masked modalities; transfer across domains via shared discrete codebooks and alignment; and robust downstream performance with few labels due to structure- and importance-aware pretraining. Ablations vary tokenization granularity, mask composition, discretization vs pure regression, alignment regularization, and compute-aware scheduling to characterize what matters most per domain.",
+        "rationale": "Masked prediction works when tokens, masks, and targets reflect the data’s structure and uncertainty. For streams, contiguity, channel correlations, and time–frequency duality matter; for graphs, masking should respect topology and community structure. Importance-aware masking focuses learning capacity on informative regions while retaining coverage of background context, echoing how masked language modeling benefits from content words but still sees function words. Discrete reconstruction targets stabilize training for continuous signals and avoid blurry averages; residual heads keep precision. Cross-modal contrastive and matching losses encourage the model to use complementary sensors rather than treating them as noise, and a soft alignment-path regularizer makes masked prediction feasible under time warps without requiring exact frame alignment.\n\nThe compute-aware data scheduler acknowledges that heterogeneous data pools contribute unequally and saturate with repetition, so it allocates pretraining steps and mask types where they are most valuable. Together, these choices adapt the masked-prediction principle beyond text and images by aligning the masking unit to structure (spans, subgraphs, channels), the prediction target to noise and ambiguity (discrete codes plus residuals), and the objective to cross-sensor alignment and discrimination.",
+        "inspired_by": [
+          {
+            "seed_id": "b8e0de8b37e5",
+            "domain": "IR_REC",
+            "borrowed_aspect": "importance-aware masking via learned rationales"
+          },
+          {
+            "seed_id": "a89ca7315ce7",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "multi-task masked objectives and matching in a single-stream transformer"
+          },
+          {
+            "seed_id": "236e8a49f8f1",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "cross-modal contrastive alignment across heterogeneous sensors"
+          },
+          {
+            "seed_id": "298c239b83ef",
+            "domain": "SPEECH",
+            "borrowed_aspect": "alignment-path regularization for near-monotonic cross-modal timing"
+          },
+          {
+            "seed_id": "9a1e291adee1",
+            "domain": "SPEECH",
+            "borrowed_aspect": "cross-attention links between modality-specific decoders for alignment"
+          },
+          {
+            "seed_id": "ea5c88f759fa",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "compute-aware data mixing and repetition scheduling"
+          },
+          {
+            "seed_id": "d919f55daf69",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "shallow modality projections into a shared transformer"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surface several relevant works but none that match SAMM end-to-end. OmniVec2 (2024) uses modality-specific tokenizers + shared transformer across ~12 modalities including graphs and time series, but does not combine importance-aware masking, discrete codebook targets with residual heads, soft monotonic alignment path regularization, or compute-aware data scheduling. The physiological signals masked autoencoder paper (2024) uses masked autoencoding + modality dropout + cross-modal reconstruction for sensor streams but lacks graph support, structure-aware subgraph masking, discrete VQ targets, and the alignment path regularizer. HGMAE (2022) covers heterogeneous graph masked autoencoders with adaptive masking but is graph-only and lacks the time-series/sensor stream unification, discrete codebook targets, and cross-modal alignment. No paper surfaces the full combination: (1) unified masked pretraining across graphs + time series + sensor streams, (2) importance-aware hard masking policy, (3) discrete VQ codebook + residual head targets for continuous signals, (4) soft monotonic alignment path regularizer for cross-modal temporal alignment, and (5) compute-aware data scheduling with utility/repetition half-life modeling. This matches the Score 4 anchor — combining mechanism families with no surfaced published joint application for this exact problem, with several named design choices (importance-aware masking budget, soft alignment path regularizer, compute-aware scheduler with half-lives) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - OmniVec2 (2024): modality-specific tokenizers + shared transformer for 12+ modalities including graphs and time series, with iterative modality-switching pretraining — closest architectural match but lacks importance-aware masking, discrete VQ targets, alignment path regularizer, and compute-aware scheduling.\n  - Promoting cross-modal representations for physiological signals (2024): masked autoencoding + modality dropout + cross-modal reconstruction for multimodal sensor/physiological streams — overlaps on masked pretraining + modality dropout for sensor streams but is not unified with graphs and lacks VQ targets and alignment path.\n  - HGMAE (2022): heterogeneous graph masked autoencoder with adaptive attribute masking and metapath-based edge reconstruction — overlaps on graph masked pretraining with structure-aware masking but is graph-only and lacks continuous signal targets and cross-modal alignment.\n  - KGRec (2023): rationale-aware masked autoencoder for knowledge graphs using importance-scored masking — overlaps on importance-aware masking for graph pretraining but is recommendation-specific and lacks the unified multimodal framework.\n  - Scaling Laws for Data Filtering (2024): compute-aware scaling with utility exponents and repetition half-lives — overlaps on the compute-aware scheduling concept but is for vision-language CLIP training, not masked pretraining across heterogeneous modalities.",
+        "prior_works": [
+          "OmniVec2 (2024): modality-specific tokenizers + shared transformer for 12+ modalities including graphs and time series, with iterative modality-switching pretraining — closest architectural match but lacks importance-aware masking, discrete VQ targets, alignment path regularizer, and compute-aware scheduling.",
+          "Promoting cross-modal representations for physiological signals (2024): masked autoencoding + modality dropout + cross-modal reconstruction for multimodal sensor/physiological streams — overlaps on masked pretraining + modality dropout for sensor streams but is not unified with graphs and lacks VQ targets and alignment path.",
+          "HGMAE (2022): heterogeneous graph masked autoencoder with adaptive attribute masking and metapath-based edge reconstruction — overlaps on graph masked pretraining with structure-aware masking but is graph-only and lacks continuous signal targets and cross-modal alignment.",
+          "KGRec (2023): rationale-aware masked autoencoder for knowledge graphs using importance-scored masking — overlaps on importance-aware masking for graph pretraining but is recommendation-specific and lacks the unified multimodal framework.",
+          "Scaling Laws for Data Filtering (2024): compute-aware scaling with utility exponents and repetition half-lives — overlaps on the compute-aware scheduling concept but is for vision-language CLIP training, not masked pretraining across heterogeneous modalities."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose a unified masked-prediction framework for non-text, non-image data called Structure- and Alignment-aware Masked Modeling (SAMM). SAMM treats graphs, time series, and heterogeneous sensor streams as token sequences enriched with structure. Tokenization is modality-specific but follows a common interface: each token carries a value embedding, a position/structure embedding, and a type embedding. For time series and sensor streams, we form variable-length temporal patches via change-point detection or fixed windows (with overlap) and optionally add frequency-domain tokens from short-time Fourier or wavelet transforms. For graphs, both nodes and edges become tokens, and attention is biased by graph distances and edge types; we also allow subgraph tokens produced by a lightweight pooling operator. Tokens from all sources are projected with shallow, modality-specific linear layers into a single fusion transformer, avoiding heavy encoders while preserving modality identity via type and structure embeddings.\n\nMasking is a mixture of random, structure-aware, and importance-aware policies. In streams, we mask contiguous spans, full channels, and frequency bands; in graphs, we mask nodes, edges, and coherent subgraphs (communities or k-hop balls). To make masking informative rather than arbitrary, we maintain a fast rationale scorer that estimates per-token importance from current representations; we sample a fixed budget of hard masks from high-importance tokens and fill the remainder with random or structure-contiguous masks to cover both critical and background context. We also apply modality dropout at sequence level (e.g., blank all tactile tokens while keeping vision) to force cross-sensor prediction.\n\nPrediction targets are chosen to avoid regression-to-the-mean and to match measurement noise. For continuous values, we predict discrete latent codes produced by a small vector-quantizer trained jointly with dequantization noise, plus an auxiliary residual head for fine error correction. Stream decoders predict both time-domain tokens and spectro-temporal tokens to capture local dynamics and periodicity; graph decoders predict masked node/edge attributes and edge existence. We optimize a multitask objective: masked-token cross-entropy on codes and L1/L2 on residuals; a cross-sensor contrastive alignment that brings co-temporal segments from different modalities together and pushes negatives apart; a pairwise matching loss that discriminates correctly synchronized pairs from time-shifted or modality-mismatched pairs; and a temporal-ordering loss on shuffled spans. For paired modalities with expected near-monotonic timing (e.g., audio–text, audio–vibration), we compute a soft alignment path from cross-modal similarities and add a regularizer that increases path sharpness and monotonicity while allowing small warps.\n\nArchitecturally, SAMM uses a single fusion transformer with relative position encodings for time and attention biases for graph topology. Lightweight per-modality heads share the backbone and are linked by cross-attention during decoding so that predictions for one stream can directly condition on hidden states from another when it is unmasked. Training follows a curriculum: begin with shorter spans, lower mask ratios, and mostly random masks; ramp up to higher ratios with larger contiguous blocks, more structure-aware subgraph masks, and more frequent modality dropouts. A compute-aware data scheduler mixes datasets and sensor pools based on learned utility and repetition half-lives, allocating training steps where they yield the greatest marginal improvement. At finetuning time, we freeze most of the backbone and attach small task heads (forecasting, anomaly detection, link prediction, node classification, imputation), optionally continuing masked objectives at low weight for stability.\n\nIn deployment, SAMM enables: imputation under missing sensors by reconstructing masked modalities; transfer across domains via shared discrete codebooks and alignment; and robust downstream performance with few labels due to structure- and importance-aware pretraining. Ablations vary tokenization granularity, mask composition, discretization vs pure regression, alignment regularization, and compute-aware scheduling to characterize what matters most per domain.",
+    "final_rationale": "Masked prediction works when tokens, masks, and targets reflect the data’s structure and uncertainty. For streams, contiguity, channel correlations, and time–frequency duality matter; for graphs, masking should respect topology and community structure. Importance-aware masking focuses learning capacity on informative regions while retaining coverage of background context, echoing how masked language modeling benefits from content words but still sees function words. Discrete reconstruction targets stabilize training for continuous signals and avoid blurry averages; residual heads keep precision. Cross-modal contrastive and matching losses encourage the model to use complementary sensors rather than treating them as noise, and a soft alignment-path regularizer makes masked prediction feasible under time warps without requiring exact frame alignment.\n\nThe compute-aware data scheduler acknowledges that heterogeneous data pools contribute unequally and saturate with repetition, so it allocates pretraining steps and mask types where they are most valuable. Together, these choices adapt the masked-prediction principle beyond text and images by aligning the masking unit to structure (spans, subgraphs, channels), the prediction target to noise and ambiguity (discrete codes plus residuals), and the objective to cross-sensor alignment and discrimination.",
+    "final_inspired_by": [
+      {
+        "seed_id": "b8e0de8b37e5",
+        "domain": "IR_REC",
+        "borrowed_aspect": "importance-aware masking via learned rationales"
+      },
+      {
+        "seed_id": "a89ca7315ce7",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "multi-task masked objectives and matching in a single-stream transformer"
+      },
+      {
+        "seed_id": "236e8a49f8f1",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "cross-modal contrastive alignment across heterogeneous sensors"
+      },
+      {
+        "seed_id": "298c239b83ef",
+        "domain": "SPEECH",
+        "borrowed_aspect": "alignment-path regularization for near-monotonic cross-modal timing"
+      },
+      {
+        "seed_id": "9a1e291adee1",
+        "domain": "SPEECH",
+        "borrowed_aspect": "cross-attention links between modality-specific decoders for alignment"
+      },
+      {
+        "seed_id": "ea5c88f759fa",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "compute-aware data mixing and repetition scheduling"
+      },
+      {
+        "seed_id": "d919f55daf69",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "shallow modality projections into a shared transformer"
+      }
+    ],
+    "wall_clock_s": 183.61,
+    "cost": {
+      "gen_prompt_tokens": 7276,
+      "gen_completion_tokens": 6552,
+      "judge_prompt_tokens": 148888,
+      "judge_completion_tokens": 1270,
+      "gen_cost_usd": 0.0746,
+      "judge_cost_usd": 0.4657,
+      "total_cost_usd": 0.5403
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose MASK-FLEX, a unified masked-prediction pretraining recipe for graphs, time series, and multi-sensor streams. The core idea is to reconstruct strategically masked structure and signals from their context with a modality-aware encoder/decoder and a set of objectives tailored to data type and deployment constraints. MASK-FLEX uses multi-scale, structure-aware masks; a graph encoder with a global context token; a continuous-time stream encoder for irregular sensor data; and a lightweight reconstruction head. Training proceeds in two phases: (1) bidirectional masked infilling to learn rich representations, and (2) a causal variant for streams to close the train–test gap for online use.\n\nGraph adaptation: Represent each sample as a (possibly dynamic) attributed graph and apply structured masks over nodes, edges, attributes, and subgraphs. We preferentially sample masks as random-walk subgraphs and small edge cuts so the model must reason about topology, not just local attributes. The encoder is a message-passing or graph transformer that injects a learnable global token into per-node updates and the readout, so global context (e.g., session/user or scene/task state) is available during reconstruction. The decoder predicts masked node attributes (regression/classification), masked edge existence/types (link prediction), and the masked portion of any global attribute. High mask ratios (50–80%) are feasible with a light decoder, mirroring MAE-style efficiency while enforcing structural reasoning.\n\nTime series and sensor streams: Use a continuous-time encoder built on a Neural CDE front end to handle irregular sampling and multi-rate sensors. We train with discretely-online integration so the model remains causal at a target control/streaming frequency, but in phase 1 allow bidirectional context for representation learning. Masks combine (a) contiguous time spans at multiple scales, (b) channel-group drops to force cross-sensor reasoning, and (c) naturally missing segments treated as masks. To disambiguate concurrent sources (e.g., overlapping events in audio or multi-sensor interference), we add a mix-and-separate auxiliary task: form synthetic mixtures of two streams and train a shared backbone with a separation head to recover each source, alongside masked infilling. In phase 2, we switch a subset of masks to causal blocks (predict spans using only past) and keep the discretely-online evolution so the pretrained model can be deployed without violating causality.\n\nObjective design: Reconstruction heads predict appropriate targets per variable: categorical attributes via cross-entropy; continuous signals via heteroskedastic regression (predict mean and variance with a NLL loss) or Huber/quantile losses to avoid blurring. For oscillatory data (e.g., audio, vibration), add a phase/spectral term computed on short windows so the model matches both amplitude and phase rather than only time-domain MSE. For graphs, include link-prediction and small-motif classification losses to bias toward topology compliance. We use uncertainty-aware weighting to focus learning where the model is least certain: estimate a per-mask confidence from a lightweight latent prototype module or from predicted observation noise, and upweight high-uncertainty regions. Mask placement follows a curriculum: start with pointwise and short blocks, then grow to long spans and larger subgraphs; a tiny selector network identifies change-points or “core” segments (e.g., event onsets) and we occasionally center masks on these to force event-level reasoning. The total loss is a weighted sum of masked reconstruction, structural/phase terms, and the separation auxiliary.\n\nTraining and transfer: Phase 1 pretrains with high mask ratios and bidirectional context for sample efficiency. Phase 2 introduces causal masks for streams while keeping bidirectional graph pretraining. For downstream use, freeze or lightly tune the encoder and attach task-specific heads: node/graph classification, anomaly detection, forecasting, policy conditioning, or cross-sensor fusion. The same pretrained backbone supports both offline analytics (full-context) and online control/monitoring (causal), thanks to the discretely-online CDE evolution and the global token that stabilizes long-horizon context on graphs.",
+        "rationale": "Masked prediction works by forcing a model to use global and long-range context to reconstruct missing information. On graphs, masking nodes/edges/subgraphs compels the encoder to internalize topology and attribute dependencies; injecting a global token ensures that local message passing is conditioned on session- or scene-level state, improving sample efficiency and downstream performance. On streams, contiguous block masks teach temporal dynamics and cross-sensor relationships; a continuous-time encoder preserves invariances to sampling rate and irregularity, while a discretely-online evolution keeps the pretrained model deployable under causality constraints.\n\nTwo design choices are pivotal: what to predict and where to mask. Predicting distributional targets and adding phase/spectral terms yield objectives aligned with perception and control rather than plain MSE. Event-aware and uncertainty-aware masking avoid overfitting to easy regions, increasing the value of each masked token. Finally, a mix-and-separate auxiliary resolves multi-source ambiguity—common in real sensors—so the backbone learns disentangled, source-aware features that transfer robustly.",
+        "inspired_by": [
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global attribute token injected into graph updates and readout"
+          },
+          {
+            "seed_id": "9afe61a7b42b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "discretely-online Neural CDE for causal continuous-time encoding"
+          },
+          {
+            "seed_id": "f41ac7143cfe",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "auxiliary mix-and-separate objective to disambiguate concurrent sources"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "core segment/frame selection to guide event-aware masking"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "deterministic latent uncertainty for loss weighting and mask sampling"
+          },
+          {
+            "seed_id": "0b42617a036f",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "phase-sensitive loss design for oscillatory signals"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed MASK-FLEX combines several known mechanisms: (1) masked graph pretraining with structural objectives (GraphMAE, GraphMAE2, GiGaMAE are well-established), (2) masked time series pretraining (many papers exist), (3) Neural CDE for irregular time series (from the inspired seed), and (4) a mix-and-separate auxiliary task for multi-sensor streams. The searches found no paper that jointly applies Neural CDEs with masked pretraining, no paper combining mix-and-separate as an auxiliary task within a masked pretraining framework for sensor streams, and no unified framework spanning graphs + time series + sensor streams with all these components together. The closest works are GraphMAE2 (graph masked autoencoder), EMIT (event-based masking for irregular time series), and the multiscale CDE paper — but none combine these mechanisms together, and the mix-and-separate auxiliary within masked pretraining is not surfaced anywhere. The two-phase bidirectional/causal training with discretely-online CDE evolution is also not found in any search result. This combination of mechanism families (graph masked pretraining + Neural CDE encoder + mix-and-separate auxiliary + uncertainty/curriculum masking + two-phase causal/bidirectional training) has no published joint application surfaced, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application, with several named design choices not present in the literature.\n\nPrior works:\n  - GraphMAE2 (2023): Masked graph autoencoder with feature reconstruction and structural objectives — overlaps with graph masked pretraining component\n  - GiGaMAE (2023): Graph masked autoencoder with latent reconstruction — overlaps with graph masked pretraining component\n  - EMIT (2024): Event-based masking for irregular time series self-supervised pretraining — overlaps with irregular time series masked pretraining\n  - Multiscale Sensor Fusion and Continuous Control with Neural CDEs (2022): Discretely-online CDE evolution for causal deployment — overlaps with continuous-time stream encoder design\n  - Universal Sound Separation with Self-Supervised Audio Masked Autoencoder (2024): Combines masked autoencoder with separation, but for audio only, not as auxiliary task within unified masked pretraining\n  - Visually Informed Binaural Audio Generation without Binaural Audios (2021): Mix-and-separate auxiliary task for audio-visual learning — overlaps with mix-and-separate auxiliary concept",
+        "prior_works": [
+          "GraphMAE2 (2023): Masked graph autoencoder with feature reconstruction and structural objectives — overlaps with graph masked pretraining component",
+          "GiGaMAE (2023): Graph masked autoencoder with latent reconstruction — overlaps with graph masked pretraining component",
+          "EMIT (2024): Event-based masking for irregular time series self-supervised pretraining — overlaps with irregular time series masked pretraining",
+          "Multiscale Sensor Fusion and Continuous Control with Neural CDEs (2022): Discretely-online CDE evolution for causal deployment — overlaps with continuous-time stream encoder design",
+          "Universal Sound Separation with Self-Supervised Audio Masked Autoencoder (2024): Combines masked autoencoder with separation, but for audio only, not as auxiliary task within unified masked pretraining",
+          "Visually Informed Binaural Audio Generation without Binaural Audios (2021): Mix-and-separate auxiliary task for audio-visual learning — overlaps with mix-and-separate auxiliary concept"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose MASK-FLEX, a unified masked-prediction pretraining recipe for graphs, time series, and multi-sensor streams. The core idea is to reconstruct strategically masked structure and signals from their context with a modality-aware encoder/decoder and a set of objectives tailored to data type and deployment constraints. MASK-FLEX uses multi-scale, structure-aware masks; a graph encoder with a global context token; a continuous-time stream encoder for irregular sensor data; and a lightweight reconstruction head. Training proceeds in two phases: (1) bidirectional masked infilling to learn rich representations, and (2) a causal variant for streams to close the train–test gap for online use.\n\nGraph adaptation: Represent each sample as a (possibly dynamic) attributed graph and apply structured masks over nodes, edges, attributes, and subgraphs. We preferentially sample masks as random-walk subgraphs and small edge cuts so the model must reason about topology, not just local attributes. The encoder is a message-passing or graph transformer that injects a learnable global token into per-node updates and the readout, so global context (e.g., session/user or scene/task state) is available during reconstruction. The decoder predicts masked node attributes (regression/classification), masked edge existence/types (link prediction), and the masked portion of any global attribute. High mask ratios (50–80%) are feasible with a light decoder, mirroring MAE-style efficiency while enforcing structural reasoning.\n\nTime series and sensor streams: Use a continuous-time encoder built on a Neural CDE front end to handle irregular sampling and multi-rate sensors. We train with discretely-online integration so the model remains causal at a target control/streaming frequency, but in phase 1 allow bidirectional context for representation learning. Masks combine (a) contiguous time spans at multiple scales, (b) channel-group drops to force cross-sensor reasoning, and (c) naturally missing segments treated as masks. To disambiguate concurrent sources (e.g., overlapping events in audio or multi-sensor interference), we add a mix-and-separate auxiliary task: form synthetic mixtures of two streams and train a shared backbone with a separation head to recover each source, alongside masked infilling. In phase 2, we switch a subset of masks to causal blocks (predict spans using only past) and keep the discretely-online evolution so the pretrained model can be deployed without violating causality.\n\nObjective design: Reconstruction heads predict appropriate targets per variable: categorical attributes via cross-entropy; continuous signals via heteroskedastic regression (predict mean and variance with a NLL loss) or Huber/quantile losses to avoid blurring. For oscillatory data (e.g., audio, vibration), add a phase/spectral term computed on short windows so the model matches both amplitude and phase rather than only time-domain MSE. For graphs, include link-prediction and small-motif classification losses to bias toward topology compliance. We use uncertainty-aware weighting to focus learning where the model is least certain: estimate a per-mask confidence from a lightweight latent prototype module or from predicted observation noise, and upweight high-uncertainty regions. Mask placement follows a curriculum: start with pointwise and short blocks, then grow to long spans and larger subgraphs; a tiny selector network identifies change-points or “core” segments (e.g., event onsets) and we occasionally center masks on these to force event-level reasoning. The total loss is a weighted sum of masked reconstruction, structural/phase terms, and the separation auxiliary.\n\nTraining and transfer: Phase 1 pretrains with high mask ratios and bidirectional context for sample efficiency. Phase 2 introduces causal masks for streams while keeping bidirectional graph pretraining. For downstream use, freeze or lightly tune the encoder and attach task-specific heads: node/graph classification, anomaly detection, forecasting, policy conditioning, or cross-sensor fusion. The same pretrained backbone supports both offline analytics (full-context) and online control/monitoring (causal), thanks to the discretely-online CDE evolution and the global token that stabilizes long-horizon context on graphs.",
+    "final_rationale": "Masked prediction works by forcing a model to use global and long-range context to reconstruct missing information. On graphs, masking nodes/edges/subgraphs compels the encoder to internalize topology and attribute dependencies; injecting a global token ensures that local message passing is conditioned on session- or scene-level state, improving sample efficiency and downstream performance. On streams, contiguous block masks teach temporal dynamics and cross-sensor relationships; a continuous-time encoder preserves invariances to sampling rate and irregularity, while a discretely-online evolution keeps the pretrained model deployable under causality constraints.\n\nTwo design choices are pivotal: what to predict and where to mask. Predicting distributional targets and adding phase/spectral terms yield objectives aligned with perception and control rather than plain MSE. Event-aware and uncertainty-aware masking avoid overfitting to easy regions, increasing the value of each masked token. Finally, a mix-and-separate auxiliary resolves multi-source ambiguity—common in real sensors—so the backbone learns disentangled, source-aware features that transfer robustly.",
+    "final_inspired_by": [
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global attribute token injected into graph updates and readout"
+      },
+      {
+        "seed_id": "9afe61a7b42b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "discretely-online Neural CDE for causal continuous-time encoding"
+      },
+      {
+        "seed_id": "f41ac7143cfe",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "auxiliary mix-and-separate objective to disambiguate concurrent sources"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "core segment/frame selection to guide event-aware masking"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "deterministic latent uncertainty for loss weighting and mask sampling"
+      },
+      {
+        "seed_id": "0b42617a036f",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "phase-sensitive loss design for oscillatory signals"
+      }
+    ],
+    "wall_clock_s": 157.13,
+    "cost": {
+      "gen_prompt_tokens": 4806,
+      "gen_completion_tokens": 5649,
+      "judge_prompt_tokens": 146409,
+      "judge_completion_tokens": 1037,
+      "gen_cost_usd": 0.0625,
+      "judge_cost_usd": 0.4548,
+      "total_cost_usd": 0.5173
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the Neural CDE front-end for continuous-time/irregular sensor encoding combined with a mix-and-separate auxiliary task and a two-phase bidirectional-to-causal training switch. The Neural CDE integration is a non-trivial mechanism not commonly paired with masked pretraining, and the mix-and-separate auxiliary is borrowed from source separation but applied here as a pretraining signal for sensor streams. Method B's strongest novel element is the combination of a jointly-trained vector quantizer as prediction targets (discrete codebook + residual head) with a soft monotonic alignment path regularizer across modalities and an importance-aware rationale scorer for mask sampling. The VQ-target approach echoes dVAE/BEiT but the combination with cross-modal soft-DTW-style alignment regularization and importance-driven hard mask sampling is a more original compound mechanism. Both methods are elaborate composites, but Method B's discrete-code prediction target with dequantization noise plus the soft monotonic alignment path regularizer represents a tighter, more distinctly novel combination that is harder to find as a unit in prior literature, compared to Method A's Neural CDE + mix-and-separate which are more directly borrowed from existing separate literatures."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode identified in the query is the challenge of adapting masked-prediction pretraining—which succeeded in language and vision—to structurally different data types (graphs, time series, sensor streams), with particular emphasis on what objective design choices matter. Both methods engage this failure mode directly by proposing modality-specific tokenization, masking strategies, and reconstruction objectives. Method A addresses the failure mode through explicit modality-aware mechanisms: structured graph masks (random-walk subgraphs, edge cuts), a Neural CDE front end for irregular time series, phase/spectral reconstruction terms, and a two-phase causal/bidirectional training scheme. Method B addresses it through a unified token-sequence framework with importance-aware masking, discrete latent code prediction (to avoid regression-to-the-mean blurring), cross-sensor contrastive alignment, and temporal ordering losses. Both trace causal pathways from the named problem to specific method steps. However, Method B more directly addresses the \"objective design choices matter\" aspect of the query by explicitly tackling the regression-to-the-mean failure of naive MSE reconstruction (via VQ discretization), cross-modal alignment objectives, and temporal ordering—each tied to a specific failure mode of naive masked prediction on these data types. Method A's mechanisms are comprehensive but somewhat more engineering-focused (handling irregularity, causality) rather than directly resolving why naive masked prediction objectives fail on these modalities."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's most serious coherence weakness is the two-phase training scheme that combines a bidirectional Neural CDE encoder in phase 1 with a causal variant in phase 2. Neural CDEs are inherently continuous-time integrators that require careful reformulation to switch between bidirectional and causal modes, and the method does not explain how the same pretrained weights transfer between these two fundamentally different integration regimes without retraining or architectural changes. The \"discretely-online integration\" concept is mentioned but not defined clearly enough to resolve this tension. Method B's most serious coherence weakness is the jointly trained vector quantizer used as prediction targets — training a VQ codebook jointly with the masked prediction objective is known to be unstable and requires careful engineering (commitment losses, codebook resets, EMA updates), and the method does not address how this instability is managed. Additionally, the \"compute-aware data scheduler with learned utility and repetition half-lives\" is an underspecified component that would require significant additional design work. However, Method B's overall architecture — a single fusion transformer with modality-specific tokenization and shared attention — is internally consistent and each component connects logically to the next. Method A's bidirectional-to-causal CDE transition represents a more fundamental architectural contradiction that would require redesigning core components, whereas Method B's weaknesses are more about underspecification of auxiliary components rather than internal contradictions."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6861,
+    "judge_completion_tokens": 917,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0343,
+    "total_cost_usd": 0.0343
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "query_id": "Q06",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Updating billions of parameters to adapt a pretrained LLM is\nprohibitive on consumer hardware; how can we adapt the model\nwith a small number of additional parameters and match full\nfine-tuning performance?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose HyperZero-PEFT, a forward-only, hypernetwork-driven adapter scheme that adapts a frozen LLM using a tiny number of additional parameters while matching full fine-tuning. Insert lightweight, parallel adapters in the FFN (LoRA-style down/up projections) and short learned key/value prefixes in attention. A single shared hypernetwork generates all adapter and prefix weights for every layer from compact inputs that concatenate a task embedding, a layer-id embedding, and a block-type embedding. The generated modules are injected with residual scaling and per-layer learned gates to softly select where adaptation matters most. Only the hypernetwork, small embedding tables, the per-layer gates, and optionally layer norms are trained; the LLM weights remain frozen.\n\nTraining is performed with a two-point zeroth-order (ZO) estimator on the hypernetwork parameters, eliminating backpropagation through the base LLM so memory stays near inference. At each step, draw an antithetic perturbation for the hypernetwork weights, run two forward passes to compute a finite-difference loss, and update with an Adam-like optimizer. We deterministically resample perturbations by seed to reduce variance and enable gradient accumulation without extra memory. Because the hypernetwork is small and the base model is frozen, a single consumer GPU (e.g., 8–24 GB) can train billions-parameter LLMs with near-inference memory and throughput.\n\nTo maximize accuracy under a tiny parameter budget, we add a short sensitivity warm-up that allocates rank and prefix length where they help most. Using a small held-out set, we probe each layer by perturbing its hyper-embedding and measuring loss change, then allocate higher LoRA rank and/or longer prefixes to the top-k most sensitive layers while shrinking others to minimal or zero rank. The hypernetwork learns to specialize by layer and block type, amortizing parameters across the whole stack and across tasks via the task embedding.\n\nAt inference, the hypernetwork generates per-layer adapter/prefix weights on the fly or caches them after the first use; switching tasks reduces to swapping a task embedding. The method is compatible with quantized bases (e.g., 4/8-bit) since only small-side modules are trained and applied in higher precision. With typical settings (LoRA rank 4–16; prefix length 8–16; hypernetwork at 0.2%–0.6% of base), HyperZero-PEFT achieves performance on par with full fine-tuning while training and storing orders of magnitude fewer parameters.",
+        "rationale": "HyperZero-PEFT combines two complementary ideas: (a) a shared hypernetwork that amortizes the cost of generating effective adapters and attention prefixes across all layers and tasks, and (b) forward-only zeroth-order training so adaptation fits on consumer hardware. Prior work shows that hypernetworks conditioned on task/layer/block embeddings can produce both adapter and prefix weights that rival or beat standard PEFT while training a tiny fraction of parameters, suggesting strong capacity-per-parameter. ZO optimization, in turn, matches the memory footprint of inference by avoiding backpropagation, and has been shown to scale to large LLMs on a single 24 GB GPU with competitive convergence.\n\nThe sensitivity-based budget allocator exploits the observed low effective curvature rank in LLMs to place rank and prefix length where they matter, letting a very small parameter budget approximate the function class of full fine-tuning. Together, these components deliver near-FT accuracy while training and storing only a small, task-portable hypernetwork and embeddings—precisely the constraints required for consumer devices.",
+        "inspired_by": [
+          {
+            "seed_id": "e5b45665d25d",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "shared hypernetwork generating adapters and prefixes"
+          },
+          {
+            "seed_id": "e3de9f378959",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "two-point zeroth-order training with LoRA updates and seed resampling"
+          },
+          {
+            "seed_id": "438c24cbe8da",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "forward-only finite-difference gradient with near-zero overhead"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed HyperZero-PEFT combines three mechanisms: (1) a shared hypernetwork generating both LoRA adapters and prefix KV weights conditioned on task/layer/block embeddings (directly matching HyperFormer 2021 and HyperPELT 2022, and HyperLoader 2024), (2) zeroth-order (MeZO-style) training applied only to the small hypernetwork parameters to avoid backprop through the frozen LLM, and (3) a sensitivity warm-up that allocates rank/prefix length per layer. The hypernetwork-for-adapters component is well-covered by HyperFormer/HyperPELT/HyperLoader. ZO applied to PEFT adapters is covered by AdaZeta (tensor-train adapter + ZO) and Bilevel ZOFO (ZO + PEFT). However, no surfaced paper combines a shared hypernetwork (generating all adapter+prefix weights from task/layer/block embeddings) with ZO optimization of the hypernetwork parameters specifically. The closest is AdaZeta (ZO + small adapter, no hypernetwork) and HyperLoader (hypernetwork + adapters, no ZO). This matches the Score 4 anchor: combining mechanism families with no surfaced published joint application for this exact problem, with searches returning prior work on individual mechanisms but not their combination.\n\nPrior works:\n  - Parameter-efficient Multi-task Fine-tuning for Transformers via Shared Hypernetworks / HyperFormer (2021): shared hypernetwork conditioned on task/layer/adapter-position generates adapter weights for all layers — directly covers the hypernetwork component\n  - HyperPELT: Unified Parameter-Efficient Language Model Tuning (2022): hypernetwork generates both prefix and adapter weights from task/layer/block embeddings — covers the combined prefix+adapter generation via hypernetwork\n  - HyperLoader: Integrating Hypernetwork-Based LoRA and Adapter Layers into Multi-Task Transformers (2024): hypernetwork generates LoRA and adapter weights conditioned on task/layer/position — covers LoRA-style hypernetwork generation\n  - AdaZeta: Adaptive Zeroth-Order Tensor-Train Adaption for Memory-Efficient LLM Fine-Tuning (2024): ZO optimization applied to a small adapter module (tensor-train) for memory-efficient LLM fine-tuning — covers ZO+small-adapter combination\n  - Bilevel ZOFO: Bridging Parameter-Efficient and Zeroth-Order Techniques (2025): bilevel method coupling ZO full-model updates with FO-PEFT inner loop — covers ZO+PEFT combination but not hypernetwork-generated adapters",
+        "prior_works": [
+          "Parameter-efficient Multi-task Fine-tuning for Transformers via Shared Hypernetworks / HyperFormer (2021): shared hypernetwork conditioned on task/layer/adapter-position generates adapter weights for all layers — directly covers the hypernetwork component",
+          "HyperPELT: Unified Parameter-Efficient Language Model Tuning (2022): hypernetwork generates both prefix and adapter weights from task/layer/block embeddings — covers the combined prefix+adapter generation via hypernetwork",
+          "HyperLoader: Integrating Hypernetwork-Based LoRA and Adapter Layers into Multi-Task Transformers (2024): hypernetwork generates LoRA and adapter weights conditioned on task/layer/position — covers LoRA-style hypernetwork generation",
+          "AdaZeta: Adaptive Zeroth-Order Tensor-Train Adaption for Memory-Efficient LLM Fine-Tuning (2024): ZO optimization applied to a small adapter module (tensor-train) for memory-efficient LLM fine-tuning — covers ZO+small-adapter combination",
+          "Bilevel ZOFO: Bridging Parameter-Efficient and Zeroth-Order Techniques (2025): bilevel method coupling ZO full-model updates with FO-PEFT inner loop — covers ZO+PEFT combination but not hypernetwork-generated adapters"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose HyperZero-PEFT, a forward-only, hypernetwork-driven adapter scheme that adapts a frozen LLM using a tiny number of additional parameters while matching full fine-tuning. Insert lightweight, parallel adapters in the FFN (LoRA-style down/up projections) and short learned key/value prefixes in attention. A single shared hypernetwork generates all adapter and prefix weights for every layer from compact inputs that concatenate a task embedding, a layer-id embedding, and a block-type embedding. The generated modules are injected with residual scaling and per-layer learned gates to softly select where adaptation matters most. Only the hypernetwork, small embedding tables, the per-layer gates, and optionally layer norms are trained; the LLM weights remain frozen.\n\nTraining is performed with a two-point zeroth-order (ZO) estimator on the hypernetwork parameters, eliminating backpropagation through the base LLM so memory stays near inference. At each step, draw an antithetic perturbation for the hypernetwork weights, run two forward passes to compute a finite-difference loss, and update with an Adam-like optimizer. We deterministically resample perturbations by seed to reduce variance and enable gradient accumulation without extra memory. Because the hypernetwork is small and the base model is frozen, a single consumer GPU (e.g., 8–24 GB) can train billions-parameter LLMs with near-inference memory and throughput.\n\nTo maximize accuracy under a tiny parameter budget, we add a short sensitivity warm-up that allocates rank and prefix length where they help most. Using a small held-out set, we probe each layer by perturbing its hyper-embedding and measuring loss change, then allocate higher LoRA rank and/or longer prefixes to the top-k most sensitive layers while shrinking others to minimal or zero rank. The hypernetwork learns to specialize by layer and block type, amortizing parameters across the whole stack and across tasks via the task embedding.\n\nAt inference, the hypernetwork generates per-layer adapter/prefix weights on the fly or caches them after the first use; switching tasks reduces to swapping a task embedding. The method is compatible with quantized bases (e.g., 4/8-bit) since only small-side modules are trained and applied in higher precision. With typical settings (LoRA rank 4–16; prefix length 8–16; hypernetwork at 0.2%–0.6% of base), HyperZero-PEFT achieves performance on par with full fine-tuning while training and storing orders of magnitude fewer parameters.",
+    "final_rationale": "HyperZero-PEFT combines two complementary ideas: (a) a shared hypernetwork that amortizes the cost of generating effective adapters and attention prefixes across all layers and tasks, and (b) forward-only zeroth-order training so adaptation fits on consumer hardware. Prior work shows that hypernetworks conditioned on task/layer/block embeddings can produce both adapter and prefix weights that rival or beat standard PEFT while training a tiny fraction of parameters, suggesting strong capacity-per-parameter. ZO optimization, in turn, matches the memory footprint of inference by avoiding backpropagation, and has been shown to scale to large LLMs on a single 24 GB GPU with competitive convergence.\n\nThe sensitivity-based budget allocator exploits the observed low effective curvature rank in LLMs to place rank and prefix length where they matter, letting a very small parameter budget approximate the function class of full fine-tuning. Together, these components deliver near-FT accuracy while training and storing only a small, task-portable hypernetwork and embeddings—precisely the constraints required for consumer devices.",
+    "final_inspired_by": [
+      {
+        "seed_id": "e5b45665d25d",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "shared hypernetwork generating adapters and prefixes"
+      },
+      {
+        "seed_id": "e3de9f378959",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "two-point zeroth-order training with LoRA updates and seed resampling"
+      },
+      {
+        "seed_id": "438c24cbe8da",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "forward-only finite-difference gradient with near-zero overhead"
+      }
+    ],
+    "wall_clock_s": 193.94,
+    "cost": {
+      "gen_prompt_tokens": 7223,
+      "gen_completion_tokens": 5926,
+      "judge_prompt_tokens": 123863,
+      "judge_completion_tokens": 1310,
+      "gen_cost_usd": 0.0683,
+      "judge_cost_usd": 0.3912,
+      "total_cost_usd": 0.4595
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Sparse Global–Local Adapters (SGLA), a parameter‑efficient adaptation scheme that adds fewer than ~0.5–1.0% new parameters to a frozen pretrained LLM while approaching full fine‑tuning performance. SGLA combines two complementary components: (1) cross‑layer global conditioning via lightweight learned prefixes that inject a task/domain embedding into the attention stacks of selected layers, and (2) a tiny bank of low‑rank adapters per selected layer with prototype‑routed gating so the model can express task‑specific transformations without touching the base weights.\n\nLayer placement is selected automatically with a probe‑and‑prune procedure. First, we run the frozen LLM and attach layer‑wise linear probes to measure which layers most correlate with downstream task signal on a small validation set. We then initialize small scalar gates per candidate layer and train under a group‑sparsity regularizer so only the few most useful layers remain active. We place SGLA modules only in these layers (typically 4–8 late layers on decoder models), sharply reducing the parameter budget while targeting the layers where task knowledge concentrates.\n\nWithin each selected layer, we (a) prepend a short, learned key/value prefix (e.g., 8–32 virtual tokens) that acts as a global task attribute, injected into the attention computation across the forward pass; and (b) attach a tiny bank (e.g., 2–4) of low‑rank adapters to the attention and MLP projections with very small ranks (r≈4–8). A lightweight routing head matches the current hidden state to a handful of learned prototypes (cosine similarity), producing mixture weights that softly select which adapter(s) to engage for the token or sequence. This yields mixture‑of‑adapters expressivity with minimal added parameters and compute. The routing head also outputs a calibrated confidence signal that we use to schedule updates.\n\nTraining proceeds in two short phases on consumer hardware. Phase A (stabilize and align): we distill token‑level logits from a reference model (e.g., a fully fine‑tuned or larger teacher when available) and adversarially align intermediate representations between the adapted and frozen bases to preserve general capability. The prefix vectors are updated with a conservative, uncertainty‑guided EMA: examples the router deems uncertain get larger prompt updates, while certain ones get smaller nudges. Phase B (task specialization): we optimize the task objective (e.g., SFT or preference learning) only over the SGLA parameters. We use a loss‑adaptive momentum optimizer that estimates noise online from the scalar loss and gradients, stabilizing training with small batches and reducing hyperparameter sensitivity typical of consumer GPUs. Throughout, only the prefixes, adapter banks, routers, and layer gates are trainable; the base model remains frozen.\n\nAt inference, the model loads just the selected‑layer prefixes, adapter banks, and tiny router. For multi‑task or continual setups, we maintain one prefix per task/domain and share the adapter banks; swapping prefixes selects the behavior with negligible overhead. The small, routed adapter design keeps memory and latency close to the frozen base while delivering accuracy comparable to full fine‑tuning on many instruction‑following and domain adaptation workloads.",
+        "rationale": "Targeting late layers concentrates adaptation capacity where decoder backbones encode task‑specific behavior, allowing a tiny number of parameters to effect large changes. Cross‑layer global prefixes act like a task attribute that conditions attention everywhere it matters, while the local low‑rank adapters provide just‑enough capacity to reshape computations. Prototype‑routed mixtures increase expressivity under the same budget and supply an uncertainty signal we can exploit to allocate updates and prevent overfitting.\n\nUncertainty‑guided prompt updates and adversarial feature alignment preserve generalization and mitigate catastrophic forgetting when training with small batches on consumer hardware. Finally, a loss‑adaptive, momentum‑aware optimizer with online noise estimation stabilizes the small set of trainable parameters without expensive tuning. Together, these ingredients allow SGLA to approach or match full fine‑tuning performance for many tasks while adding orders‑of‑magnitude fewer parameters and fitting comfortably on commodity GPUs.",
+        "inspired_by": [
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "layer-wise probing to target late layers that encode task knowledge"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "prompt-based adaptation with uncertainty-guided updating and adversarial alignment"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based latent space and confidence for routing and uncertainty"
+          },
+          {
+            "seed_id": "663d598bb0b9",
+            "domain": "CV",
+            "borrowed_aspect": "loss-adaptive momentum with online noise estimation for stable optimization"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "group-sparse screening to select a minimal subset of layers"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global attribute injection across updates analogous to cross-layer prefixes"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed SGLA method combines: (1) prefix/prompt tuning for global task conditioning, (2) prototype-routed mixture-of-LoRA adapters per selected layer, (3) layer selection via linear probing + group-sparsity gating, (4) uncertainty-guided EMA for prefix updates + adversarial feature alignment, and (5) a loss-adaptive momentum optimizer. Searches confirm that mixture-of-LoRA with various routing schemes (MoELoRA, MiLoRA, DynMoLE, HDMoLE, etc.) is well-established, and Fisher-based layer selection for sparse MoE-LoRA (FLoE) exists. The uncertainty-guided EMA + adversarial alignment for prompt adaptation is drawn from the VPLU/cloud-device paper (CV domain). However, no single paper combines all these mechanisms — specifically: prototype-routed (cosine similarity) mixture-of-LoRA + cross-layer prefix conditioning + probe-and-prune layer selection + uncertainty-guided EMA prefix updates + adversarial alignment — for LLM PEFT. The individual components are known, and some pairs exist (MoE-LoRA + layer selection in FLoE; prefix + LoRA in hybrid PEFT), but the full combination with the specific uncertainty-guided routing confidence signal driving prefix EMA updates is not surfaced. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this exact problem, introducing named design choices not present in the surfaced literature as a unified system.\n\nPrior works:\n  - MoELoRA (2024): contrastive-learning-guided mixture of LoRA experts for LLM PEFT — covers MoE-LoRA routing component\n  - MiLoRA (2024): prompt-aware routing for mixture of LoRA modules — covers mixture-of-LoRA with routing\n  - FLoE (2025): Fisher-based layer selection for sparse MoE-LoRA deployment — covers layer selection + MoE-LoRA combination\n  - HDMoLE (2024): hierarchical routing + dynamic thresholds for mixture of LoRA experts — covers MoE-LoRA routing\n  - BH-PEFT (2025): combines adapter, LoRA, and prefix tuning for LLM fine-tuning — covers hybrid prefix+LoRA\n  - Cloud-Device Collaborative Adaptation / VPLU (2022): uncertainty-guided EMA prompt updates + adversarial feature alignment — covers uncertainty-guided prompt update mechanism",
+        "prior_works": [
+          "MoELoRA (2024): contrastive-learning-guided mixture of LoRA experts for LLM PEFT — covers MoE-LoRA routing component",
+          "MiLoRA (2024): prompt-aware routing for mixture of LoRA modules — covers mixture-of-LoRA with routing",
+          "FLoE (2025): Fisher-based layer selection for sparse MoE-LoRA deployment — covers layer selection + MoE-LoRA combination",
+          "HDMoLE (2024): hierarchical routing + dynamic thresholds for mixture of LoRA experts — covers MoE-LoRA routing",
+          "BH-PEFT (2025): combines adapter, LoRA, and prefix tuning for LLM fine-tuning — covers hybrid prefix+LoRA",
+          "Cloud-Device Collaborative Adaptation / VPLU (2022): uncertainty-guided EMA prompt updates + adversarial feature alignment — covers uncertainty-guided prompt update mechanism"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Sparse Global–Local Adapters (SGLA), a parameter‑efficient adaptation scheme that adds fewer than ~0.5–1.0% new parameters to a frozen pretrained LLM while approaching full fine‑tuning performance. SGLA combines two complementary components: (1) cross‑layer global conditioning via lightweight learned prefixes that inject a task/domain embedding into the attention stacks of selected layers, and (2) a tiny bank of low‑rank adapters per selected layer with prototype‑routed gating so the model can express task‑specific transformations without touching the base weights.\n\nLayer placement is selected automatically with a probe‑and‑prune procedure. First, we run the frozen LLM and attach layer‑wise linear probes to measure which layers most correlate with downstream task signal on a small validation set. We then initialize small scalar gates per candidate layer and train under a group‑sparsity regularizer so only the few most useful layers remain active. We place SGLA modules only in these layers (typically 4–8 late layers on decoder models), sharply reducing the parameter budget while targeting the layers where task knowledge concentrates.\n\nWithin each selected layer, we (a) prepend a short, learned key/value prefix (e.g., 8–32 virtual tokens) that acts as a global task attribute, injected into the attention computation across the forward pass; and (b) attach a tiny bank (e.g., 2–4) of low‑rank adapters to the attention and MLP projections with very small ranks (r≈4–8). A lightweight routing head matches the current hidden state to a handful of learned prototypes (cosine similarity), producing mixture weights that softly select which adapter(s) to engage for the token or sequence. This yields mixture‑of‑adapters expressivity with minimal added parameters and compute. The routing head also outputs a calibrated confidence signal that we use to schedule updates.\n\nTraining proceeds in two short phases on consumer hardware. Phase A (stabilize and align): we distill token‑level logits from a reference model (e.g., a fully fine‑tuned or larger teacher when available) and adversarially align intermediate representations between the adapted and frozen bases to preserve general capability. The prefix vectors are updated with a conservative, uncertainty‑guided EMA: examples the router deems uncertain get larger prompt updates, while certain ones get smaller nudges. Phase B (task specialization): we optimize the task objective (e.g., SFT or preference learning) only over the SGLA parameters. We use a loss‑adaptive momentum optimizer that estimates noise online from the scalar loss and gradients, stabilizing training with small batches and reducing hyperparameter sensitivity typical of consumer GPUs. Throughout, only the prefixes, adapter banks, routers, and layer gates are trainable; the base model remains frozen.\n\nAt inference, the model loads just the selected‑layer prefixes, adapter banks, and tiny router. For multi‑task or continual setups, we maintain one prefix per task/domain and share the adapter banks; swapping prefixes selects the behavior with negligible overhead. The small, routed adapter design keeps memory and latency close to the frozen base while delivering accuracy comparable to full fine‑tuning on many instruction‑following and domain adaptation workloads.",
+    "final_rationale": "Targeting late layers concentrates adaptation capacity where decoder backbones encode task‑specific behavior, allowing a tiny number of parameters to effect large changes. Cross‑layer global prefixes act like a task attribute that conditions attention everywhere it matters, while the local low‑rank adapters provide just‑enough capacity to reshape computations. Prototype‑routed mixtures increase expressivity under the same budget and supply an uncertainty signal we can exploit to allocate updates and prevent overfitting.\n\nUncertainty‑guided prompt updates and adversarial feature alignment preserve generalization and mitigate catastrophic forgetting when training with small batches on consumer hardware. Finally, a loss‑adaptive, momentum‑aware optimizer with online noise estimation stabilizes the small set of trainable parameters without expensive tuning. Together, these ingredients allow SGLA to approach or match full fine‑tuning performance for many tasks while adding orders‑of‑magnitude fewer parameters and fitting comfortably on commodity GPUs.",
+    "final_inspired_by": [
+      {
+        "seed_id": "a9647aa8fe5e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "layer-wise probing to target late layers that encode task knowledge"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "prompt-based adaptation with uncertainty-guided updating and adversarial alignment"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based latent space and confidence for routing and uncertainty"
+      },
+      {
+        "seed_id": "663d598bb0b9",
+        "domain": "CV",
+        "borrowed_aspect": "loss-adaptive momentum with online noise estimation for stable optimization"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "group-sparse screening to select a minimal subset of layers"
+      },
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global attribute injection across updates analogous to cross-layer prefixes"
+      }
+    ],
+    "wall_clock_s": 158.82,
+    "cost": {
+      "gen_prompt_tokens": 4807,
+      "gen_completion_tokens": 4357,
+      "judge_prompt_tokens": 139818,
+      "judge_completion_tokens": 1197,
+      "gen_cost_usd": 0.0496,
+      "judge_cost_usd": 0.4374,
+      "total_cost_usd": 0.487
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of a shared hypernetwork that generates all adapter and prefix weights across layers from concatenated task/layer/block-type embeddings, trained via zeroth-order (forward-only) optimization to eliminate backpropagation through the base LLM entirely. The ZO-hypernetwork combination for PEFT is a genuinely unusual pairing. Method B's strongest novel element is the prototype-routed mixture-of-adapters with uncertainty-guided EMA prefix updates and a probe-and-prune layer selection procedure. However, mixture-of-experts/adapters with routing, prefix tuning, and layer selection via probing are all individually well-established components; their combination, while reasonable, is closer to an engineering assembly of known parts. Method A's zeroth-order training of a hypernetwork that generates all PEFT parameters on the fly is a more distinctive and harder-to-find combination in the literature, representing a more original mechanism."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is the prohibitive cost of updating billions of parameters on consumer hardware, requiring a small number of additional parameters to match full fine-tuning. Method A addresses this by freezing the base model and adding sparse, low-rank adapters plus prefixes to selected layers, with training via standard backpropagation through only the small added modules — this directly reduces trainable parameters but still requires backpropagation through the frozen model's forward pass, which still consumes significant activation memory. Method B addresses the same parameter-efficiency goal but goes further on the memory axis by eliminating backpropagation through the base LLM entirely via zeroth-order (forward-only) estimation, meaning memory stays near inference levels — this more directly resolves the \"prohibitive on consumer hardware\" aspect of the failure mode, since the bottleneck on consumer hardware is not just parameter count but also the memory required for backpropagation through a large frozen model. Both methods use small additional parameters, but Method B's ZO training mechanism more directly engages the consumer hardware constraint by removing the need for gradient storage through the base model."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's most serious coherence flaw is the combination of zeroth-order (ZO) optimization with a hypernetwork that generates all adapter weights for every layer. ZO optimization is notoriously slow and high-variance in high-dimensional parameter spaces; while the hypernetwork is described as \"small,\" it still must parameterize adapters for every layer of a billions-parameter model, making the effective dimensionality of the ZO search space non-trivial. More critically, the \"sensitivity warm-up\" that allocates rank by perturbing hyper-embeddings and measuring loss change is described as using a \"small held-out set,\" but this procedure itself requires forward passes and loss measurements that are not clearly distinguished from the ZO training loop, creating an underspecified bootstrapping problem. The claim that ZO on the hypernetwork achieves performance \"on par with full fine-tuning\" is a strong assumption given known ZO convergence limitations. Method B is largely internally consistent: the probe-and-prune layer selection, prefix conditioning, low-rank adapter banks with prototype routing, and two-phase training all fit together without contradiction. The main mild weakness is that Phase A involves distillation from a \"reference model (e.g., a fully fine-tuned or larger teacher when available)\" — this optional dependency on a teacher model is acknowledged as optional, which is acceptable. The adversarial alignment of intermediate representations adds complexity but is a known technique. Overall, Method B has no fundamental contradictions and could be implemented by an ML practitioner, while Method A has a meaningful coherence tension between ZO optimization and the complexity/dimensionality of the hypernetwork parameter space."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5424,
+    "judge_completion_tokens": 841,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0289,
+    "total_cost_usd": 0.0289
+  }
+}

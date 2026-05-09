@@ -1,0 +1,199 @@
+{
+  "query_id": "Q17",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Dense models compute every parameter for every input, wasting\ncompute when only a fraction is needed; how can we conditionally\nactivate only the relevant subnetwork at inference?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Conditional Subnetwork Activation (CSA), a single model trained to expose multiple, input-dependent compute paths at inference. Each backbone block contains two parallel branches: a light, local-processing path (e.g., gated MLP or depthwise-conv MLP) and a heavier, global-context path (e.g., attention). A tiny router (shared across tokens or operating on token groups) chooses which branch(es) to execute per block given a cheap summary of the current hidden state. During training, we apply stochastic branch dropout to force both branches to be individually competent and to encourage graceful degradation when only one is active. We add a soft FLOPs budget regularizer on the router’s expected choices so the model learns to allocate compute where it pays off most.\n\nTo avoid running unnecessary depth, we attach auxiliary prediction heads at several layers and adopt a dynamic early-exit rule driven by layer-wise saturation: compute the cosine similarity between consecutive hidden states; when similarity exceeds a calibrated threshold and the corresponding head’s confidence is sufficient, we stop and emit the output. For autoregressive generation, we decay the threshold across decoding steps and cap minimum layers to avoid premature exits on early tokens. This turns depth into an on-demand resource, activating more layers only for difficult inputs or steps.\n\nWithin each block, we further make width conditional by nesting smaller channel slices inside larger ones. Linear and attention projections are parameterized in a Matryoshka style so the first w% of channels approximate a competent subnetwork and larger widths strictly extend it. We implement this as masked matrix multiplications/grouped projections that compute only the selected slice, avoiding kernel recompilations. Training samples widths per batch (e.g., 25/50/100%), distills from the full-width path to narrower slices, and jointly optimizes the task loss so all widths remain aligned.\n\nAt inference, CSA follows a progressive schedule that minimizes overhead: start with a narrow width and only the light branch for a small number of layers; if the saturation metric indicates underfit or the head is uncertain, escalate compute by enabling the heavy branch and/or increasing width for subsequent layers; otherwise, early-exit. Routers operate with hysteresis and a global budget controller to stabilize decisions and respect latency targets. Optionally, a lightweight token scorer can route only the top-p tokens through the heavy branch while the remainder stay on the light path, providing additional sparsity without architectural changes.",
+        "rationale": "Dense models waste compute by executing the full depth, width, and global-context machinery on every input. CSA reduces all three dimensions adaptively: branch routing decides whether to pay for global context per block; early exiting truncates depth once representations saturate; and Matryoshka-style slicing executes only the necessary width. Because branches are trained with dropout and slices are co-trained with distillation, any activated subnetwork remains well-formed, limiting accuracy loss under reduced compute.\n\nThe key is to couple low-cost, reliable signals to gating. Layer-wise cosine similarity provides a model-internal saturation proxy that generalizes across tasks and supports safe early exit. Branch dropout makes per-branch activation robust, enabling per-input routing without retraining. Nested weight slicing turns width into a knob the router can adjust on-the-fly using the same backbone, avoiding multiple models. Together, these mechanisms conditionally activate only the relevant subnetwork for each input and deliver substantial inference savings with bounded quality impact.",
+        "inspired_by": [
+          {
+            "seed_id": "5123915b5345",
+            "domain": "SPEECH",
+            "borrowed_aspect": "parallel light/heavy branches with branch dropout for dual-mode execution"
+          },
+          {
+            "seed_id": "ff2cf1c24dba",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "layer-wise cosine similarity as an early-exit saturation signal"
+          },
+          {
+            "seed_id": "174a1ef09924",
+            "domain": "IR_REC",
+            "borrowed_aspect": "nested weight/activation slicing via masked matrix multiplication"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed CSA method combines three distinct mechanisms in a unified framework: (1) parallel light/heavy branch routing per block with stochastic branch dropout and FLOPs regularization, (2) early exit via cosine similarity saturation of hidden states with autoregressive-specific threshold decay, and (3) Matryoshka-style nested width slicing with masked matrix multiplications and co-training via distillation. Searches surfaced COST-EFF (width slimming + early exit for PLMs), SortedNet/Sorted LLaMA (nested depth/width sub-models), and MuE (cosine similarity early exit for VLMs) as the closest individual components. However, no paper was found that jointly combines all three dimensions — branch routing (light/heavy parallel paths), cosine-similarity-driven early exit, and Matryoshka width slicing — in a single adaptive inference framework. The combination of parallel branch routing (inspired by Branchformer) with Matryoshka width and cosine-similarity early exit is not present as a joint application in any surfaced paper. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with searches returning prior work on individual mechanisms but not their combination.\n\nPrior works:\n  - COST-EFF (2022): Combines width slimming with multi-exit early exiting for PLMs, but no branch routing or Matryoshka-style nested slicing.\n  - SortedNet / Sorted LLaMA (2023): Nested sub-model training across depth/width dimensions with shared parameters, but no parallel branch routing or cosine-similarity exit signal.\n  - MuE: You Need Multiple Exiting (2022): Cosine similarity of hidden states as early exit signal for VLMs with autoregressive threshold decay — directly overlaps the early exit component.\n  - Branchformer (2022): Parallel light/heavy branch with branch dropout for inference mode switching — directly overlaps the branch routing component.\n  - Matryoshka Representation Learning (2022): Nested width/channel slicing with co-training — overlaps the width slicing component.",
+        "prior_works": [
+          "COST-EFF (2022): Combines width slimming with multi-exit early exiting for PLMs, but no branch routing or Matryoshka-style nested slicing.",
+          "SortedNet / Sorted LLaMA (2023): Nested sub-model training across depth/width dimensions with shared parameters, but no parallel branch routing or cosine-similarity exit signal.",
+          "MuE: You Need Multiple Exiting (2022): Cosine similarity of hidden states as early exit signal for VLMs with autoregressive threshold decay — directly overlaps the early exit component.",
+          "Branchformer (2022): Parallel light/heavy branch with branch dropout for inference mode switching — directly overlaps the branch routing component.",
+          "Matryoshka Representation Learning (2022): Nested width/channel slicing with co-training — overlaps the width slicing component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Conditional Subnetwork Activation (CSA), a single model trained to expose multiple, input-dependent compute paths at inference. Each backbone block contains two parallel branches: a light, local-processing path (e.g., gated MLP or depthwise-conv MLP) and a heavier, global-context path (e.g., attention). A tiny router (shared across tokens or operating on token groups) chooses which branch(es) to execute per block given a cheap summary of the current hidden state. During training, we apply stochastic branch dropout to force both branches to be individually competent and to encourage graceful degradation when only one is active. We add a soft FLOPs budget regularizer on the router’s expected choices so the model learns to allocate compute where it pays off most.\n\nTo avoid running unnecessary depth, we attach auxiliary prediction heads at several layers and adopt a dynamic early-exit rule driven by layer-wise saturation: compute the cosine similarity between consecutive hidden states; when similarity exceeds a calibrated threshold and the corresponding head’s confidence is sufficient, we stop and emit the output. For autoregressive generation, we decay the threshold across decoding steps and cap minimum layers to avoid premature exits on early tokens. This turns depth into an on-demand resource, activating more layers only for difficult inputs or steps.\n\nWithin each block, we further make width conditional by nesting smaller channel slices inside larger ones. Linear and attention projections are parameterized in a Matryoshka style so the first w% of channels approximate a competent subnetwork and larger widths strictly extend it. We implement this as masked matrix multiplications/grouped projections that compute only the selected slice, avoiding kernel recompilations. Training samples widths per batch (e.g., 25/50/100%), distills from the full-width path to narrower slices, and jointly optimizes the task loss so all widths remain aligned.\n\nAt inference, CSA follows a progressive schedule that minimizes overhead: start with a narrow width and only the light branch for a small number of layers; if the saturation metric indicates underfit or the head is uncertain, escalate compute by enabling the heavy branch and/or increasing width for subsequent layers; otherwise, early-exit. Routers operate with hysteresis and a global budget controller to stabilize decisions and respect latency targets. Optionally, a lightweight token scorer can route only the top-p tokens through the heavy branch while the remainder stay on the light path, providing additional sparsity without architectural changes.",
+    "final_rationale": "Dense models waste compute by executing the full depth, width, and global-context machinery on every input. CSA reduces all three dimensions adaptively: branch routing decides whether to pay for global context per block; early exiting truncates depth once representations saturate; and Matryoshka-style slicing executes only the necessary width. Because branches are trained with dropout and slices are co-trained with distillation, any activated subnetwork remains well-formed, limiting accuracy loss under reduced compute.\n\nThe key is to couple low-cost, reliable signals to gating. Layer-wise cosine similarity provides a model-internal saturation proxy that generalizes across tasks and supports safe early exit. Branch dropout makes per-branch activation robust, enabling per-input routing without retraining. Nested weight slicing turns width into a knob the router can adjust on-the-fly using the same backbone, avoiding multiple models. Together, these mechanisms conditionally activate only the relevant subnetwork for each input and deliver substantial inference savings with bounded quality impact.",
+    "final_inspired_by": [
+      {
+        "seed_id": "5123915b5345",
+        "domain": "SPEECH",
+        "borrowed_aspect": "parallel light/heavy branches with branch dropout for dual-mode execution"
+      },
+      {
+        "seed_id": "ff2cf1c24dba",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "layer-wise cosine similarity as an early-exit saturation signal"
+      },
+      {
+        "seed_id": "174a1ef09924",
+        "domain": "IR_REC",
+        "borrowed_aspect": "nested weight/activation slicing via masked matrix multiplication"
+      }
+    ],
+    "wall_clock_s": 151.27,
+    "cost": {
+      "gen_prompt_tokens": 6594,
+      "gen_completion_tokens": 5456,
+      "judge_prompt_tokens": 105622,
+      "judge_completion_tokens": 1046,
+      "gen_cost_usd": 0.0628,
+      "judge_cost_usd": 0.3326,
+      "total_cost_usd": 0.3954
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Context-Conditioned ProtoGated Subnetworks (C2PS): replace each dense block with a thin, always-on shared trunk in parallel with a pool of E residual experts. A lightweight router activates only the top-k experts per input (or per token for sequence models), so most parameters remain idle for any given example. The trunk preserves a stable, general pathway; the experts provide capacity that is selectively engaged.\n\nRouting is fast and data-aware. Compute a global context embedding once per input (e.g., CLS/mean-pooled features) and feed it to all routers. At each block, the router forms a compact local summary of the incoming features (e.g., per-token or spatially pooled) and scores it against a bank of learned prototypes using cosine similarity with a sharpening nonlinearity. The router fuses local scores with a FiLM-style modulation from the global context to make context-aware, top-k selections. To keep routing overhead low even with larger E, we maintain a streaming top-k via limited-scope competition: only adjacent near-top candidates are compared and swapped until convergence to the k winners, avoiding full O(E^2) pairwise ranking.\n\nTraining is end-to-end with standard task loss plus: (1) a load-balancing regularizer to prevent expert collapse; (2) structured group sparsity on expert parameters that encourages specialization and prunes unused paths into clean subnetworks; and (3) a gradual sparsity curriculum that anneals k from dense toward the target budget, stabilizing early learning. We use straight-through or Gumbel-TopK estimators for discrete routing, and distill from a dense teacher (or a late-training snapshot) to mitigate routing noise while experts specialize.\n\nInference is strictly conditional: for each layer, compute the router, dispatch activations only to the selected experts, and aggregate their outputs (e.g., sum or weighted sum) with the trunk via residual addition. Budgets are adjustable at runtime by tuning k or the routing temperature. For transformers, apply C2PS to MLPs (per-token routing) and optionally to attention heads (per-head routing); for CNNs, gate residual bottlenecks or channel groups. When routing uncertainty is high (e.g., low prototype margin), fall back to a larger k or the trunk-only path, preserving accuracy under tight budgets.",
+        "rationale": "C2PS achieves conditional compute by learning which subnetwork is relevant for each input and only activating that subset. Prototype-based scoring yields sharp, discriminative routing while remaining inexpensive, and the global-context modulation aligns per-token/per-block choices with the sequence- or image-level intent. Group sparsity and a sparsity curriculum shape experts into truly distinct competencies so that activating only a few preserves accuracy. Load balancing avoids overused experts and keeps throughput stable.\n\nCompared to static pruning, C2PS adapts per input and per location (token/region), capturing input heterogeneity without incurring dense FLOPs. Compared to naive MoE, the prototype router is lighter, better regularized, and stabilized by a shared trunk and knowledge distillation, delivering strong accuracy–efficiency trade-offs and controllable latency.",
+        "inspired_by": [
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-similarity gating with sharpened responses"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "group sparsity regularization for structured subspace selection"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector before heavy reasoning to cut redundant compute"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global context conditioning of local computations"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "limited-scope competition to efficiently select top-k"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed C2PS method combines: (1) shared trunk + sparse expert pool (DeepSeekMoE-style, well-known), (2) prototype/cosine-similarity-based routing (seen in HiCL for continual learning, not for general conditional compute), (3) FiLM-style global context modulation of per-token routing (not surfaced as a joint application for conditional compute), (4) streaming top-k via limited-scope competition (inspired by GLIMPSE's RTL passes but applied to routing), (5) group sparsity + sparsity curriculum annealing k, and (6) knowledge distillation from dense teacher. MoCE (sequence-level + token-level dual routing) is the closest published work but lacks prototype scoring and FiLM modulation. No single paper combines all these mechanisms for the conditional compute problem. The combination of prototype-cosine routing + FiLM global context modulation + shared trunk + sparsity curriculum is not surfaced as a joint application, matching the Score 4 anchor — combines mechanism families with no surfaced published joint application for this problem, though individual components are known.\n\nPrior works:\n  - DeepSeekMoE (2024): shared always-on expert + fine-grained routed experts with load balancing — overlaps with C2PS's shared trunk + expert pool design\n  - Mixture-of-Clustered-Experts / MoCE (2025): dual-stage routing with sequence-level group routing + token-level top-k — overlaps with C2PS's global context + local routing hierarchy\n  - HiCL (2025): cosine similarity between sparse representations and learned prototypes for MoE-style routing — overlaps with C2PS's prototype cosine scoring\n  - GLIMPSE (2024): limited-scope adjacent comparison for efficient top-k ranking — overlaps with C2PS's streaming top-k via limited-scope competition\n  - Parameter-Efficient Conformers via Sharing Sparsely-Gated Experts (2022): shared+sparse MoE with knowledge distillation — overlaps with C2PS's KD + sparse MoE combination",
+        "prior_works": [
+          "DeepSeekMoE (2024): shared always-on expert + fine-grained routed experts with load balancing — overlaps with C2PS's shared trunk + expert pool design",
+          "Mixture-of-Clustered-Experts / MoCE (2025): dual-stage routing with sequence-level group routing + token-level top-k — overlaps with C2PS's global context + local routing hierarchy",
+          "HiCL (2025): cosine similarity between sparse representations and learned prototypes for MoE-style routing — overlaps with C2PS's prototype cosine scoring",
+          "GLIMPSE (2024): limited-scope adjacent comparison for efficient top-k ranking — overlaps with C2PS's streaming top-k via limited-scope competition",
+          "Parameter-Efficient Conformers via Sharing Sparsely-Gated Experts (2022): shared+sparse MoE with knowledge distillation — overlaps with C2PS's KD + sparse MoE combination"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Context-Conditioned ProtoGated Subnetworks (C2PS): replace each dense block with a thin, always-on shared trunk in parallel with a pool of E residual experts. A lightweight router activates only the top-k experts per input (or per token for sequence models), so most parameters remain idle for any given example. The trunk preserves a stable, general pathway; the experts provide capacity that is selectively engaged.\n\nRouting is fast and data-aware. Compute a global context embedding once per input (e.g., CLS/mean-pooled features) and feed it to all routers. At each block, the router forms a compact local summary of the incoming features (e.g., per-token or spatially pooled) and scores it against a bank of learned prototypes using cosine similarity with a sharpening nonlinearity. The router fuses local scores with a FiLM-style modulation from the global context to make context-aware, top-k selections. To keep routing overhead low even with larger E, we maintain a streaming top-k via limited-scope competition: only adjacent near-top candidates are compared and swapped until convergence to the k winners, avoiding full O(E^2) pairwise ranking.\n\nTraining is end-to-end with standard task loss plus: (1) a load-balancing regularizer to prevent expert collapse; (2) structured group sparsity on expert parameters that encourages specialization and prunes unused paths into clean subnetworks; and (3) a gradual sparsity curriculum that anneals k from dense toward the target budget, stabilizing early learning. We use straight-through or Gumbel-TopK estimators for discrete routing, and distill from a dense teacher (or a late-training snapshot) to mitigate routing noise while experts specialize.\n\nInference is strictly conditional: for each layer, compute the router, dispatch activations only to the selected experts, and aggregate their outputs (e.g., sum or weighted sum) with the trunk via residual addition. Budgets are adjustable at runtime by tuning k or the routing temperature. For transformers, apply C2PS to MLPs (per-token routing) and optionally to attention heads (per-head routing); for CNNs, gate residual bottlenecks or channel groups. When routing uncertainty is high (e.g., low prototype margin), fall back to a larger k or the trunk-only path, preserving accuracy under tight budgets.",
+    "final_rationale": "C2PS achieves conditional compute by learning which subnetwork is relevant for each input and only activating that subset. Prototype-based scoring yields sharp, discriminative routing while remaining inexpensive, and the global-context modulation aligns per-token/per-block choices with the sequence- or image-level intent. Group sparsity and a sparsity curriculum shape experts into truly distinct competencies so that activating only a few preserves accuracy. Load balancing avoids overused experts and keeps throughput stable.\n\nCompared to static pruning, C2PS adapts per input and per location (token/region), capturing input heterogeneity without incurring dense FLOPs. Compared to naive MoE, the prototype router is lighter, better regularized, and stabilized by a shared trunk and knowledge distillation, delivering strong accuracy–efficiency trade-offs and controllable latency.",
+    "final_inspired_by": [
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-similarity gating with sharpened responses"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "group sparsity regularization for structured subspace selection"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector before heavy reasoning to cut redundant compute"
+      },
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global context conditioning of local computations"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "limited-scope competition to efficiently select top-k"
+      }
+    ],
+    "wall_clock_s": 106.84,
+    "cost": {
+      "gen_prompt_tokens": 4799,
+      "gen_completion_tokens": 3075,
+      "judge_prompt_tokens": 111458,
+      "judge_completion_tokens": 1307,
+      "gen_cost_usd": 0.0367,
+      "judge_cost_usd": 0.354,
+      "total_cost_usd": 0.3907
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of Matryoshka-style nested width slicing with cosine-similarity-based layer saturation for early exit, integrated into a unified progressive compute escalation schedule. However, each of these components (Matryoshka representations, early exit with confidence thresholds, MoE-style branch routing, FLOPs regularization) exists in prior literature, and the combination, while comprehensive, is an engineering assembly of known ideas. Method B's strongest novel element is the prototype-based routing mechanism fused with FiLM-style global context modulation and a streaming limited-scope top-k competition algorithm to avoid O(E²) ranking overhead. The prototype-cosine-similarity router with FiLM global context fusion is a more distinctive named mechanism not commonly found in MoE routing literature, and the streaming top-k via limited-scope competition is a specific algorithmic contribution. Compared to Method A's well-catalogued combination, Method B introduces a more original routing architecture that would be harder to find as a prior published unit."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is dense models computing every parameter for every input, wasting compute when only a fraction of the network is needed. Method A directly addresses this by replacing dense blocks with sparse expert pools where only top-k experts are activated per input, with a traceable causal pathway: router computes scores → selects top-k experts → only those experts execute → remaining parameters stay idle. This is a direct conditional activation mechanism. Method B addresses the problem through multiple orthogonal mechanisms (branch selection, early exit, Matryoshka width slicing), each of which partially engages the failure mode, but the combination is more diffuse. Early exit reduces depth conditionally but doesn't address width/parameter sparsity within active layers; branch selection is conditional but operates on only two options rather than a sparse subset of a large parameter pool; Matryoshka slicing addresses width but through nested subsets rather than truly conditional activation of relevant subnetworks. Method A's mechanism more directly and cleanly maps to \"conditionally activating only the relevant subnetwork\" — the sparse expert routing is precisely the mechanism that keeps most parameters idle for any given input, which is the core of the query."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A (C2PS) is largely coherent: it describes a mixture-of-experts style architecture with a shared trunk, prototype-based routing, load balancing, and straight-through/Gumbel estimators for discrete routing. The one mild coherence concern is the \"streaming top-k via limited-scope competition\" mechanism, which is described vaguely enough that an implementer would need to invent the exact algorithm, but this is a minor gap rather than a contradiction. The overall pipeline is consistent and implementable.\n\nMethod B (CSA) combines three distinct conditional-compute mechanisms: branch selection, early exit, and Matryoshka width slicing. Each mechanism individually is coherent, but the integration creates coherence problems. The progressive inference schedule—starting narrow/light, then escalating width and branch type based on saturation—interacts with the early-exit logic in ways that are underspecified: if the model exits early, the width escalation for \"subsequent layers\" never happens, yet the saturation metric is supposed to trigger escalation before exit. The interaction between the hysteresis controller, the global budget controller, the per-block router, and the early-exit threshold creates multiple interdependent decision points whose joint behavior is not resolved. Additionally, training simultaneously with stochastic branch dropout, width sampling, and distillation from the full-width path introduces competing objectives whose reconciliation is not explained. These are not merely implementation details but genuine logical gaps in how the components interact."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 4719,
+    "judge_completion_tokens": 828,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0266,
+    "total_cost_usd": 0.0266
+  }
+}

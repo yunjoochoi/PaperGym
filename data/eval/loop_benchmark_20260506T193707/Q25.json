@@ -1,0 +1,228 @@
+{
+  "query_id": "Q25",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Internal model components correlate with abilities but\ncorrelation is not causation; how can we identify which\ncomponents causally implement a given capability and use that\nfor editing or interpretation?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Define a component family and an interventional knob. Choose a granular basis to probe (e.g., SAE features, MLP neurons, attention heads, or low-rank subspaces). For each component c, implement a parametric intervention I(c; α) that scales, nulls, or injects activation with a signed strength α. Calibrate α per component to achieve a fixed target KL divergence δ between the model’s clean and intervened token distributions, so all components are compared at equal perturbation strength. For any capability of interest, specify a measurable scorer (unit tests or a judge LLM) and a token-level Component Dependency Measure that compares p(y_t | history, I off) and p(y_t | history, I on) under the calibrated δ; aggregate per-token effects into capability-specific scores.\n\nActively harvest diagnostic contexts that maximize causal signal. Starting from seed prompts that elicit the capability, run a search loop that proposes context mutations (paraphrases, harder variants, distractors) and selects those where the calibrated intervention on any candidate component yields large, reliable output divergences or capability score deltas. Interleave model runs with selection to concentrate the diagnostic set on regions where causal effects are identifiable, not merely correlated. This planner-style data collection increases power and reduces confounding by ensuring comparisons are made where the capability is actually exercised.\n\nEstimate causal responsibility with knockout–rescue tests and robust aggregation. For each component, compute calibrated knockout effects on the diagnostic set and confirm directionality via anti-interventions (amplify vs suppress). Perform rescue by injecting a downstream surrogate signal to test whether the observed impairment is specifically mediated by the targeted pathway. Quantify redundancy and synergy via pairwise and small-set ablations; fit a minimal hitting set of components whose joint knockout flips the capability metric, and estimate marginal contributions with greedy Shapley-style approximations. Aggregate effect sizes across contexts with heavy-tailed estimators (e.g., Student’s t regression or median-of-means) and report confidence intervals via bootstrap, yielding a ranked list of causally responsible components and minimal causal cores.\n\nEdit within a trust region. Attach light-weight gates to the identified components (scalars or tiny MLPs) and optimize them to attenuate or enhance the capability on the diagnostic set while enforcing a per-batch KL budget to the original model, preserving global behavior. Use a trust-region update that maximizes the desired capability objective (or minimizes an undesired one) under the KL constraint; stop early when the capability change saturates or the KL budget is met. Validate on held-out contexts, and, if needed, widen edits by adding or removing components from the causal core based on post-edit re-scoring.\n\nProduce output-grounded interpretations. For each causally identified component, automatically summarize its function by collecting tokens and behaviors whose probabilities most increase or decrease under calibrated interventions on the diagnostic set, clustering them, and prompting a judge model to produce concise hypotheses. Track the component dependency curves over generation steps to reveal when and how the capability is mediated. Package each component with: its effect size and CI, minimal counterfactual examples demonstrating knockout–rescue, the learned gate value if edited, and a natural-language description tied to its downstream impacts.",
+        "rationale": "Causality requires interventions and counterfactuals, not correlations. By calibrating per-component interventions to a fixed KL distance, we obtain fair, comparable effect sizes across heterogeneous units and avoid over-penalizing sensitive layers. The active context search focuses measurement on cases where the capability is engaged, increasing statistical power and reducing spurious associations. Knockout–rescue tests and small-set ablations distinguish direct mediators from passengers and reveal redundancy, while robust aggregation prevents a few outlier prompts from dominating conclusions.\n\nFor editing, KL-constrained, trust-region gating provides local, controllable changes to the identified causal pathways while guarding against off-target drift. Output-based summaries convert raw effect measurements into human-usable interpretations, grounding component descriptions in their demonstrable downstream consequences rather than input correlations. Together, these steps reliably identify which components causally implement a capability and turn that knowledge into targeted, safe edits and clear interpretations.",
+        "inspired_by": [
+          {
+            "seed_id": "0a49806327f2",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "calibrated intervention scoring with target KL and output-grounded interpretation"
+          },
+          {
+            "seed_id": "359f98a60b38",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "dependency measure via distributional comparison to quantify reliance"
+          },
+          {
+            "seed_id": "f7d0ff1999b7",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "planner-driven, interleaved data collection focused on relevance"
+          },
+          {
+            "seed_id": "3065495cf523",
+            "domain": "RL",
+            "borrowed_aspect": "trust-region optimization under a KL constraint for safe edits"
+          },
+          {
+            "seed_id": "35dbae9aa284",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "heavy-tailed robust estimation to resist outlier-induced distortion"
+          },
+          {
+            "seed_id": "03f26ea245f1",
+            "domain": "IR_REC",
+            "borrowed_aspect": "harvesting implicit interventions across deployments to control confounding when building diagnostic sets"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines several mechanisms: (1) KL-calibrated per-component interventions for fair comparison (present in the SAE auto-interp paper, seed 1), (2) active/adaptive context harvesting to maximize causal signal (not surfaced in any paper), (3) knockout-rescue tests with Shapley-style aggregation and minimal hitting sets for causal responsibility estimation (not surfaced as a joint application), (4) trust-region KL-constrained gating for targeted editing of identified causal components (not surfaced), and (5) output-grounded interpretation via intervention effects. While individual elements exist — KL-calibrated interventions (Anthropic SAE paper), causal mediation analysis for LLM components (ROME-style work), SAE feature interpretation — no surfaced paper combines all five mechanisms into a unified pipeline: active diagnostic context harvesting + calibrated interventions + knockout-rescue + Shapley hitting sets + trust-region editing. The closest is the \"Automatically Interpreting Millions of Features\" paper which covers KL-calibrated intervention scoring for SAE features, but lacks the active context harvesting, knockout-rescue, hitting set estimation, and trust-region editing components. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, introducing named design choices (active diagnostic harvesting loop, knockout-rescue with hitting sets, trust-region gating) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - Automatically Interpreting Millions of Features in Large Language Models (2024): Introduces KL-calibrated intervention scoring for SAE features and output-grounded interpretations — directly overlaps with the calibration and interpretation components.\n  - Locating and Mitigating Gender Bias in Large Language Models (2024): Uses causal mediation analysis to locate components and then applies knowledge editing — overlaps with the locate-then-edit pipeline structure.\n  - Do LLMs \"Feel\"? Emotion Circuits Discovery and Control (2025): Identifies neurons/attention heads via ablation/enhancement interventions and modulates circuits for control — overlaps with causal component identification and editing.\n  - Causal Concept Graphs in LLM Latent Space for Stepwise Reasoning (2026): Combines SAE features with causal structure learning and intervention-based fidelity scoring — overlaps with causal intervention on sparse features.",
+        "prior_works": [
+          "Automatically Interpreting Millions of Features in Large Language Models (2024): Introduces KL-calibrated intervention scoring for SAE features and output-grounded interpretations — directly overlaps with the calibration and interpretation components.",
+          "Locating and Mitigating Gender Bias in Large Language Models (2024): Uses causal mediation analysis to locate components and then applies knowledge editing — overlaps with the locate-then-edit pipeline structure.",
+          "Do LLMs \"Feel\"? Emotion Circuits Discovery and Control (2025): Identifies neurons/attention heads via ablation/enhancement interventions and modulates circuits for control — overlaps with causal component identification and editing.",
+          "Causal Concept Graphs in LLM Latent Space for Stepwise Reasoning (2026): Combines SAE features with causal structure learning and intervention-based fidelity scoring — overlaps with causal intervention on sparse features."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Define a component family and an interventional knob. Choose a granular basis to probe (e.g., SAE features, MLP neurons, attention heads, or low-rank subspaces). For each component c, implement a parametric intervention I(c; α) that scales, nulls, or injects activation with a signed strength α. Calibrate α per component to achieve a fixed target KL divergence δ between the model’s clean and intervened token distributions, so all components are compared at equal perturbation strength. For any capability of interest, specify a measurable scorer (unit tests or a judge LLM) and a token-level Component Dependency Measure that compares p(y_t | history, I off) and p(y_t | history, I on) under the calibrated δ; aggregate per-token effects into capability-specific scores.\n\nActively harvest diagnostic contexts that maximize causal signal. Starting from seed prompts that elicit the capability, run a search loop that proposes context mutations (paraphrases, harder variants, distractors) and selects those where the calibrated intervention on any candidate component yields large, reliable output divergences or capability score deltas. Interleave model runs with selection to concentrate the diagnostic set on regions where causal effects are identifiable, not merely correlated. This planner-style data collection increases power and reduces confounding by ensuring comparisons are made where the capability is actually exercised.\n\nEstimate causal responsibility with knockout–rescue tests and robust aggregation. For each component, compute calibrated knockout effects on the diagnostic set and confirm directionality via anti-interventions (amplify vs suppress). Perform rescue by injecting a downstream surrogate signal to test whether the observed impairment is specifically mediated by the targeted pathway. Quantify redundancy and synergy via pairwise and small-set ablations; fit a minimal hitting set of components whose joint knockout flips the capability metric, and estimate marginal contributions with greedy Shapley-style approximations. Aggregate effect sizes across contexts with heavy-tailed estimators (e.g., Student’s t regression or median-of-means) and report confidence intervals via bootstrap, yielding a ranked list of causally responsible components and minimal causal cores.\n\nEdit within a trust region. Attach light-weight gates to the identified components (scalars or tiny MLPs) and optimize them to attenuate or enhance the capability on the diagnostic set while enforcing a per-batch KL budget to the original model, preserving global behavior. Use a trust-region update that maximizes the desired capability objective (or minimizes an undesired one) under the KL constraint; stop early when the capability change saturates or the KL budget is met. Validate on held-out contexts, and, if needed, widen edits by adding or removing components from the causal core based on post-edit re-scoring.\n\nProduce output-grounded interpretations. For each causally identified component, automatically summarize its function by collecting tokens and behaviors whose probabilities most increase or decrease under calibrated interventions on the diagnostic set, clustering them, and prompting a judge model to produce concise hypotheses. Track the component dependency curves over generation steps to reveal when and how the capability is mediated. Package each component with: its effect size and CI, minimal counterfactual examples demonstrating knockout–rescue, the learned gate value if edited, and a natural-language description tied to its downstream impacts.",
+    "final_rationale": "Causality requires interventions and counterfactuals, not correlations. By calibrating per-component interventions to a fixed KL distance, we obtain fair, comparable effect sizes across heterogeneous units and avoid over-penalizing sensitive layers. The active context search focuses measurement on cases where the capability is engaged, increasing statistical power and reducing spurious associations. Knockout–rescue tests and small-set ablations distinguish direct mediators from passengers and reveal redundancy, while robust aggregation prevents a few outlier prompts from dominating conclusions.\n\nFor editing, KL-constrained, trust-region gating provides local, controllable changes to the identified causal pathways while guarding against off-target drift. Output-based summaries convert raw effect measurements into human-usable interpretations, grounding component descriptions in their demonstrable downstream consequences rather than input correlations. Together, these steps reliably identify which components causally implement a capability and turn that knowledge into targeted, safe edits and clear interpretations.",
+    "final_inspired_by": [
+      {
+        "seed_id": "0a49806327f2",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "calibrated intervention scoring with target KL and output-grounded interpretation"
+      },
+      {
+        "seed_id": "359f98a60b38",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "dependency measure via distributional comparison to quantify reliance"
+      },
+      {
+        "seed_id": "f7d0ff1999b7",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "planner-driven, interleaved data collection focused on relevance"
+      },
+      {
+        "seed_id": "3065495cf523",
+        "domain": "RL",
+        "borrowed_aspect": "trust-region optimization under a KL constraint for safe edits"
+      },
+      {
+        "seed_id": "35dbae9aa284",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "heavy-tailed robust estimation to resist outlier-induced distortion"
+      },
+      {
+        "seed_id": "03f26ea245f1",
+        "domain": "IR_REC",
+        "borrowed_aspect": "harvesting implicit interventions across deployments to control confounding when building diagnostic sets"
+      }
+    ],
+    "wall_clock_s": 179.65,
+    "cost": {
+      "gen_prompt_tokens": 7126,
+      "gen_completion_tokens": 7223,
+      "judge_prompt_tokens": 89172,
+      "judge_completion_tokens": 1098,
+      "gen_cost_usd": 0.0811,
+      "judge_cost_usd": 0.284,
+      "total_cost_usd": 0.3651
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "1) Define and elicit the capability. Curate a compact, capability-specific evaluation set with paired counterfactuals that selectively disrupt the target behavior while holding other factors constant (e.g., prompts that require subject–verb agreement vs minimally-edited distractors that remove the need for agreement). Fix an external scoring function that reflects the capability (task accuracy, calibrated reference metrics, or human ratings), and lock an execution protocol (temperature, seeds) to reduce evaluation noise. Run clean and corrupted inputs through the frozen model to produce activation traces per component (e.g., attention heads, MLP neurons, or low-rank feature directions).\n\n2) Fast screening to localize candidates. Perform lightweight, layer- and component-wise screening to reduce the search space: train linear probes on intermediate representations to decode a capability-relevant target (e.g., the next correct token among distractors) and compute per-component decodability and mutual-information gains. Combine with coarse behavioral importance (e.g., masking a head group and measuring accuracy drop) to form a shortlist of candidate components per layer. Keep this stage deliberately permissive to favor recall over precision.\n\n3) Causal subnetwork discovery via sparse, differentiable masking. Parameterize a binary mask over component groups (e.g., heads/MLP blocks) with per-layer group sparsity and a small, learnable controller that samples masks (e.g., Bernoulli or Gumbel–Softmax) during training. Optimize the mask with a two-contrast objective: (a) with only the masked-on components allowed to transmit their activations (others zeroed or bypassed), the model should retain high capability score on the clean set; (b) when the same components are ablated (masked off) in the full model, the capability score should drop sharply on the same inputs and their counterfactuals. Add group-L0/L1 penalties and a hierarchical per-layer budget to encourage minimal, structured solutions. For efficiency and stability, estimate gradients of the discrete mask with sampling-based estimators and restrict forward/backward to the expanded subgraph touched by sampled components. Iterate mask training only over the shortlisted candidates from step 2.\n\n4) Causal verification and actionable editing. Verify the discovered set by do-style interventions: (i) ablate-only tests (turn off the set and confirm capability loss), (ii) rescue tests (enable only the set and confirm capability recovery on counterfactual-disrupted inputs), and (iii) activation patching (swap clean vs corrupted activations at candidate sites and measure output deltas) to quantify average causal effect. For interpretation, output the minimal causal circuit (components and their strongest edges/IO tokens) with effect sizes. For editing, use the mask as a handle: suppress a capability by zeroing/scaling its components; amplify by gain-scaling or targeted fine-tuning restricted to the set; or transplant by copying the set (and their layer-normalization context) into a sibling model and validating transfer. Always re-check collateral effects on unrelated control tasks to bound side effects.",
+        "rationale": "The pipeline turns correlational signals into causal evidence by pairing a permissive, high-recall screen (linear probes and coarse ablations) with targeted do-interventions on a sparsified set of components. Learning a minimal masked subnetwork that both preserves the capability when kept and erases it when removed operationalizes causal necessity and sufficiency, while hierarchical group sparsity enforces component-level structure and parsimony. Sampling-based mask optimization makes the discrete selection tractable without exhaustively testing all component combinations.\n\nThe verification suite (ablate, rescue, and activation patching) provides convergent evidence that the selected components implement the capability, and the learned mask becomes a practical control for editing—allowing suppression, amplification, or transfer—while external, reference-grounded evaluation avoids over-trusting the model’s own internal signals.",
+        "inspired_by": [
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "layer-wise linear probing to localize where knowledge is represented"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "hierarchical group-sparse selection to derive minimal, component-specific subspaces"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "two-stage pipeline with a lightweight selector followed by heavy reasoning"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "sampling-based gradient estimator for discrete structured selections"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "avoidance of self-evaluation bias via external, reference-grounded metrics"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surface several relevant papers in mechanistic interpretability: ACDC (automated circuit discovery via activation patching), differential binary masking (mentioned in the Causal Abstraction paper), SafeSeek (differentiable binary masks for safety circuits), and HAGD (hierarchical differentiable circuit search). The proposed method combines (1) linear probe screening as a high-recall shortlist, (2) sparse differentiable masking with Gumbel-Softmax/Bernoulli sampling and hierarchical group-L0/L1 sparsity optimized against a two-contrast objective (preserve capability when on, erase when off), and (3) a verification suite (ablate, rescue, activation patching) plus actionable editing (suppress/amplify/transplant). SafeSeek is the closest match—it uses differentiable binary masks with gradient descent on task datasets for circuit extraction and then uses circuits for fine-tuning. However, the proposed method adds the linear probe pre-screening stage, the explicit two-contrast (necessity+sufficiency) training objective, the hierarchical per-layer budget, sampling-based gradient estimators, and the full editing suite (suppress/amplify/transplant with collateral checks). No surfaced paper combines all these elements as a unified pipeline. The combination of linear probe screening + two-contrast differentiable masking + rescue/ablate/patching verification + editing operations is not matched end-to-end by any surfaced paper, matching the Score 4 anchor: combines mechanism families with no surfaced published joint application for this exact pipeline, though individual components (differentiable masking, activation patching, linear probes) are each known.\n\nPrior works:\n  - SafeSeek (2026): Uses differentiable binary masks optimized via gradient descent on safety datasets to extract circuits in LLMs, then applies circuits for safety fine-tuning — closest overlap with the differentiable masking + editing component.\n  - ACDC / Automated Circuit Discovery (2023): Activation patching-based automated circuit discovery in transformers — overlaps with the causal verification via activation patching component.\n  - Causal Abstraction (2023): Theoretical unification of mechanistic interpretability methods including differential binary masking, activation patching, causal scrubbing — covers individual mechanisms used.\n  - MIB Benchmark (2025): Evaluates mask optimization and attribution patching methods for circuit localization — confirms these are known individual techniques.\n  - HAGD (2026): Hierarchical differentiable circuit search with causal intervention protocols — overlaps with hierarchical sparsity and differentiable search components.",
+        "prior_works": [
+          "SafeSeek (2026): Uses differentiable binary masks optimized via gradient descent on safety datasets to extract circuits in LLMs, then applies circuits for safety fine-tuning — closest overlap with the differentiable masking + editing component.",
+          "ACDC / Automated Circuit Discovery (2023): Activation patching-based automated circuit discovery in transformers — overlaps with the causal verification via activation patching component.",
+          "Causal Abstraction (2023): Theoretical unification of mechanistic interpretability methods including differential binary masking, activation patching, causal scrubbing — covers individual mechanisms used.",
+          "MIB Benchmark (2025): Evaluates mask optimization and attribution patching methods for circuit localization — confirms these are known individual techniques.",
+          "HAGD (2026): Hierarchical differentiable circuit search with causal intervention protocols — overlaps with hierarchical sparsity and differentiable search components."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "1) Define and elicit the capability. Curate a compact, capability-specific evaluation set with paired counterfactuals that selectively disrupt the target behavior while holding other factors constant (e.g., prompts that require subject–verb agreement vs minimally-edited distractors that remove the need for agreement). Fix an external scoring function that reflects the capability (task accuracy, calibrated reference metrics, or human ratings), and lock an execution protocol (temperature, seeds) to reduce evaluation noise. Run clean and corrupted inputs through the frozen model to produce activation traces per component (e.g., attention heads, MLP neurons, or low-rank feature directions).\n\n2) Fast screening to localize candidates. Perform lightweight, layer- and component-wise screening to reduce the search space: train linear probes on intermediate representations to decode a capability-relevant target (e.g., the next correct token among distractors) and compute per-component decodability and mutual-information gains. Combine with coarse behavioral importance (e.g., masking a head group and measuring accuracy drop) to form a shortlist of candidate components per layer. Keep this stage deliberately permissive to favor recall over precision.\n\n3) Causal subnetwork discovery via sparse, differentiable masking. Parameterize a binary mask over component groups (e.g., heads/MLP blocks) with per-layer group sparsity and a small, learnable controller that samples masks (e.g., Bernoulli or Gumbel–Softmax) during training. Optimize the mask with a two-contrast objective: (a) with only the masked-on components allowed to transmit their activations (others zeroed or bypassed), the model should retain high capability score on the clean set; (b) when the same components are ablated (masked off) in the full model, the capability score should drop sharply on the same inputs and their counterfactuals. Add group-L0/L1 penalties and a hierarchical per-layer budget to encourage minimal, structured solutions. For efficiency and stability, estimate gradients of the discrete mask with sampling-based estimators and restrict forward/backward to the expanded subgraph touched by sampled components. Iterate mask training only over the shortlisted candidates from step 2.\n\n4) Causal verification and actionable editing. Verify the discovered set by do-style interventions: (i) ablate-only tests (turn off the set and confirm capability loss), (ii) rescue tests (enable only the set and confirm capability recovery on counterfactual-disrupted inputs), and (iii) activation patching (swap clean vs corrupted activations at candidate sites and measure output deltas) to quantify average causal effect. For interpretation, output the minimal causal circuit (components and their strongest edges/IO tokens) with effect sizes. For editing, use the mask as a handle: suppress a capability by zeroing/scaling its components; amplify by gain-scaling or targeted fine-tuning restricted to the set; or transplant by copying the set (and their layer-normalization context) into a sibling model and validating transfer. Always re-check collateral effects on unrelated control tasks to bound side effects.",
+    "final_rationale": "The pipeline turns correlational signals into causal evidence by pairing a permissive, high-recall screen (linear probes and coarse ablations) with targeted do-interventions on a sparsified set of components. Learning a minimal masked subnetwork that both preserves the capability when kept and erases it when removed operationalizes causal necessity and sufficiency, while hierarchical group sparsity enforces component-level structure and parsimony. Sampling-based mask optimization makes the discrete selection tractable without exhaustively testing all component combinations.\n\nThe verification suite (ablate, rescue, and activation patching) provides convergent evidence that the selected components implement the capability, and the learned mask becomes a practical control for editing—allowing suppression, amplification, or transfer—while external, reference-grounded evaluation avoids over-trusting the model’s own internal signals.",
+    "final_inspired_by": [
+      {
+        "seed_id": "a9647aa8fe5e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "layer-wise linear probing to localize where knowledge is represented"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "hierarchical group-sparse selection to derive minimal, component-specific subspaces"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "two-stage pipeline with a lightweight selector followed by heavy reasoning"
+      },
+      {
+        "seed_id": "69f9d4fc5e68",
+        "domain": "RL",
+        "borrowed_aspect": "sampling-based gradient estimator for discrete structured selections"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "avoidance of self-evaluation bias via external, reference-grounded metrics"
+      }
+    ],
+    "wall_clock_s": 180.78,
+    "cost": {
+      "gen_prompt_tokens": 4802,
+      "gen_completion_tokens": 3880,
+      "judge_prompt_tokens": 88094,
+      "judge_completion_tokens": 1245,
+      "gen_cost_usd": 0.0448,
+      "judge_cost_usd": 0.283,
+      "total_cost_usd": 0.3278
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the adaptive diagnostic context harvesting loop—a planner-style search that actively mutates prompts to maximize causal signal, combined with calibrated equal-perturbation interventions (fixed KL divergence δ) ensuring fair cross-component comparison. This combination of active data collection interleaved with causal testing is not a standard component of existing mechanistic interpretability pipelines. Method B's strongest novel element is the differentiable sparse masking with a two-contrast objective (retain capability with masked-on components, drop capability when masked-off), using Gumbel-Softmax/Bernoulli sampling over a shortlisted candidate set. However, differentiable circuit discovery via sparse masking is closely related to existing work (e.g., ACDC, edge attribution patching, differentiable masking for subnetwork discovery), making it less novel. Method A's active/adaptive diagnostic context harvesting combined with calibrated equal-strength interventions represents a more original combination not easily found in prior mechanistic interpretability literature."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is the correlation-vs-causation gap in identifying which internal components *causally* implement a capability, and then using that causal identification for editing or interpretation. Both methods directly engage this failure mode. Method A uses sparse differentiable masking with a two-contrast objective (retain capability with only masked components, lose capability when they're ablated), followed by do-style interventions including ablate-only, rescue, and activation patching tests — directly tracing causation. Method B uses calibrated interventional knobs at equal perturbation strength, knockout-rescue tests with anti-interventions, pairwise/synergy ablations, and Shapley-style marginal contribution estimates, also directly targeting causation. Both then use the identified causal components for editing. The methods are comparably direct in engaging the failure mode: both implement interventional (do-calculus-style) tests rather than correlational ones, both include rescue tests to confirm causal mediation, and both provide editing mechanisms tied to the causal identification. Method B adds calibration for equal perturbation strength and robust statistical aggregation, while Method A adds differentiable mask learning for efficient discovery. These represent different but equally direct mechanistic engagements with the core failure mode."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A has a coherence tension in its \"calibrated α per component to achieve a fixed target KL divergence δ\" step — calibrating per-component interventions to equal KL is a reasonable idea but introduces a circular dependency where the calibration itself requires running the full model repeatedly per component, and the KL target conflates component importance with component sensitivity. More seriously, the \"rescue by injecting a downstream surrogate signal\" step is underspecified: what constitutes a valid surrogate signal and how it is constructed is left undefined, making this step difficult to implement without redesign. The \"planner-style\" context mutation loop is also loosely specified in terms of how proposals are generated and selected. Method B proceeds through clearly defined, sequentially dependent stages: curate evaluation set, screen with probes and coarse ablations, optimize differentiable sparse masks with a well-defined two-contrast objective, then verify with standard do-style interventions. Each step's inputs and outputs are clearly defined and feed naturally into the next. The Gumbel-Softmax/Bernoulli mask training with group sparsity penalties is a standard, implementable approach. The editing step (suppress/amplify/transplant via the learned mask) follows directly from the discovered components. Method B has no major coherence gaps, while Method A has several underspecified components that would require invention to implement."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5784,
+    "judge_completion_tokens": 821,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0297,
+    "total_cost_usd": 0.0297
+  }
+}

@@ -1,0 +1,14 @@
+system: |
+  Propose a research method that addresses the user's problem statement.
+  No prior literature or seeds are provided — rely on your own knowledge.
+
+  Your output MUST be JSON:
+    {
+      "method":    "<3-5 paragraphs describing the proposed method end-to-end>",
+      "rationale": "<why this addresses the user's problem, 1-3 paragraphs>",
+      "inspired_by": []
+    }
+
+user: |
+  ## Query
+  {{ query }}

@@ -1,0 +1,4 @@
+system: |
+  You are a {{ role }} in PaperGym.
+user: |
+  Problem: {{ problem }}

@@ -1,0 +1,214 @@
+{
+  "query_id": "Q01",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Sequential LLM decoding is slow because each token needs a full\nlarge-model forward pass; how can a small draft model propose\ntokens in parallel that the large model verifies without quality\nloss?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Parallel Draft–Verify Decoding (PDVD): a small draft model D proposes a block of the next B tokens in parallel, and the large target model L verifies and commits a maximal prefix of that block, guaranteeing the exact output that L would have produced under the chosen decoding policy (greedy or stochastic). At each step, we maintain L’s KV cache for the accepted prefix. D is a lightweight transformer trained to approximate L’s next-token distribution and, crucially, to predict the next B positions simultaneously using a lookahead masking scheme so its B predictions can be produced in one pass.\n\nDrafting: Given prefix x1:t, we append B masked slots and run D once with a position-specific lookahead mask that prevents the masked slots from attending to each other, letting every future position see the same prefix but not cross-talk with other future positions. D outputs logits (or top-m lists) for positions t+1..t+B in parallel; we sample or select candidates from these logits according to the downstream decoding policy (e.g., greedy or temperature sampling) to form a draft block ŷ1:B.\n\nVerification: We run L autoregressively over the draft block reusing the KV cache, but stop as soon as we encounter the first position j where D’s draft and L’s policy disagree. For greedy decoding, we accept all ŷ1:(j−1) that match L and set yj to L’s argmax; for stochastic decoding, we perform acceptance–rejection at each position i using the standard probability ratio test min(1, pL(yi|x, y< i)/pD(yi|x, y< i)), which yields exact samples from L. To save compute when a mismatch is likely, we add a shallow verifier gate g that inspects early-layer activations and D’s logits to predict rejection; if g flags a likely mismatch at position i, we abort the deep layers for that position and mark it as a rejection early, while still running the full L pass for any token we finally commit—preserving exactness.\n\nScheduling and pipelining: While L verifies the current block, D immediately drafts the next block from the (temporarily) extended context, keeping both models busy. Across a batch of sequences, we verify blocks in a strided, GPU-friendly manner. To further increase parallelism without changing correctness, maintain a cache of tentative tokens across future steps and iterate in sweeps: each sweep lets L verify only its assigned positions (earliest unverified positions across requests) using cached guesses elsewhere; after the sweep, we write back accepted tokens and repeat. This converges to the same sequence as fully sequential decoding, yet enables high hardware utilization via batched verification.\n\nTraining D and the verifier gate: Train D via distillation from L on next-token prediction and a blockwise objective: for randomly chosen prefixes, predict the next B tokens with the lookahead mask so every position learns to rely solely on the prefix. Train the shallow gate g to predict “accept vs reject” using features from early L layers and D’s logits, with a loss that heavily penalizes false accepts; at inference, g only short-circuits expensive verification on tokens that would be rejected, never on tokens we ultimately commit.",
+        "rationale": "This design eliminates quality loss by committing tokens only after L has validated them, and by using exact acceptance–rejection for stochastic decoding. The small D amortizes the expensive large-model passes: if the average accepted-prefix length per draft is r·B (r = acceptance rate), then L performs one forward sweep per r·B emitted tokens instead of per token, yielding a speedup of roughly 1/r in the large-model compute, while D’s parallel draft is cheap and overlapped. The verifier gate further reduces wasted large-model work by aborting deep-layer computation early on blocks that will be rejected, without changing any committed outputs.\n\nThe lookahead masking allows D to produce multiple future positions in a single pass without causal leakage between those positions, which is what makes parallel drafting both valid and efficient. The iterative, cache-based scheduling maintains high device utilization and mirrors a fixed-point view of sequential decoding: multiple tentative positions are updated and corrected until they match L’s true trajectory, but tokens are only emitted once L has fully verified them—preserving exact equivalence to L’s outputs.",
+        "inspired_by": [
+          {
+            "seed_id": "27132f85513f",
+            "domain": "IR_REC",
+            "borrowed_aspect": "position-specific attention mask for parallel token prediction"
+          },
+          {
+            "seed_id": "c0f89de47a61",
+            "domain": "RL",
+            "borrowed_aspect": "parallel horizon splitting with cached proposals and iterative correction"
+          },
+          {
+            "seed_id": "cc388ce5379c",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "predictor-guided early abort of expensive computation"
+          },
+          {
+            "seed_id": "631afbec883a",
+            "domain": "SPEECH",
+            "borrowed_aspect": "two-pass selective replacement after comparison to a stronger model"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed PDVD combines several known mechanisms: (1) speculative decoding with a small draft model and exact acceptance-rejection (Leviathan et al. 2023, Chen et al. 2023 — well established); (2) parallel multi-token drafting in a single forward pass using position-specific masking (covered by PARD, DART, Medusa, Falcon); (3) a shallow verifier gate using early target-model layer activations to predict rejection and abort deep computation (no surfaced paper matches this specific component); (4) Picard-iteration-style scheduling with a cache of tentative tokens swept across batch positions (related to Jacobi/CLLMs but not in the speculative decoding context with a separate draft model). The combination of (3) and (4) together with (1)+(2) has not been surfaced as a joint published method. However, components (1) and (2) are very well covered by PARD and DART specifically, and the Picard scheduling is closely related to CLLMs/Jacobi decoding. The shallow verifier gate using early L-layer activations is the most novel element — no search returned a paper doing this. The overall combination matches the Score 4 anchor: combines mechanism families with no surfaced published joint application, with one named design choice (the shallow verifier gate using early target-model layer activations) not present in surfaced literature.\n\nPrior works:\n  - Speculative Decoding (Leviathan et al. 2023 / Chen et al. 2023): foundational draft-verify with exact acceptance-rejection, same problem\n  - Medusa (2024): multiple parallel decoding heads predicting B future tokens in one pass with tree verification\n  - PARD (2025): parallel draft model predicting multiple future tokens in single forward pass with masked training, same problem\n  - DART (2026): parallel masked prediction of multiple future positions in single forward pass for speculative decoding\n  - Falcon (2024): semi-autoregressive drafting with parallel token prediction and coupled distillation\n  - CLLMs (2024): Jacobi/fixed-point iteration for parallel LLM decoding, related to Picard-iteration scheduling\n  - Kangaroo (2024): early-exit confidence threshold to abort drafting, related to verifier gate concept\n  - PACER (2026): blockwise pre-verification layer to predict rejection before full target model pass",
+        "prior_works": [
+          "Speculative Decoding (Leviathan et al. 2023 / Chen et al. 2023): foundational draft-verify with exact acceptance-rejection, same problem",
+          "Medusa (2024): multiple parallel decoding heads predicting B future tokens in one pass with tree verification",
+          "PARD (2025): parallel draft model predicting multiple future tokens in single forward pass with masked training, same problem",
+          "DART (2026): parallel masked prediction of multiple future positions in single forward pass for speculative decoding",
+          "Falcon (2024): semi-autoregressive drafting with parallel token prediction and coupled distillation",
+          "CLLMs (2024): Jacobi/fixed-point iteration for parallel LLM decoding, related to Picard-iteration scheduling",
+          "Kangaroo (2024): early-exit confidence threshold to abort drafting, related to verifier gate concept",
+          "PACER (2026): blockwise pre-verification layer to predict rejection before full target model pass"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Parallel Draft–Verify Decoding (PDVD): a small draft model D proposes a block of the next B tokens in parallel, and the large target model L verifies and commits a maximal prefix of that block, guaranteeing the exact output that L would have produced under the chosen decoding policy (greedy or stochastic). At each step, we maintain L’s KV cache for the accepted prefix. D is a lightweight transformer trained to approximate L’s next-token distribution and, crucially, to predict the next B positions simultaneously using a lookahead masking scheme so its B predictions can be produced in one pass.\n\nDrafting: Given prefix x1:t, we append B masked slots and run D once with a position-specific lookahead mask that prevents the masked slots from attending to each other, letting every future position see the same prefix but not cross-talk with other future positions. D outputs logits (or top-m lists) for positions t+1..t+B in parallel; we sample or select candidates from these logits according to the downstream decoding policy (e.g., greedy or temperature sampling) to form a draft block ŷ1:B.\n\nVerification: We run L autoregressively over the draft block reusing the KV cache, but stop as soon as we encounter the first position j where D’s draft and L’s policy disagree. For greedy decoding, we accept all ŷ1:(j−1) that match L and set yj to L’s argmax; for stochastic decoding, we perform acceptance–rejection at each position i using the standard probability ratio test min(1, pL(yi|x, y< i)/pD(yi|x, y< i)), which yields exact samples from L. To save compute when a mismatch is likely, we add a shallow verifier gate g that inspects early-layer activations and D’s logits to predict rejection; if g flags a likely mismatch at position i, we abort the deep layers for that position and mark it as a rejection early, while still running the full L pass for any token we finally commit—preserving exactness.\n\nScheduling and pipelining: While L verifies the current block, D immediately drafts the next block from the (temporarily) extended context, keeping both models busy. Across a batch of sequences, we verify blocks in a strided, GPU-friendly manner. To further increase parallelism without changing correctness, maintain a cache of tentative tokens across future steps and iterate in sweeps: each sweep lets L verify only its assigned positions (earliest unverified positions across requests) using cached guesses elsewhere; after the sweep, we write back accepted tokens and repeat. This converges to the same sequence as fully sequential decoding, yet enables high hardware utilization via batched verification.\n\nTraining D and the verifier gate: Train D via distillation from L on next-token prediction and a blockwise objective: for randomly chosen prefixes, predict the next B tokens with the lookahead mask so every position learns to rely solely on the prefix. Train the shallow gate g to predict “accept vs reject” using features from early L layers and D’s logits, with a loss that heavily penalizes false accepts; at inference, g only short-circuits expensive verification on tokens that would be rejected, never on tokens we ultimately commit.",
+    "final_rationale": "This design eliminates quality loss by committing tokens only after L has validated them, and by using exact acceptance–rejection for stochastic decoding. The small D amortizes the expensive large-model passes: if the average accepted-prefix length per draft is r·B (r = acceptance rate), then L performs one forward sweep per r·B emitted tokens instead of per token, yielding a speedup of roughly 1/r in the large-model compute, while D’s parallel draft is cheap and overlapped. The verifier gate further reduces wasted large-model work by aborting deep-layer computation early on blocks that will be rejected, without changing any committed outputs.\n\nThe lookahead masking allows D to produce multiple future positions in a single pass without causal leakage between those positions, which is what makes parallel drafting both valid and efficient. The iterative, cache-based scheduling maintains high device utilization and mirrors a fixed-point view of sequential decoding: multiple tentative positions are updated and corrected until they match L’s true trajectory, but tokens are only emitted once L has fully verified them—preserving exact equivalence to L’s outputs.",
+    "final_inspired_by": [
+      {
+        "seed_id": "27132f85513f",
+        "domain": "IR_REC",
+        "borrowed_aspect": "position-specific attention mask for parallel token prediction"
+      },
+      {
+        "seed_id": "c0f89de47a61",
+        "domain": "RL",
+        "borrowed_aspect": "parallel horizon splitting with cached proposals and iterative correction"
+      },
+      {
+        "seed_id": "cc388ce5379c",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "predictor-guided early abort of expensive computation"
+      },
+      {
+        "seed_id": "631afbec883a",
+        "domain": "SPEECH",
+        "borrowed_aspect": "two-pass selective replacement after comparison to a stronger model"
+      }
+    ],
+    "wall_clock_s": 202.96,
+    "cost": {
+      "gen_prompt_tokens": 6832,
+      "gen_completion_tokens": 7495,
+      "judge_prompt_tokens": 154929,
+      "judge_completion_tokens": 1209,
+      "gen_cost_usd": 0.0835,
+      "judge_cost_usd": 0.4829,
+      "total_cost_usd": 0.5664
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Draft-Verify Parallel Decoding (DVPD): a two-model pipeline where a small draft model D speculatively proposes multi-token continuations in parallel and the large model L verifies them with a single batched forward pass. At each step, D produces a short draft block of length m along a greedy path and optionally a few branched alternatives per position (small branching factor b). L is then run once on the packed set of proposed tokens under teacher forcing to obtain conditional probabilities for every proposed position. A per-token accept/reject rule is applied left-to-right to accept the longest prefix whose drafted tokens pass verification; on the first rejection, we immediately emit L’s own token for that position, discard the remaining drafted suffix, and continue. The accept/reject test is implemented as a correction step that makes the emitted token distribution exactly match L’s sampler, ensuring no quality loss relative to decoding with L alone. KV caches computed during verification are retained so accepted tokens never require recomputation.\n\nTo make drafts highly verifiable, we train D by distilling multi-step conditionals from L. D uses a lightweight backbone and M parallel heads to predict up to M future tokens from the current prefix (depth-m drafting). The loss combines next-token KL with multi-step teacher-forced KL over the drafted depth, plus a calibration auxiliary head that predicts a per-token acceptance probability from D’s pre-softmax activations. During training, uncertainty-aware weighting up-weights examples and positions where D is less confident and/or disagrees with L, improving calibration and downstream acceptance rates without increasing D’s size.\n\nAt inference, DVPD adapts its drafting budget to context difficulty. The confidence head estimates an acceptance curve over the next positions; we choose the draft depth m and branching b to keep the expected number of accepted tokens per verification above a target. A tiny selector then ranks the few branched candidates by cumulative confidence and prunes to the top-K proposals before verification, keeping the large-model batch small and dense. Verification is early-terminating: we accept tokens until the first rejection; because L was run on the whole packed set once, this becomes a cheap, linear-time check over the positions with no additional L calls. While L verifies the current block, D asynchronously prepares the next draft from the most recently accepted prefix, overlapping compute and further reducing wall-clock latency.\n\nEngineering-wise, we pack proposals sharing a prefix into a single L forward using a block attention mask and contiguous token layout so the GPU sees one dense batch. We reuse L’s KV cache from the prefix; accepted tokens simply extend the cache, and even on rejection we retain the cache up to the rejection point. If D’s accuracy drops (e.g., out-of-domain context), the controller shrinks m and prunes branching to avoid wasted verification, and in the limit DVPD reverts to pure L decoding. Because emitted tokens are either accepted under the exact correction rule or sampled directly from L at the rejection point, DVPD preserves L’s output distribution by construction.\n\nThis end-to-end procedure yields large speedups when D’s drafts often match L, amortizing one L pass over multiple emitted tokens. Dynamic confidence-gated drafting and selective verification keep the acceptance rate high and the verifier batch small, while exact correction guarantees that output quality is indistinguishable from decoding with L alone.",
+        "rationale": "Sequential LLM decoding is slow because each emitted token demands a full large-model step. DVPD increases tokens-per-L-forward by letting a small, parallel-friendly draft model propose multiple future tokens at once and then verifies them in a single, early-terminating large-model pass. When drafts match, several tokens are accepted with no further large-model work; when they do not, the acceptance test falls back to L’s own sample at the first mismatch and continues, so there is no degradation in output distribution or quality.\n\nTwo additional mechanisms improve efficiency without hurting accuracy: a tiny selector prunes low-value branches before verification, and an uncertainty-calibrated controller adapts draft depth and branching to context difficulty to maintain a high acceptance rate. Together, these keep large-model compute focused on the most promising candidates and prevent regressions when the draft model is uncertain or out-of-domain, while cache reuse ensures no redundant large-model computation for accepted tokens.",
+        "inspired_by": [
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "right-to-left local correction with linear-time passes"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector gating heavy reasoning compute"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single forward-pass uncertainty head for confidence calibration"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided updating and teacher–student knowledge transfer"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "avoid self-evaluation bias via external verification"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed DVPD method combines well-established speculative decoding mechanisms (draft-verify pipeline, exact correction rule, KV cache reuse, tree/branching drafts) with a few additional components: (1) multi-step KL distillation training for the draft model, (2) a calibration auxiliary head predicting per-token acceptance probability from pre-softmax activations, (3) uncertainty-aware weighting during training, and (4) dynamic budget adaptation using the confidence head. Searches confirm that speculative decoding with dynamic tree construction (EAGLE-2, TALON, C2T, ASDT, AdaEDL), async overlapping (SwiftSpec, Talon), multi-head drafting (Medusa, Falcon), and distillation-based training (DVI, FastMTP) are all well-covered individually. However, the specific combination of a calibration head predicting acceptance probability from draft model activations plus uncertainty-aware training weighting to improve calibration and acceptance rates is not surfaced in any paper. The dynamic budget adaptation using this confidence head to choose draft depth and branching is partially covered by EAGLE-2/TALON/C2T (which use confidence for tree pruning), but the specific calibration head trained with acceptance-probability supervision from draft pre-softmax activations is not found. This matches the Score 4 anchor: combines known mechanisms with one named design choice (the calibration/acceptance-prediction auxiliary head with uncertainty-aware training weighting) not present in surfaced literature.\n\nPrior works:\n  - Medusa (2024): multi-head parallel drafting with self-distillation and tree-based verification, directly overlapping with multi-head drafting and distillation components\n  - EAGLE/EAGLE-2 (2024): draft model trained with feature-level distillation from target model, dynamic tree construction based on confidence scores\n  - AdaEDL (2024): entropy-based adaptive draft length stopping, overlapping with dynamic budget adaptation\n  - TALON/C2T (2025): confidence-aware adaptive tree construction for speculative decoding, overlapping with dynamic branching/pruning\n  - SwiftSpec (2025): asynchronous draft-verify pipeline with KV cache management, overlapping with async overlapping component\n  - Falcon (2024): coupled sequential glancing distillation for draft model training with multi-token parallel prediction, overlapping with multi-step KL distillation\n  - Draft, Verify, and Improve/DVI (2025): online KL distillation from verifier to drafter during inference, overlapping with distillation training signal",
+        "prior_works": [
+          "Medusa (2024): multi-head parallel drafting with self-distillation and tree-based verification, directly overlapping with multi-head drafting and distillation components",
+          "EAGLE/EAGLE-2 (2024): draft model trained with feature-level distillation from target model, dynamic tree construction based on confidence scores",
+          "AdaEDL (2024): entropy-based adaptive draft length stopping, overlapping with dynamic budget adaptation",
+          "TALON/C2T (2025): confidence-aware adaptive tree construction for speculative decoding, overlapping with dynamic branching/pruning",
+          "SwiftSpec (2025): asynchronous draft-verify pipeline with KV cache management, overlapping with async overlapping component",
+          "Falcon (2024): coupled sequential glancing distillation for draft model training with multi-token parallel prediction, overlapping with multi-step KL distillation",
+          "Draft, Verify, and Improve/DVI (2025): online KL distillation from verifier to drafter during inference, overlapping with distillation training signal"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Draft-Verify Parallel Decoding (DVPD): a two-model pipeline where a small draft model D speculatively proposes multi-token continuations in parallel and the large model L verifies them with a single batched forward pass. At each step, D produces a short draft block of length m along a greedy path and optionally a few branched alternatives per position (small branching factor b). L is then run once on the packed set of proposed tokens under teacher forcing to obtain conditional probabilities for every proposed position. A per-token accept/reject rule is applied left-to-right to accept the longest prefix whose drafted tokens pass verification; on the first rejection, we immediately emit L’s own token for that position, discard the remaining drafted suffix, and continue. The accept/reject test is implemented as a correction step that makes the emitted token distribution exactly match L’s sampler, ensuring no quality loss relative to decoding with L alone. KV caches computed during verification are retained so accepted tokens never require recomputation.\n\nTo make drafts highly verifiable, we train D by distilling multi-step conditionals from L. D uses a lightweight backbone and M parallel heads to predict up to M future tokens from the current prefix (depth-m drafting). The loss combines next-token KL with multi-step teacher-forced KL over the drafted depth, plus a calibration auxiliary head that predicts a per-token acceptance probability from D’s pre-softmax activations. During training, uncertainty-aware weighting up-weights examples and positions where D is less confident and/or disagrees with L, improving calibration and downstream acceptance rates without increasing D’s size.\n\nAt inference, DVPD adapts its drafting budget to context difficulty. The confidence head estimates an acceptance curve over the next positions; we choose the draft depth m and branching b to keep the expected number of accepted tokens per verification above a target. A tiny selector then ranks the few branched candidates by cumulative confidence and prunes to the top-K proposals before verification, keeping the large-model batch small and dense. Verification is early-terminating: we accept tokens until the first rejection; because L was run on the whole packed set once, this becomes a cheap, linear-time check over the positions with no additional L calls. While L verifies the current block, D asynchronously prepares the next draft from the most recently accepted prefix, overlapping compute and further reducing wall-clock latency.\n\nEngineering-wise, we pack proposals sharing a prefix into a single L forward using a block attention mask and contiguous token layout so the GPU sees one dense batch. We reuse L’s KV cache from the prefix; accepted tokens simply extend the cache, and even on rejection we retain the cache up to the rejection point. If D’s accuracy drops (e.g., out-of-domain context), the controller shrinks m and prunes branching to avoid wasted verification, and in the limit DVPD reverts to pure L decoding. Because emitted tokens are either accepted under the exact correction rule or sampled directly from L at the rejection point, DVPD preserves L’s output distribution by construction.\n\nThis end-to-end procedure yields large speedups when D’s drafts often match L, amortizing one L pass over multiple emitted tokens. Dynamic confidence-gated drafting and selective verification keep the acceptance rate high and the verifier batch small, while exact correction guarantees that output quality is indistinguishable from decoding with L alone.",
+    "final_rationale": "Sequential LLM decoding is slow because each emitted token demands a full large-model step. DVPD increases tokens-per-L-forward by letting a small, parallel-friendly draft model propose multiple future tokens at once and then verifies them in a single, early-terminating large-model pass. When drafts match, several tokens are accepted with no further large-model work; when they do not, the acceptance test falls back to L’s own sample at the first mismatch and continues, so there is no degradation in output distribution or quality.\n\nTwo additional mechanisms improve efficiency without hurting accuracy: a tiny selector prunes low-value branches before verification, and an uncertainty-calibrated controller adapts draft depth and branching to context difficulty to maintain a high acceptance rate. Together, these keep large-model compute focused on the most promising candidates and prevent regressions when the draft model is uncertain or out-of-domain, while cache reuse ensures no redundant large-model computation for accepted tokens.",
+    "final_inspired_by": [
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "right-to-left local correction with linear-time passes"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector gating heavy reasoning compute"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "single forward-pass uncertainty head for confidence calibration"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided updating and teacher–student knowledge transfer"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "avoid self-evaluation bias via external verification"
+      }
+    ],
+    "wall_clock_s": 135.17,
+    "cost": {
+      "gen_prompt_tokens": 4804,
+      "gen_completion_tokens": 3939,
+      "judge_prompt_tokens": 103505,
+      "judge_completion_tokens": 1181,
+      "gen_cost_usd": 0.0454,
+      "judge_cost_usd": 0.3282,
+      "total_cost_usd": 0.3736
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the lookahead masking scheme applied to the draft model D, which allows a single forward pass to produce B parallel predictions by preventing cross-attention between future positions while sharing the same prefix context. This is a specific architectural mechanism for parallel drafting. Method B's strongest novel element is the combination of a calibration auxiliary head that predicts per-token acceptance probability from pre-softmax activations, used to dynamically adapt draft depth and branching factor at inference time. Both methods build on the well-established speculative decoding framework (Leviathan et al., Chen et al.). Method A's lookahead masking for parallel draft generation is a more architecturally specific and less obvious mechanism than Method B's confidence-based adaptive budgeting, which is a more incremental extension of existing speculative decoding with dynamic depth selection. However, Method B's uncertainty-aware training weighting combined with a calibration head that drives inference-time adaptation is also a non-trivial combination. On balance, Method A's lookahead masking scheme for enabling a single-pass parallel draft is a more clearly novel architectural contribution, while Method B's adaptive confidence-gated drafting is closer to combining known ideas (confidence estimation, adaptive computation, speculative decoding) in a straightforward way."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is sequential LLM decoding requiring a full large-model forward pass per token, which the query proposes to solve via a small draft model proposing tokens in parallel that the large model verifies without quality loss. Both methods directly engage this failure mode through speculative decoding pipelines. Method A traces a clear causal pathway: draft model proposes a block, large model verifies in one batched forward pass, and an exact accept/reject correction rule preserves the output distribution. Method B also traces this pathway: draft model proposes B tokens in parallel via a lookahead mask, large model verifies and commits a maximal prefix using the standard probability ratio test for exact distribution matching. Both methods hit the failure mode head-on with comparable mechanisms (parallel drafting, single verification pass, exact correction for quality preservation). The core mechanisms are essentially equivalent in directness—both propose parallel drafting, batched verification, and mathematically exact correction rules that guarantee no quality loss relative to the large model alone."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A is largely coherent: it describes a standard speculative decoding pipeline with a correction step, distillation-based draft training, confidence-gated adaptive drafting, and KV cache reuse. The main potential weakness is the \"calibration auxiliary head\" and \"confidence curve\" mechanism, which adds complexity but is not contradictory. The asynchronous overlap of D drafting while L verifies is a real engineering challenge but not incoherent. Overall the steps are consistent and implementable.\n\nMethod B has a more serious coherence issue: the verification step is described as running L \"autoregressively over the draft block,\" stopping at the first mismatch. This means L is not doing a single batched forward pass but rather sequential forward passes—which partially undermines the parallelism motivation and contradicts the later claim of \"batched verification.\" More critically, the \"sweeps\" mechanism described at the end (maintaining a cache of tentative tokens, iterating in sweeps where L verifies only assigned positions using cached guesses elsewhere) is underspecified and potentially contradictory with the exactness guarantee—it is unclear how using \"cached guesses\" for unverified positions preserves the exact output distribution. The shallow verifier gate that \"aborts deep layers for that position\" while still running the full L pass for committed tokens is also somewhat contradictory in its description. These internal inconsistencies make Method B harder to implement without redesigning components."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5922,
+    "judge_completion_tokens": 830,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0302,
+    "total_cost_usd": 0.0302
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "n": 1,
+  "C_win": 0,
+  "A_win": 1,
+  "tie": 0,
+  "C_win_rate": 0.0,
+  "A_win_rate": 1.0,
+  "tie_rate": 0.0,
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 0,
+      "completion": 0
+    },
+    "judge_tokens": {
+      "prompt": 2108,
+      "completion": 301
+    },
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0108,
+    "total_cost_usd": 0.0108,
+    "wall_clock_s": 8.34
+  }
+}

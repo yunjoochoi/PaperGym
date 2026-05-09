@@ -1,0 +1,351 @@
+{
+  "query_id": "Q15",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Generating intermediate reasoning steps before the final\nanswer sharply improves LLM accuracy; how can we apply\nanalogous intermediate-computation patterns to vision,\nreinforcement learning, or recommendation models?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose a single template—Intermediate Computation Traces (ICT)—that equips non-language models with an explicit, verifiable scratchpad they generate and consume before committing to a final prediction or action. ICT has three shared components: (1) a Step Generator that proposes a short sequence of intermediate states (e.g., visual evidence selections, subgoals, or intent facets) and associated actions (e.g., retrieve a patch, pick a skill, fetch items); (2) a Grounder–Retriever that executes each action to attach concrete evidence to the trace (segments/patch captions, one-step skill rollouts or success estimates, multi-view item candidates); and (3) a Faithfulness Evaluator that checks trace–evidence consistency with domain-executable tests and uses the score both as training signal and as a gating/halting mechanism. Training proceeds in two phases: supervised trace induction using teacher trajectories synthesized from strong heuristics or pretrained tools, then reinforcement-style fine-tuning that rewards both task success and faithful, useful traces. Like interleaved reasoning–retrieval in RAG for LLMs, the Step Generator alternates propose–execute–revise until a cap or a halting predicate is met, and the final solver conditions on the validated trace.",
+        "rationale": "Intermediate computation helps when the raw mapping from inputs to outputs is either long-horizon (RL), compositional and cross-modal (vision), or multi-aspect with coverage/diversity requirements (recommendation). By forcing models to externalize and then verify partial computations, ICT reduces search depth, improves credit assignment, and provides alignment hooks that correlate with end-task accuracy. The seeds demonstrate that (i) interleaving reasoning with retrieval stabilizes exploration and improves performance, (ii) explicit, grounded intermediates (segments, scene-graph facts) and executable checks raise faithfulness and accuracy in VQA, (iii) subgoal images/plans and look-ahead skill models shorten RL horizons, and (iv) multi-view item representations and listwise feedback let recommenders reason over intents rather than a single undifferentiated score.",
+        "inspired_by": [
+          {
+            "seed_id": "cdaa17dcfb4d",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "interleaved reasoning–retrieval with supervised-to-RL training"
+          },
+          {
+            "seed_id": "68b9ef91c8e5",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "faithfulness scoring via executable intermediate traces"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "supervised grounding of visual evidence via segmentations"
+          },
+          {
+            "seed_id": "1cd6d97d9549",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "explicit probabilistic reasoning over image–question semantics"
+          },
+          {
+            "seed_id": "d54cefc9ff77",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "question-guided region selection and micro-captions"
+          },
+          {
+            "seed_id": "8c68da056026",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "look-ahead planning with coarse skill models and success predictors"
+          },
+          {
+            "seed_id": "9102c8c37284",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "curriculum from micro-steps to longer executions"
+          },
+          {
+            "seed_id": "ac81994762c9",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "visual chain-of-thought via subgoal image prediction"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-view embeddings to represent item facets"
+          },
+          {
+            "seed_id": "cdb65a898b67",
+            "domain": "IR_REC",
+            "borrowed_aspect": "listwise reranker feedback to update first-stage retrieval"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed ICT method introduces a unified three-component framework (Step Generator + Grounder-Retriever + Faithfulness Evaluator) applied simultaneously to vision, RL, and recommendation as a single template. Searches surface related work on CoT for VLMs with RL (LAT/CoE, VisionReasoner, CoT-VLA), intent-guided reasoning for recommendation (IGR-SR), and visual RAG with faithfulness verification (KIRA), but none combine all three components as a unified cross-domain template. The closest papers address individual mechanisms: LAT does grounded reasoning with RL for visual document RAG; IGR-SR does intent-guided intermediate reasoning for recommendation; CoT-VLA does visual subgoal generation for robotics. However, no surfaced paper proposes a single unified framework with a Faithfulness Evaluator as both training signal and halting mechanism applied jointly across vision, RL, and recommendation domains. This matches the Score 4 anchor: combines mechanism families (grounded trace generation + faithfulness verification + RL fine-tuning) with no surfaced published joint application for this cross-domain problem, though individual mechanisms appear in prior work.\n\nPrior works:\n  - Look as You Think / LAT (2025): Unifies CoT reasoning with visual evidence attribution via RL for visual document RAG — overlaps with grounded trace generation + RL training signal components.\n  - Intent-Guided Reasoning for Sequential Recommendation / IGR-SR (2025): Uses intermediate intent reasoning steps for recommendation — overlaps with intent facets component of ICT for recommendation.\n  - CoT-VLA (2025): Visual chain-of-thought with subgoal image prediction for robot manipulation — overlaps with Step Generator + subgoal component for RL/robotics.\n  - VisionReasoner (2025): Unified RL-trained reasoning for visual perception tasks — overlaps with RL fine-tuning of intermediate reasoning for vision.\n  - KIRA (2026): Visual RAG with chain-of-retrieval and hallucination verification — overlaps with Grounder-Retriever + faithfulness verification components.",
+        "prior_works": [
+          "Look as You Think / LAT (2025): Unifies CoT reasoning with visual evidence attribution via RL for visual document RAG — overlaps with grounded trace generation + RL training signal components.",
+          "Intent-Guided Reasoning for Sequential Recommendation / IGR-SR (2025): Uses intermediate intent reasoning steps for recommendation — overlaps with intent facets component of ICT for recommendation.",
+          "CoT-VLA (2025): Visual chain-of-thought with subgoal image prediction for robot manipulation — overlaps with Step Generator + subgoal component for RL/robotics.",
+          "VisionReasoner (2025): Unified RL-trained reasoning for visual perception tasks — overlaps with RL fine-tuning of intermediate reasoning for vision.",
+          "KIRA (2026): Visual RAG with chain-of-retrieval and hallucination verification — overlaps with Grounder-Retriever + faithfulness verification components."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose a single template—Intermediate Computation Traces (ICT)—that equips non-language models with an explicit, verifiable scratchpad they generate and consume before committing to a final prediction or action. ICT has three shared components: (1) a Step Generator that proposes a short sequence of intermediate states (e.g., visual evidence selections, subgoals, or intent facets) and associated actions (e.g., retrieve a patch, pick a skill, fetch items); (2) a Grounder–Retriever that executes each action to attach concrete evidence to the trace (segments/patch captions, one-step skill rollouts or success estimates, multi-view item candidates); and (3) a Faithfulness Evaluator that checks trace–evidence consistency with domain-executable tests and uses the score both as training signal and as a gating/halting mechanism. Training proceeds in two phases: supervised trace induction using teacher trajectories synthesized from strong heuristics or pretrained tools, then reinforcement-style fine-tuning that rewards both task success and faithful, useful traces. Like interleaved reasoning–retrieval in RAG for LLMs, the Step Generator alternates propose–execute–revise until a cap or a halting predicate is met, and the final solver conditions on the validated trace.",
+    "final_rationale": "Intermediate computation helps when the raw mapping from inputs to outputs is either long-horizon (RL), compositional and cross-modal (vision), or multi-aspect with coverage/diversity requirements (recommendation). By forcing models to externalize and then verify partial computations, ICT reduces search depth, improves credit assignment, and provides alignment hooks that correlate with end-task accuracy. The seeds demonstrate that (i) interleaving reasoning with retrieval stabilizes exploration and improves performance, (ii) explicit, grounded intermediates (segments, scene-graph facts) and executable checks raise faithfulness and accuracy in VQA, (iii) subgoal images/plans and look-ahead skill models shorten RL horizons, and (iv) multi-view item representations and listwise feedback let recommenders reason over intents rather than a single undifferentiated score.",
+    "final_inspired_by": [
+      {
+        "seed_id": "cdaa17dcfb4d",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "interleaved reasoning–retrieval with supervised-to-RL training"
+      },
+      {
+        "seed_id": "68b9ef91c8e5",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "faithfulness scoring via executable intermediate traces"
+      },
+      {
+        "seed_id": "7f79d5d52bbc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "supervised grounding of visual evidence via segmentations"
+      },
+      {
+        "seed_id": "1cd6d97d9549",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "explicit probabilistic reasoning over image–question semantics"
+      },
+      {
+        "seed_id": "d54cefc9ff77",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "question-guided region selection and micro-captions"
+      },
+      {
+        "seed_id": "8c68da056026",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "look-ahead planning with coarse skill models and success predictors"
+      },
+      {
+        "seed_id": "9102c8c37284",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "curriculum from micro-steps to longer executions"
+      },
+      {
+        "seed_id": "ac81994762c9",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "visual chain-of-thought via subgoal image prediction"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-view embeddings to represent item facets"
+      },
+      {
+        "seed_id": "cdb65a898b67",
+        "domain": "IR_REC",
+        "borrowed_aspect": "listwise reranker feedback to update first-stage retrieval"
+      }
+    ],
+    "wall_clock_s": 168.7,
+    "cost": {
+      "gen_prompt_tokens": 7156,
+      "gen_completion_tokens": 6610,
+      "judge_prompt_tokens": 103780,
+      "judge_completion_tokens": 1101,
+      "gen_cost_usd": 0.075,
+      "judge_cost_usd": 0.3279,
+      "total_cost_usd": 0.4029
+    }
+  },
+  "d_loop": {
+    "rounds": 2,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      3,
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose a Generalized Intermediate Computation (G-IC) framework that mirrors chain-of-thought with three shared modules across domains: (1) an Evidence Generator that produces compact, human-interpretable intermediate artifacts aligned to the task (e.g., per-frame captions, subgoal graphs, or intent sketches); (2) a Selector/Refiner that prunes or iteratively improves these artifacts before the final decision; and (3) a Decision Head that conditions on the verified intermediate evidence to output predictions, actions, or rankings. A lightweight Confidence Gate determines how many refinement steps to run per example, escalating computation on hard cases. Training is two-stage: first teach the Evidence Generator using weak or proxy supervision; then teach the Decision Head to rely on the evidence via supervised fine-tuning or imitation, with online refinement during rollouts or ranking.\n\nFor vision, the Evidence Generator is a small LVLM that produces progress-aware, per-frame captions and/or a compact scene/temporal graph. A tiny LLM selects question-relevant “core” frames and composes a concise evidence chain (e.g., object states changing over time). The Decision Head (a larger LVLM or task-specific vision model) consumes only the selected frames plus the evidence to reason and answer. We train this in two steps: first supervise per-frame progress captions and temporal key events; then train the reasoner to cite evidence and answer. At inference, the Confidence Gate uses a learned uncertainty head to decide whether to stop after selection or to generate additional evidence/refinement passes on ambiguous clips.\n\nFor reinforcement learning, the Evidence Generator builds a small belief/subgoal graph at each timestep: candidate waypoints or latent subgoals, predicted reachability and value deltas, and a compact belief state from a lightweight Bayesian network. A pseudo-interactive demonstrator labels the best next subgoal during rollouts (DAgger-style), yielding intermediate supervision without dense rewards. The Decision Head is the policy conditioned on the current observation and the subgoal/evidence chain; it executes short-horizon actions toward the selected subgoal, then replans, thereby converting long-horizon tasks into verified intermediate hops. We pretrain with behavior cloning and auxiliary prediction, then fine-tune with interactive data aggregation while maintaining the BN’s fast, sampling-based gradient updates to keep the intermediate beliefs cheap to learn and update online.\n\nFor recommendation, the Evidence Generator converts each session into a directed session graph augmented with a user-global attribute that summarizes long-term preference. It produces an explicit intent sketch: a topical mixture over item attributes, short-term transition motifs centered on the last interaction, and candidate next-item hubs from graph propagation. The Selector/Refiner restricts to a top-k candidate set and performs a few linear-time pairwise refinement passes that only compare adjacent items among the top-k, updating the ranking with each pass. The Decision Head scores candidates conditioned on the intent sketch and updated global attribute to produce the final list. The Confidence Gate stops early on confident sessions and triggers extra refinement passes or broader candidate exploration when uncertainty is high.\n\nAcross domains, the framework surfaces intermediate evidence that the final module must cite or condition on, improving robustness and sample efficiency and enabling adaptive compute. Because the evidence is structured (progress captions or keyframes in vision, subgoal graphs in RL, intent sketches in recommendation) and trained with targeted or pseudo labels, it remains stable under refinement and auditable at inference time.",
+        "rationale": "LLM chain-of-thought works by externalizing latent reasoning into verifiable intermediate steps. G-IC brings the same pattern to non-language tasks by (i) defining domain-appropriate, compact evidence objects; (ii) training a small, specialized generator to produce them; (iii) letting a downstream head condition on and, when needed, refine these objects; and (iv) gating computation with uncertainty to spend more steps only when they matter. This preserves the benefits of decomposition and evidence citation while controlling cost.\n\nEach instantiation is grounded in mechanisms shown to help: progress-aware captions and core-frame selection provide textual and temporal scaffolds for video reasoning; pseudo-interactive subgoal supervision and a lightweight probabilistic belief support stable intermediate planning in sparse-reward RL; session graphs with a global attribute and efficient pairwise re-ranking create explicit, iteratively-refined intent sketches for recommendation. Uncertainty-aware gating makes the intermediate-computation budget adaptive, further improving accuracy-efficiency tradeoffs.",
+        "inspired_by": [
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "two-stage core-frame selection and evidence-first reasoning"
+          },
+          {
+            "seed_id": "4a9de5f8c7ec",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "progress-aware per-frame captions as intermediate representation"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "DAgger-like pseudo interactive demonstrator for subgoal supervision"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "lightweight Bayesian network beliefs with efficient gradient estimation"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "session graph with attention-updated global attribute as session summary"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "linear-time adjacent-pair re-ranking passes for iterative refinement"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "single-pass uncertainty head to gate compute depth"
+          }
+        ],
+        "novelty_score": 3,
+        "novelty_reasoning": "The vision component of G-IC closely matches VideoEspresso (2024), which proposes a Frame Selector + two-stage SFT reasoning LVLM with core frame selection and multimodal CoT evidence — the overlap is substantial. The RL component draws on DUET's pseudo-interactive demonstrator (DAgger-style) and the Bayesian network belief state from the inductive-bias RL paper, but no search surfaced a paper combining these with subgoal graphs as intermediate evidence in the same way. The recommendation component combines GAG-style session graphs with GLIMPSE-style RTL pairwise re-ranking and an intent sketch, but no paper was found combining all three. The overarching G-IC framework — a single architecture with Evidence Generator, Selector/Refiner, Decision Head, and Confidence Gate applied uniformly across vision, RL, and recommendation — has no direct published counterpart. However, the vision instantiation is nearly identical to VideoEspresso, and the individual mechanisms across all three domains are well-established combinations. The cross-domain unification with a shared confidence gate is novel in framing, but each domain instantiation is largely assembled from known components with modest novelty. This matches the Score 3-4 boundary; since the vision component is very close to VideoEspresso and the other components combine known mechanisms, I default to the lower score of 3.\n\nPrior works:\n  - VideoEspresso (2024): Nearly identical vision pipeline — Frame Selector (tiny LVLM+LLM for core frame selection) + two-stage SFT reasoning LVLM with multimodal CoT evidence chains for video QA.\n  - GAG: Global Attributed Graph Neural Network for Streaming Session-based Recommendation (2020): Session graph with global user attribute, directly used in the recommendation Evidence Generator.\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2024): RTL adjacent pairwise re-ranking passes over top-k, directly used in the recommendation Selector/Refiner.\n  - DUET: Think Global, Act Local (2022): Pseudo-interactive demonstrator (DAgger-style) for VLN, directly used in the RL component.\n  - Inductive-bias-driven RL (2019): Sampling-based gradient updates for Bayesian networks as belief state in RL, directly used in the RL component.\n  - Progress-Aware Video Frame Captioning (2024): Per-frame progress-aware captions as intermediate textual representation for video reasoning, directly used in the vision component.",
+        "prior_works": [
+          "VideoEspresso (2024): Nearly identical vision pipeline — Frame Selector (tiny LVLM+LLM for core frame selection) + two-stage SFT reasoning LVLM with multimodal CoT evidence chains for video QA.",
+          "GAG: Global Attributed Graph Neural Network for Streaming Session-based Recommendation (2020): Session graph with global user attribute, directly used in the recommendation Evidence Generator.",
+          "GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2024): RTL adjacent pairwise re-ranking passes over top-k, directly used in the recommendation Selector/Refiner.",
+          "DUET: Think Global, Act Local (2022): Pseudo-interactive demonstrator (DAgger-style) for VLN, directly used in the RL component.",
+          "Inductive-bias-driven RL (2019): Sampling-based gradient updates for Bayesian networks as belief state in RL, directly used in the RL component.",
+          "Progress-Aware Video Frame Captioning (2024): Per-frame progress-aware captions as intermediate textual representation for video reasoning, directly used in the vision component."
+        ],
+        "feedback_used": null
+      },
+      {
+        "round_num": 2,
+        "method": "We propose Verifiably Executed Intermediate Computation (VEIC): instead of latent chain-of-thought text, each model emits a compact, typed micro-program that is executed by a small, domain-specific runner to produce a trace of measurable predicates, counterfactual tests, and certificates before any final decision. A common Proposer–Executor–Auditor–Head pipeline is used across domains. The Proposer maps inputs to a domain-agnostic DSL with primitives (predicates, subgoals, swaps), constraints (pre/post-conditions, expected monotonic trends), and a budget (steps to execute). The Executor deterministically runs the program on a lightweight, differentiable simulator to return per-step test statistics and a state trajectory. The Auditor then stress-tests these claims with targeted perturbations and counterfactuals, aggregates evidence with an adaptive state estimator to form program-level confidence and certificates, and either approves or requests a revised program within budget. The Decision Head consumes only the executed-and-audited trace to output the answer, action, or ranking.\n\nVision (video QA/recognition). The Proposer outputs a temporal predicate program comprising a small set of structured hypotheses (e.g., appear(A), move_towards(A,B), contact(A,B), cause(A→B)) with expected progress signatures over time. The Executor builds per-object trajectories causally via a discretely-online CDE over detected tracks and regions, then compiles each hypothesis into differentiable tests driven by these continuous-time features, yielding per-frame truth-scores and a scalar progress curve. The Auditor mitigates self-evaluation bias by running paired counterfactual checks targeted at each hypothesis (e.g., frame-order reversal, entity label swaps, localized occlusion jitter) and rejects hypotheses whose truth-scores remain spuriously invariant. An adaptive Kalman-style update maintains a low-dimensional belief over hypothesis satisfaction as new frames arrive, using uncertainty-calibrated measurement noise from the predicate heads; the resulting certificate is a monotone-progress and falsification-pass flag plus a bounded variance on the final belief. The Decision Head answers using only certified hypotheses and their traces.\n\nReinforcement learning (sequential control). At each step, the Proposer emits an option program of 2–3 subgoals with pre/post-conditions and local cost budgets, along with a short rollout depth. The Executor evaluates options in a belief-aware simulator: a light Bayesian network maintains latent environment variables and task-relevant factors, and the policy/value dynamics are integrated with a discretely-online CDE to respect real-time causality. Option evaluation returns estimated value deltas and constraint violations from a handful of sampled rollouts without needing full posterior inference. The Auditor constructs a value-improvement certificate by aggregating the sampled deltas with an adaptive state update that explicitly tracks process/measurement noise; it also runs contrastive counterfactuals (e.g., swap post-conditions or scramble subgoal order) to detect overconfident plans. If the certificate meets a threshold (lower-bound on advantage with bounded variance), the option is executed; otherwise, the Proposer is prompted to refine subgoals within the remaining budget.\n\nRecommendation (session ranking). The Proposer emits an intent-sketch program over the current session: a small set of soft constraints (e.g., freshness, diversity, long-tail exploration) and K candidate pairwise swaps with predicted justifications. The Executor simulates counterfactual next-click likelihoods by running a session graph with a global user attribute forward and backward over the current slate; each candidate swap is scored by its certified regret reduction under the session dynamics. The Auditor prunes spurious justifications using deterministic uncertainty on the latent swap comparator and approves only swaps that pass a local robustness test (e.g., decoy-item insertion, neighbor-embedding jitter) and yield a positive certified gain. Instead of a fixed right-to-left schedule, swaps are selected by certificate strength until budget exhaustion, yielding a minimally edited slate accompanied by compact proofs of improvement.\n\nTraining and inference. VEIC is trained end-to-end with program-execution supervision signals: (i) program validity losses (pre/post-condition satisfaction), (ii) executor-aligned prediction losses (final task loss on audited traces), and (iii) auditor calibration losses (penalize certificates that disagree with held-out perturbation outcomes). Differentiation passes through executors via straight-through estimators for discrete program tokens and standard gradients for continuous runners; the Bayesian network parameters are updated with sampling-based gradients that avoid full inference. At inference, the system runs under a tight step budget (typically 3–6 executed statements), with early stopping if the auditor issues high-confidence certificates.",
+        "rationale": "VEIC transfers the core benefit of chain-of-thought—structuring problems into intermediate steps—while making those steps executable and auditable rather than latent. By forcing hypotheses, subgoals, and swap justifications to run on small domain runners, the model exposes its reasoning to measurable tests and targeted counterfactuals, reducing the risk of self-reinforcing biases. A lightweight, adaptive state estimator integrates noisy step-wise measurements into compact certificates that gate final decisions, enabling accuracy gains without large compute overhead.\n\nThe approach is cross-domain yet concrete: in vision, temporal predicates verified against causal continuous-time features provide progress evidence more robust than free-form captions; in RL, short-horizon option programs evaluated under a belief-aware simulator produce value-improvement certificates that make exploration safer and more sample-efficient; in recommendation, certificate-guided minimal swaps turn intuitive intent sketches into verifiable local improvements. Uncertainty-aware auditing and adaptive evidence aggregation are the glue that makes these intermediate computations reliable at test time.",
+        "inspired_by": [
+          {
+            "seed_id": "663d598bb0b9",
+            "domain": "CV",
+            "borrowed_aspect": "Kalman-style adaptive state update repurposed to aggregate step-wise evidence into certificates"
+          },
+          {
+            "seed_id": "9afe61a7b42b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "discretely-online neural CDE to compute causal temporal features for executor rollouts"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "deterministic uncertainty head to score predicate and pairwise-swap confidence"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "sampling-based gradient updates for Bayesian networks to train a lightweight belief model for option evaluation"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "session graph with global user attribute as a dynamics simulator for counterfactual next-click evaluations"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "adjacent local comparisons as an efficient mechanism, adapted to certificate-guided minimal swap selection"
+          },
+          {
+            "seed_id": "4a9de5f8c7ec",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "progress as an explicit target, adapted from captions to verifiable temporal predicates"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "awareness of self-evaluation bias driving the auditor’s targeted counterfactual tests"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches surfaced some related work (neuro-symbolic video QA with counterfactual reasoning, code-as-thought for chart understanding, program synthesis with verifiers for visual reasoning), but none of these match the full VEIC pipeline end-to-end. The closest paper is \"Think before You Simulate\" which uses symbolic reasoning + counterfactual verification for video QA, but it does not include the Proposer-Executor-Auditor-Head architecture, adaptive Kalman-style state estimation for certificate generation, or the cross-domain unification across vision/RL/recommendation. The proposed method introduces several named novel components: (1) a typed micro-program DSL with pre/post-conditions executed by domain-specific runners, (2) an Auditor that stress-tests with targeted perturbations and aggregates evidence via adaptive state estimation to produce certificates, (3) application of this unified pipeline across three distinct domains. No search surfaced a paper combining executable program verification with Kalman-style certificate aggregation and counterfactual auditing as a unified cross-domain intermediate computation framework. This matches the Score 4-5 range — the combination of mechanism families (executable DSL + counterfactual auditing + adaptive state estimation certificates + cross-domain unification) has no surfaced joint application, and the Auditor-certificate mechanism with adaptive state estimation is a named design choice not present in surfaced literature. However, individual components (neuro-symbolic programs, counterfactual verification, Kalman filtering) are known, placing this closer to Score 4 than 5.\n\nPrior works:\n  - Think before You Simulate (2024): neuro-symbolic counterfactual video QA with symbolic causal reasoning, overlaps with temporal predicate verification component\n  - Visual Programmability / Code-as-Thought (2025): adaptive code execution for chart understanding with RL-trained selection, overlaps with executable intermediate computation concept\n  - No Labels No Problem (2025): LLM+VLM verifiers for visual reasoning via RL, overlaps with verifier/auditor concept for visual tasks",
+        "prior_works": [
+          "Think before You Simulate (2024): neuro-symbolic counterfactual video QA with symbolic causal reasoning, overlaps with temporal predicate verification component",
+          "Visual Programmability / Code-as-Thought (2025): adaptive code execution for chart understanding with RL-trained selection, overlaps with executable intermediate computation concept",
+          "No Labels No Problem (2025): LLM+VLM verifiers for visual reasoning via RL, overlaps with verifier/auditor concept for visual tasks"
+        ],
+        "feedback_used": "Your previous synthesis received a novelty score of 3/5 from a held-out novelty judge that ran a Semantic Scholar search.\n\nThe judge surfaced the following prior work that substantively covers your proposed mechanisms:\n  - VideoEspresso (2024): Nearly identical vision pipeline — Frame Selector (tiny LVLM+LLM for core frame selection) + two-stage SFT reasoning LVLM with multimodal CoT evidence chains for video QA.\n  - GAG: Global Attributed Graph Neural Network for Streaming Session-based Recommendation (2020): Session graph with global user attribute, directly used in the recommendation Evidence Generator.\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2024): RTL adjacent pairwise re-ranking passes over top-k, directly used in the recommendation Selector/Refiner.\n  - DUET: Think Global, Act Local (2022): Pseudo-interactive demonstrator (DAgger-style) for VLN, directly used in the RL component.\n  - Inductive-bias-driven RL (2019): Sampling-based gradient updates for Bayesian networks as belief state in RL, directly used in the RL component.\n  - Progress-Aware Video Frame Captioning (2024): Per-frame progress-aware captions as intermediate textual representation for video reasoning, directly used in the vision component.\n\nJudge's reasoning: The vision component of G-IC closely matches VideoEspresso (2024), which proposes a Frame Selector + two-stage SFT reasoning LVLM with core frame selection and multimodal CoT evidence — the overlap is substantial. The RL component draws on DUET's pseudo-interactive demonstrator (DAgger-style) and the Bayesian network belief state from the inductive-bias RL paper, but no search surfaced a paper combining these with subgoal graphs as intermediate evidence in the same way. The recommendation component combines GAG-style session graphs with GLIMPSE-style RTL pairwise re-ranking and an intent sketch, but no paper was found combining all three. The overarching G-IC framework — a single architecture with Evidence Generator, Selector/Refiner, Decision Head, and Confidence Gate applied uniformly across vision, RL, and recommendation — has no direct published counterpart. However, the vision instantiation is nearly identical to VideoEspresso, and the individual mechanisms across all three domains are well-established combinations. The cross-domain unification with a shared confidence gate is novel in framing, but each domain instantiation is largely assembled from known components with modest novelty. This matches the Score 3-4 boundary; since the vision component is very close to VideoEspresso and the other components combine known mechanisms, I default to the lower score of 3.\n\nPrior works:\n  - VideoEspresso (2024): Nearly identical vision pipeline — Frame Selector (tiny LVLM+LLM for core frame selection) + two-stage SFT reasoning LVLM with multimodal CoT evidence chains for video QA.\n  - GAG: Global Attributed Graph Neural Network for Streaming Session-based Recommendation (2020): Session graph with global user attribute, directly used in the recommendation Evidence Generator.\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2024): RTL adjacent pairwise re-ranking passes over top-k, directly used in the recommendation Selector/Refiner.\n  - DUET: Think Global, Act Local (2022): Pseudo-interactive demonstrator (DAgger-style) for VLN, directly used in the RL component.\n  - Inductive-bias-driven RL (2019): Sampling-based gradient updates for Bayesian networks as belief state in RL, directly used in the RL component.\n  - Progress-Aware Video Frame Captioning (2024): Per-frame progress-aware captions as intermediate textual representation for video reasoning, directly used in the vision component.\n\nPlease synthesize a substantially more novel method for the same research problem. You may use the same retrieved seeds in non-obvious ways, or introduce new mechanism families absent from the surfaced literature. The goal is a method whose mechanism combination is not already established."
+      }
+    ],
+    "final_method": "We propose Verifiably Executed Intermediate Computation (VEIC): instead of latent chain-of-thought text, each model emits a compact, typed micro-program that is executed by a small, domain-specific runner to produce a trace of measurable predicates, counterfactual tests, and certificates before any final decision. A common Proposer–Executor–Auditor–Head pipeline is used across domains. The Proposer maps inputs to a domain-agnostic DSL with primitives (predicates, subgoals, swaps), constraints (pre/post-conditions, expected monotonic trends), and a budget (steps to execute). The Executor deterministically runs the program on a lightweight, differentiable simulator to return per-step test statistics and a state trajectory. The Auditor then stress-tests these claims with targeted perturbations and counterfactuals, aggregates evidence with an adaptive state estimator to form program-level confidence and certificates, and either approves or requests a revised program within budget. The Decision Head consumes only the executed-and-audited trace to output the answer, action, or ranking.\n\nVision (video QA/recognition). The Proposer outputs a temporal predicate program comprising a small set of structured hypotheses (e.g., appear(A), move_towards(A,B), contact(A,B), cause(A→B)) with expected progress signatures over time. The Executor builds per-object trajectories causally via a discretely-online CDE over detected tracks and regions, then compiles each hypothesis into differentiable tests driven by these continuous-time features, yielding per-frame truth-scores and a scalar progress curve. The Auditor mitigates self-evaluation bias by running paired counterfactual checks targeted at each hypothesis (e.g., frame-order reversal, entity label swaps, localized occlusion jitter) and rejects hypotheses whose truth-scores remain spuriously invariant. An adaptive Kalman-style update maintains a low-dimensional belief over hypothesis satisfaction as new frames arrive, using uncertainty-calibrated measurement noise from the predicate heads; the resulting certificate is a monotone-progress and falsification-pass flag plus a bounded variance on the final belief. The Decision Head answers using only certified hypotheses and their traces.\n\nReinforcement learning (sequential control). At each step, the Proposer emits an option program of 2–3 subgoals with pre/post-conditions and local cost budgets, along with a short rollout depth. The Executor evaluates options in a belief-aware simulator: a light Bayesian network maintains latent environment variables and task-relevant factors, and the policy/value dynamics are integrated with a discretely-online CDE to respect real-time causality. Option evaluation returns estimated value deltas and constraint violations from a handful of sampled rollouts without needing full posterior inference. The Auditor constructs a value-improvement certificate by aggregating the sampled deltas with an adaptive state update that explicitly tracks process/measurement noise; it also runs contrastive counterfactuals (e.g., swap post-conditions or scramble subgoal order) to detect overconfident plans. If the certificate meets a threshold (lower-bound on advantage with bounded variance), the option is executed; otherwise, the Proposer is prompted to refine subgoals within the remaining budget.\n\nRecommendation (session ranking). The Proposer emits an intent-sketch program over the current session: a small set of soft constraints (e.g., freshness, diversity, long-tail exploration) and K candidate pairwise swaps with predicted justifications. The Executor simulates counterfactual next-click likelihoods by running a session graph with a global user attribute forward and backward over the current slate; each candidate swap is scored by its certified regret reduction under the session dynamics. The Auditor prunes spurious justifications using deterministic uncertainty on the latent swap comparator and approves only swaps that pass a local robustness test (e.g., decoy-item insertion, neighbor-embedding jitter) and yield a positive certified gain. Instead of a fixed right-to-left schedule, swaps are selected by certificate strength until budget exhaustion, yielding a minimally edited slate accompanied by compact proofs of improvement.\n\nTraining and inference. VEIC is trained end-to-end with program-execution supervision signals: (i) program validity losses (pre/post-condition satisfaction), (ii) executor-aligned prediction losses (final task loss on audited traces), and (iii) auditor calibration losses (penalize certificates that disagree with held-out perturbation outcomes). Differentiation passes through executors via straight-through estimators for discrete program tokens and standard gradients for continuous runners; the Bayesian network parameters are updated with sampling-based gradients that avoid full inference. At inference, the system runs under a tight step budget (typically 3–6 executed statements), with early stopping if the auditor issues high-confidence certificates.",
+    "final_rationale": "VEIC transfers the core benefit of chain-of-thought—structuring problems into intermediate steps—while making those steps executable and auditable rather than latent. By forcing hypotheses, subgoals, and swap justifications to run on small domain runners, the model exposes its reasoning to measurable tests and targeted counterfactuals, reducing the risk of self-reinforcing biases. A lightweight, adaptive state estimator integrates noisy step-wise measurements into compact certificates that gate final decisions, enabling accuracy gains without large compute overhead.\n\nThe approach is cross-domain yet concrete: in vision, temporal predicates verified against causal continuous-time features provide progress evidence more robust than free-form captions; in RL, short-horizon option programs evaluated under a belief-aware simulator produce value-improvement certificates that make exploration safer and more sample-efficient; in recommendation, certificate-guided minimal swaps turn intuitive intent sketches into verifiable local improvements. Uncertainty-aware auditing and adaptive evidence aggregation are the glue that makes these intermediate computations reliable at test time.",
+    "final_inspired_by": [
+      {
+        "seed_id": "663d598bb0b9",
+        "domain": "CV",
+        "borrowed_aspect": "Kalman-style adaptive state update repurposed to aggregate step-wise evidence into certificates"
+      },
+      {
+        "seed_id": "9afe61a7b42b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "discretely-online neural CDE to compute causal temporal features for executor rollouts"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "deterministic uncertainty head to score predicate and pairwise-swap confidence"
+      },
+      {
+        "seed_id": "69f9d4fc5e68",
+        "domain": "RL",
+        "borrowed_aspect": "sampling-based gradient updates for Bayesian networks to train a lightweight belief model for option evaluation"
+      },
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "session graph with global user attribute as a dynamics simulator for counterfactual next-click evaluations"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "adjacent local comparisons as an efficient mechanism, adapted to certificate-guided minimal swap selection"
+      },
+      {
+        "seed_id": "4a9de5f8c7ec",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "progress as an explicit target, adapted from captions to verifiable temporal predicates"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "awareness of self-evaluation bias driving the auditor’s targeted counterfactual tests"
+      }
+    ],
+    "wall_clock_s": 255.91,
+    "cost": {
+      "gen_prompt_tokens": 10428,
+      "gen_completion_tokens": 8226,
+      "judge_prompt_tokens": 184712,
+      "judge_completion_tokens": 2074,
+      "gen_cost_usd": 0.0953,
+      "judge_cost_usd": 0.5852,
+      "total_cost_usd": 0.6805
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the Proposer–Executor–Auditor–Head pipeline with a domain-specific DSL that emits typed micro-programs executed by a differentiable simulator, combined with an adaptive Kalman-style belief update and counterfactual stress-testing for certificate generation. This is a fairly elaborate but recognizable combination of program synthesis, symbolic execution, and Bayesian filtering applied across domains. Method B's strongest novel element is the ICT template with a Faithfulness Evaluator that uses trace–evidence consistency as both a training signal and a halting mechanism, analogous to interleaved reasoning–retrieval in RAG but extended to vision, RL, and recommendation. Both methods share the core idea of intermediate computation traces with verification, but Method A introduces a more distinctive named mechanism: the Auditor's certificate-based falsification loop using counterfactuals and adaptive state estimation is harder to find in prior literature as a unified cross-domain component. Method B is more straightforwardly an extension of established RAG-style interleaved reasoning patterns to non-language domains, which is a more obvious generalization. Method A's combination of typed DSL programs, differentiable execution, and certificate-generating adversarial auditing is a less precedented combination."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode identified in the query is the absence of intermediate computation steps in non-language models (vision, RL, recommendation), analogous to chain-of-thought in LLMs. Method A proposes a highly elaborate Proposer–Executor–Auditor–Head pipeline with domain-specific DSLs, differentiable simulators, Bayesian networks, and certificate mechanisms. While technically impressive, much of its mechanism addresses verification, certification, and robustness rather than directly instantiating the core \"intermediate computation before final answer\" pattern. Method B more directly maps the chain-of-thought analogy: it explicitly frames the mechanism as a \"scratchpad\" with a Step Generator (propose intermediate states), a Grounder–Retriever (execute/ground each step), and a Faithfulness Evaluator (check consistency), mirroring the propose–execute–revise loop that is the direct analog of intermediate reasoning steps. Method B's causal pathway from the problem (no intermediate steps in non-language models) to the method (explicit scratchpad with iterative propose–execute–revise) is more traceable and direct, while Method A's pathway is obscured by layers of certification machinery that go beyond the core failure mode."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A proposes a Proposer–Executor–Auditor–Head pipeline with domain-specific instantiations. The core coherence concern is the complexity and internal consistency of the components: the use of \"discretely-online CDEs\" (continuous differential equations) for both vision and RL is introduced without clear definition of how discrete program tokens interface with continuous runners, and the Bayesian network in RL is said to avoid \"full posterior inference\" while still providing certified bounds — this tension is not fully resolved. However, the overall pipeline is internally consistent and each step has defined inputs/outputs. Method B proposes a simpler three-component ICT framework (Step Generator, Grounder-Retriever, Faithfulness Evaluator) with a two-phase training procedure. The components are clearly defined, the propose–execute–revise loop is well-motivated by analogy to RAG, and the training pipeline (supervised trace induction followed by RL fine-tuning) is a standard and coherent approach. There are no internal contradictions, and the assumptions are achievable with existing tools. Method A has more coherence weaknesses due to underspecified interfaces between discrete programs and continuous executors, and the tension between avoiding full inference while providing certified bounds. Method B is simpler and more consistently specified throughout."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5598,
+    "judge_completion_tokens": 849,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0295,
+    "total_cost_usd": 0.0295
+  }
+}

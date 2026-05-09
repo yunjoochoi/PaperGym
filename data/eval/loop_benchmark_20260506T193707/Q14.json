@@ -1,0 +1,260 @@
+{
+  "query_id": "Q14",
+  "natural_domain": "RL",
+  "query_text": "Complex sequential tasks have nested goal structure but flat\npolicies struggle with credit assignment over long horizons;\nhow can we learn or impose a hierarchy that decomposes the\ntask and accelerates learning?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose HILO: Hierarchical, Inspectable, Look-ahead Options. Stage 1 bootstraps a compact skill library and subgoal vocabulary. From a handful of demonstrations, we segment trajectories into near-atomic subskills (e.g., reach, grasp, place) and goal predicates by reverse-trajectory slicing; we mix these with self-generated rollouts using hindsight experience replay to train goal-conditioned, parameterized option policies π_i(a|s,g), termination β_i(s), and critics Q_i(s,g,a). For each skill, we also learn a success-probability head u_i(s,g) for fast feasibility tests. This yields reusable skills with standardized interfaces (initiation set, parameters g, termination, success estimate) and a predicate set that can describe nested subgoals.\n\nStage 2 equips each skill with a Skill Effect Model (SEM) and the agent with an explicit, factored world state. Each SEM f_i predicts the terminal state and cumulative cost of executing skill i with parameters g from state s; we implement f_i as an object-centric GNN that outputs per-object deltas and a graph-level cost. In parallel, a state reader/writer maintains a structured memory M_t of symbolic predicates (achieved subgoals, resource usage, temporal relations). After every transition (s_t, a_t, s_{t+1}), the writer updates M_{t+1}; the reader conditions both high-level choice and low-level controllers on M_t, enabling explicit tracking of nested goal completion and providing clean hooks for mid-trajectory supervision.\n\nStage 3 plans and executes in skill space with closed-loop replanning. Given (s_t, M_t) and a task goal, we perform a short-horizon look-ahead search over sequences of (skill, parameters) using the SEMs: sample skill candidates and continuous parameters, prune branches by u_i(s,g) thresholds, predict successor states with f_i, and score partial plans by the sum of expected costs and learned value-to-go. We use Weighted A* to balance exploitation and goal distance, and enrich the node score with the downstream critics ∑ Q_i to better capture local difficulty. The best branch yields the next option to execute; we run its low-level controller to termination, ingest real transitions to refine both π_i and f_i, update M, and then replan—keeping the plan reactive to model errors and stochasticity.\n\nStage 4 adds shaped credit and data-driven hierarchy refinement. We train a process-reward verifier that scores whether each executed step advanced the relevant subgoal(s) given (s_t, s_{t+1}, M_t), producing dense r_proc∈[0,1]. A composite return combines sparse outcome reward with these step-level signals, scaled higher on successful episodes to emphasize faithful processes without rewarding spurious progress. To further improve the high-level policy, we run a self-sampling tree: from shared prefixes, generate multiple candidate skill sequences, score their steps with the verifier, and derive preference pairs and listwise orderings. We then update a high-level selector network with a ranking loss that prefers plans and decisions yielding higher verifier scores and eventual success. Throughout training, we maintain an adaptive curriculum: resets are drawn near later subgoals early on and gradually move outward as success stabilizes, ensuring both options and the planner see appropriately staged difficulties.",
+        "rationale": "HILO attacks long-horizon credit assignment by factoring the task along natural temporal abstractions and making subgoal progress measurable. Options localize gradient credit to short skill executions; SEMs let us plan over these options to leap across long horizons without incurring action-level exploration debt; and explicit state memory turns nested goals into verifiable predicates so that step-level, process-aligned rewards can train both levels. The look-ahead search uses success-probability pruning and value-informed scoring to focus data collection on promising branches, while closed-loop replanning prevents model error from cascading.\n\nThe self-sampled preference learning converts multi-step execution experience into shared-prefix comparisons, stabilizing updates to the high-level selector and propagating credit to early decisions. Finally, the adaptive, demonstration-seeded curriculum ensures that both skills and planner learn from solvable subproblems before tackling full tasks, accelerating convergence without sacrificing asymptotic optimality.",
+        "inspired_by": [
+          {
+            "seed_id": "8c68da056026",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "look-ahead skill-tree search using coarse transition models and success-probability pruning plus multi-goal option training"
+          },
+          {
+            "seed_id": "b0f323c80ec7",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "Skill Effect Models that predict terminal state and execution cost with object-centric GNNs and search with Weighted A* in (skill, parameter) space"
+          },
+          {
+            "seed_id": "01a93886164b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "explicit world-state maintenance via reader and writer modules to track latent predicates over time"
+          },
+          {
+            "seed_id": "0ca863cc4925",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "composite outcome-plus-process rewards with step-level verification and trajectory-dependent scaling"
+          },
+          {
+            "seed_id": "affe6638415b",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "tree-based self-sampling with PRM-scored step preferences using shared prefixes for stable optimization"
+          },
+          {
+            "seed_id": "bda30b81e89f",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "adaptive curriculum from demonstrations via reverse-trajectory sampling and online difficulty control"
+          },
+          {
+            "seed_id": "cdb65a898b67",
+            "domain": "IR_REC",
+            "borrowed_aspect": "ranking-based objective (RankNet-style) to convert plan orderings into differentiable updates for the high-level selector"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "HILO combines multiple mechanisms: (1) GNN-based Skill Effect Models for look-ahead planning in skill space (directly covered by the SEM paper, 2021), (2) success-probability pruning + skill critic scoring in Weighted A* (closely matching HERLASE, 2018), (3) symbolic predicate state memory with reader/writer (matching Statler, 2023, though in LLM context), (4) process-reward verifier producing dense step-level rewards, (5) self-sampled shared-prefix preference/ranking loss for the high-level selector, and (6) adaptive reverse-trajectory curriculum (matching ACGD, 2019). Components 1+2 together are very close to HERLASE+SEM paper. However, the full combination — especially adding symbolic predicate memory integrated with the options framework, a learned process-reward verifier scoring subgoal advancement, and self-sampled preference/ranking loss for the high-level selector — has no single paper surfaced that combines all these together. The SEM paper and HERLASE cover the planning core, but the process-reward verifier + preference ranking for the high-level policy is a distinct addition not found in any surfaced work. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application, introducing named design choices (process-reward verifier + self-sampled preference ranking for hierarchical selector) not present in the surfaced literature as a combined system.\n\nPrior works:\n  - Search-Based Task Planning with Learned Skill Effect Models for Lifelong Robotic Manipulation (2021): GNN-based SEMs + Weighted A* planning in skill space — directly covers HILO's Stage 2-3 planning core\n  - Model Learning for Look-ahead Exploration in Continuous Control / HERLASE (2018): skill library + coarse transition models + success probability pruning + critic-scored look-ahead tree search — directly covers HILO's Stage 1-3 structure\n  - Statler: State-Maintaining Language Models for Embodied Reasoning (2023): explicit symbolic state reader/writer memory for robot planning — covers HILO's Stage 2 state memory component\n  - Adaptive Curriculum Generation from Demonstrations for Sim-to-Real Visuomotor Control / ACGD (2019): reverse-trajectory curriculum from demonstrations with adaptive difficulty — covers HILO's Stage 4 curriculum\n  - SPPD: Self-training with Process Preference Learning Using Dynamic Value Margin (2025): tree-based self-sampling with shared-prefix preference pairs scored by PRM — covers HILO's Stage 4 preference learning mechanism",
+        "prior_works": [
+          "Search-Based Task Planning with Learned Skill Effect Models for Lifelong Robotic Manipulation (2021): GNN-based SEMs + Weighted A* planning in skill space — directly covers HILO's Stage 2-3 planning core",
+          "Model Learning for Look-ahead Exploration in Continuous Control / HERLASE (2018): skill library + coarse transition models + success probability pruning + critic-scored look-ahead tree search — directly covers HILO's Stage 1-3 structure",
+          "Statler: State-Maintaining Language Models for Embodied Reasoning (2023): explicit symbolic state reader/writer memory for robot planning — covers HILO's Stage 2 state memory component",
+          "Adaptive Curriculum Generation from Demonstrations for Sim-to-Real Visuomotor Control / ACGD (2019): reverse-trajectory curriculum from demonstrations with adaptive difficulty — covers HILO's Stage 4 curriculum",
+          "SPPD: Self-training with Process Preference Learning Using Dynamic Value Margin (2025): tree-based self-sampling with shared-prefix preference pairs scored by PRM — covers HILO's Stage 4 preference learning mechanism"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose HILO: Hierarchical, Inspectable, Look-ahead Options. Stage 1 bootstraps a compact skill library and subgoal vocabulary. From a handful of demonstrations, we segment trajectories into near-atomic subskills (e.g., reach, grasp, place) and goal predicates by reverse-trajectory slicing; we mix these with self-generated rollouts using hindsight experience replay to train goal-conditioned, parameterized option policies π_i(a|s,g), termination β_i(s), and critics Q_i(s,g,a). For each skill, we also learn a success-probability head u_i(s,g) for fast feasibility tests. This yields reusable skills with standardized interfaces (initiation set, parameters g, termination, success estimate) and a predicate set that can describe nested subgoals.\n\nStage 2 equips each skill with a Skill Effect Model (SEM) and the agent with an explicit, factored world state. Each SEM f_i predicts the terminal state and cumulative cost of executing skill i with parameters g from state s; we implement f_i as an object-centric GNN that outputs per-object deltas and a graph-level cost. In parallel, a state reader/writer maintains a structured memory M_t of symbolic predicates (achieved subgoals, resource usage, temporal relations). After every transition (s_t, a_t, s_{t+1}), the writer updates M_{t+1}; the reader conditions both high-level choice and low-level controllers on M_t, enabling explicit tracking of nested goal completion and providing clean hooks for mid-trajectory supervision.\n\nStage 3 plans and executes in skill space with closed-loop replanning. Given (s_t, M_t) and a task goal, we perform a short-horizon look-ahead search over sequences of (skill, parameters) using the SEMs: sample skill candidates and continuous parameters, prune branches by u_i(s,g) thresholds, predict successor states with f_i, and score partial plans by the sum of expected costs and learned value-to-go. We use Weighted A* to balance exploitation and goal distance, and enrich the node score with the downstream critics ∑ Q_i to better capture local difficulty. The best branch yields the next option to execute; we run its low-level controller to termination, ingest real transitions to refine both π_i and f_i, update M, and then replan—keeping the plan reactive to model errors and stochasticity.\n\nStage 4 adds shaped credit and data-driven hierarchy refinement. We train a process-reward verifier that scores whether each executed step advanced the relevant subgoal(s) given (s_t, s_{t+1}, M_t), producing dense r_proc∈[0,1]. A composite return combines sparse outcome reward with these step-level signals, scaled higher on successful episodes to emphasize faithful processes without rewarding spurious progress. To further improve the high-level policy, we run a self-sampling tree: from shared prefixes, generate multiple candidate skill sequences, score their steps with the verifier, and derive preference pairs and listwise orderings. We then update a high-level selector network with a ranking loss that prefers plans and decisions yielding higher verifier scores and eventual success. Throughout training, we maintain an adaptive curriculum: resets are drawn near later subgoals early on and gradually move outward as success stabilizes, ensuring both options and the planner see appropriately staged difficulties.",
+    "final_rationale": "HILO attacks long-horizon credit assignment by factoring the task along natural temporal abstractions and making subgoal progress measurable. Options localize gradient credit to short skill executions; SEMs let us plan over these options to leap across long horizons without incurring action-level exploration debt; and explicit state memory turns nested goals into verifiable predicates so that step-level, process-aligned rewards can train both levels. The look-ahead search uses success-probability pruning and value-informed scoring to focus data collection on promising branches, while closed-loop replanning prevents model error from cascading.\n\nThe self-sampled preference learning converts multi-step execution experience into shared-prefix comparisons, stabilizing updates to the high-level selector and propagating credit to early decisions. Finally, the adaptive, demonstration-seeded curriculum ensures that both skills and planner learn from solvable subproblems before tackling full tasks, accelerating convergence without sacrificing asymptotic optimality.",
+    "final_inspired_by": [
+      {
+        "seed_id": "8c68da056026",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "look-ahead skill-tree search using coarse transition models and success-probability pruning plus multi-goal option training"
+      },
+      {
+        "seed_id": "b0f323c80ec7",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "Skill Effect Models that predict terminal state and execution cost with object-centric GNNs and search with Weighted A* in (skill, parameter) space"
+      },
+      {
+        "seed_id": "01a93886164b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "explicit world-state maintenance via reader and writer modules to track latent predicates over time"
+      },
+      {
+        "seed_id": "0ca863cc4925",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "composite outcome-plus-process rewards with step-level verification and trajectory-dependent scaling"
+      },
+      {
+        "seed_id": "affe6638415b",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "tree-based self-sampling with PRM-scored step preferences using shared prefixes for stable optimization"
+      },
+      {
+        "seed_id": "bda30b81e89f",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "adaptive curriculum from demonstrations via reverse-trajectory sampling and online difficulty control"
+      },
+      {
+        "seed_id": "cdb65a898b67",
+        "domain": "IR_REC",
+        "borrowed_aspect": "ranking-based objective (RankNet-style) to convert plan orderings into differentiable updates for the high-level selector"
+      }
+    ],
+    "wall_clock_s": 161.28,
+    "cost": {
+      "gen_prompt_tokens": 7238,
+      "gen_completion_tokens": 7144,
+      "judge_prompt_tokens": 100423,
+      "judge_completion_tokens": 1208,
+      "gen_cost_usd": 0.0805,
+      "judge_cost_usd": 0.3194,
+      "total_cost_usd": 0.3999
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Bottleneck-Option Learning with Progress and Prototypes (BOLT), a three-stage hierarchy builder that turns long-horizon trajectories into a compact library of reusable subgoals and options, then trains a high-level controller to chain them efficiently. Stage 1 learns a lightweight progress scorer and core-subgoal selector. A shared state encoder maps states to embeddings; a self-supervised progress head is trained with temporal-order and masked-segment objectives to predict relative progress between two states. During rollouts or from a replay buffer, we compute per-step progress deltas and select a handful of core states per episode that most advance progress or sit on short paths to the goal in a growing transition graph. This yields a small set of candidate subgoal states that summarize each trajectory.\n\nStage 2 turns these candidates into a stable subgoal library via a prototype layer with uncertainty. We cluster core-state embeddings using a trainable set of prototype vectors; cosine similarity assigns each candidate to its nearest prototype, and an auxiliary uncertainty head flags low-confidence assignments. High uncertainty or low maximum similarity spawns a new prototype, while a group-sparsity regularizer on per-phase usage (phases given by coarse progress bins) prunes redundant prototypes and encourages specializing different options to different parts of the task. Each prototype defines an option: a low-level policy conditioned on the prototype embedding with a termination condition based on reaching high similarity to the prototype or timeouts.\n\nStage 3 trains the hierarchy with on-policy pseudo-supervision and a lightweight probabilistic prior. We construct and update a task graph over prototypes using observed transitions and a learned reachability/cost model. A pseudo-demonstrator plans one step ahead on this graph and, at each decision, proposes the next prototype that approximately minimizes distance-to-node plus node-to-goal. We mix these on-policy labels with the high-level policy’s choices using dataset aggregation to avoid distribution shift. A compact Bayesian network over subgoal dependencies provides a prior over the next prototype given the current prototype and context; it is trained with a sampling-based gradient estimator that avoids expensive full inference and is used to mask or reweight candidates during high-level selection. Low-level options optimize a shaped reward that blends true task reward with progress-to-prototype, and we apply hindsight relabeling so that reached prototypes become valid subgoal labels even when the intended prototype was missed.\n\nTraining follows a scaffolding curriculum. We begin with strong reliance on the pseudo-demonstrator and higher weight on progress shaping, then gradually anneal both so the high-level policy learns to pick prototypes autonomously and options complete them under sparse rewards. Throughout training, uncertainty-weighted updates maintain the prototype library: confident assignments refine prototypes with higher weight; persistently uncertain regions trigger option addition; prototypes with low usage under group sparsity are merged or removed. The result is a compact, phase-specialized option set and a high-level policy that composes them to solve long-horizon tasks.",
+        "rationale": "Long-horizon credit assignment becomes tractable when decisions are evaluated at a slower temporal scale with meaningful subgoals. The progress-based selector identifies a handful of core waypoints that summarize each trajectory, dramatically shortening the effective planning horizon. Prototype-based clustering turns these waypoints into reusable, uncertainty-aware subgoals that double as option terminations, yielding stable, composable skills. Group-sparse screening keeps the option set small and phase-specialized, reducing interference and overfitting.\n\nOn-policy pseudo-labeling with a demonstrator fixes the classic distribution shift of offline hierarchy induction and supplies dense corrective signals to the high-level controller. The lightweight Bayesian prior injects inductive structure over subtask dependencies without incurring heavy inference costs, further accelerating exploration and choice at the high level. Finally, scaffolding—strong guidance and shaping early, annealed away later—provides a gentle optimization landscape that progressively hands credit from subgoal completion to the ultimate task reward.\n\nTogether, these components impose and learn a hierarchy that decomposes nested goals, shortens credit-assignment paths, and improves sample efficiency without relying on hand-labeled subgoals or expensive model-based planning.",
+        "inspired_by": [
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "selector-then-reasoning cascade for picking core elements"
+          },
+          {
+            "seed_id": "4a9de5f8c7ec",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "progress-aware supervision to localize key steps"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based latent space with uncertainty head"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "hierarchical screening with group sparsity for specialization and pruning"
+          },
+          {
+            "seed_id": "6bafdc8c3e0c",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "pseudo interactive demonstrator for on-policy labeling (DAgger-style)"
+          },
+          {
+            "seed_id": "69f9d4fc5e68",
+            "domain": "RL",
+            "borrowed_aspect": "sampling-based gradient training for a compact Bayesian prior"
+          },
+          {
+            "seed_id": "a680f4fc4baf",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "scaffolding curriculum via gradual removal of guidance"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal no published work that combines all of BOLT's key mechanisms together: (1) self-supervised progress scoring with temporal-order objectives for core-subgoal selection, (2) prototype-based option library with uncertainty-driven spawning/pruning via group-sparsity regularization, (3) pseudo-demonstrator DAgger-style training for the high-level policy over a task graph, (4) a lightweight Bayesian network prior over subgoal dependencies with sampling-based gradient estimation, and (5) scaffolding curriculum annealing. Individual components appear in prior work: prototype/landmark-based HRL exists (HIGL, LIDOSS), DAgger-style pseudo-demonstrators appear in VLN (DUET), Bayesian network with sampling-based gradients appears in cluster scheduling RL (seed 10), and progress-aware representations exist in video understanding. However, no paper surfaces that jointly applies this specific combination to hierarchical RL option discovery. The closest papers (probabilistic subgoal representations, uncertainty-aware HRL, landmark-guided HRL) each cover at most one or two of these mechanisms. The combination of prototype uncertainty management + progress-based selection + BN prior + DAgger pseudo-supervision + scaffolding curriculum for option library construction is not found as a joint application in the literature, matching the Score 4-5 range. Given that the BN prior with sampling-based gradient estimator is a named design choice not found in HRL literature, and the full combination is not surfaced, this matches Score 4 (combines mechanism families with no surfaced published joint application, introduces named design choices not in surfaced literature, but individual mechanisms are known).\n\nPrior works:\n  - Probabilistic Subgoal Representations for Hierarchical Reinforcement Learning (2024): uses probabilistic (GP-based) subgoal representations in HRL, overlapping with uncertainty-aware subgoal assignment but not prototype clustering or progress scoring.\n  - Uncertainty-aware hierarchical reinforcement learning for long-horizon tasks (2023): addresses uncertainty in HRL subgoal selection, partial overlap with uncertainty-driven option management.\n  - Robustly Learning Composable Options in Deep Reinforcement Learning (2021): pessimistic/optimistic classifiers for option initiation regions, overlaps with option composability but not prototype library or progress scoring.\n  - End-to-End Hierarchical Reinforcement Learning With Integrated Subgoal Discovery / LIDOSS (2021): trajectory-based subgoal discovery heuristic, partial overlap with core-subgoal selection stage.\n  - Inductive-bias-driven Reinforcement Learning for Efficient Schedules in Heterogeneous Clusters (2019): sampling-based gradient estimator for Bayesian networks in RL, overlaps with BN prior component but applied to scheduling not HRL option learning.\n  - Think Global Act Local / DUET (2022): pseudo-interactive demonstrator (DAgger-style) for high-level policy in navigation, overlaps with Stage 3 pseudo-demonstrator but in VLN not HRL option learning.",
+        "prior_works": [
+          "Probabilistic Subgoal Representations for Hierarchical Reinforcement Learning (2024): uses probabilistic (GP-based) subgoal representations in HRL, overlapping with uncertainty-aware subgoal assignment but not prototype clustering or progress scoring.",
+          "Uncertainty-aware hierarchical reinforcement learning for long-horizon tasks (2023): addresses uncertainty in HRL subgoal selection, partial overlap with uncertainty-driven option management.",
+          "Robustly Learning Composable Options in Deep Reinforcement Learning (2021): pessimistic/optimistic classifiers for option initiation regions, overlaps with option composability but not prototype library or progress scoring.",
+          "End-to-End Hierarchical Reinforcement Learning With Integrated Subgoal Discovery / LIDOSS (2021): trajectory-based subgoal discovery heuristic, partial overlap with core-subgoal selection stage.",
+          "Inductive-bias-driven Reinforcement Learning for Efficient Schedules in Heterogeneous Clusters (2019): sampling-based gradient estimator for Bayesian networks in RL, overlaps with BN prior component but applied to scheduling not HRL option learning.",
+          "Think Global Act Local / DUET (2022): pseudo-interactive demonstrator (DAgger-style) for high-level policy in navigation, overlaps with Stage 3 pseudo-demonstrator but in VLN not HRL option learning."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Bottleneck-Option Learning with Progress and Prototypes (BOLT), a three-stage hierarchy builder that turns long-horizon trajectories into a compact library of reusable subgoals and options, then trains a high-level controller to chain them efficiently. Stage 1 learns a lightweight progress scorer and core-subgoal selector. A shared state encoder maps states to embeddings; a self-supervised progress head is trained with temporal-order and masked-segment objectives to predict relative progress between two states. During rollouts or from a replay buffer, we compute per-step progress deltas and select a handful of core states per episode that most advance progress or sit on short paths to the goal in a growing transition graph. This yields a small set of candidate subgoal states that summarize each trajectory.\n\nStage 2 turns these candidates into a stable subgoal library via a prototype layer with uncertainty. We cluster core-state embeddings using a trainable set of prototype vectors; cosine similarity assigns each candidate to its nearest prototype, and an auxiliary uncertainty head flags low-confidence assignments. High uncertainty or low maximum similarity spawns a new prototype, while a group-sparsity regularizer on per-phase usage (phases given by coarse progress bins) prunes redundant prototypes and encourages specializing different options to different parts of the task. Each prototype defines an option: a low-level policy conditioned on the prototype embedding with a termination condition based on reaching high similarity to the prototype or timeouts.\n\nStage 3 trains the hierarchy with on-policy pseudo-supervision and a lightweight probabilistic prior. We construct and update a task graph over prototypes using observed transitions and a learned reachability/cost model. A pseudo-demonstrator plans one step ahead on this graph and, at each decision, proposes the next prototype that approximately minimizes distance-to-node plus node-to-goal. We mix these on-policy labels with the high-level policy’s choices using dataset aggregation to avoid distribution shift. A compact Bayesian network over subgoal dependencies provides a prior over the next prototype given the current prototype and context; it is trained with a sampling-based gradient estimator that avoids expensive full inference and is used to mask or reweight candidates during high-level selection. Low-level options optimize a shaped reward that blends true task reward with progress-to-prototype, and we apply hindsight relabeling so that reached prototypes become valid subgoal labels even when the intended prototype was missed.\n\nTraining follows a scaffolding curriculum. We begin with strong reliance on the pseudo-demonstrator and higher weight on progress shaping, then gradually anneal both so the high-level policy learns to pick prototypes autonomously and options complete them under sparse rewards. Throughout training, uncertainty-weighted updates maintain the prototype library: confident assignments refine prototypes with higher weight; persistently uncertain regions trigger option addition; prototypes with low usage under group sparsity are merged or removed. The result is a compact, phase-specialized option set and a high-level policy that composes them to solve long-horizon tasks.",
+    "final_rationale": "Long-horizon credit assignment becomes tractable when decisions are evaluated at a slower temporal scale with meaningful subgoals. The progress-based selector identifies a handful of core waypoints that summarize each trajectory, dramatically shortening the effective planning horizon. Prototype-based clustering turns these waypoints into reusable, uncertainty-aware subgoals that double as option terminations, yielding stable, composable skills. Group-sparse screening keeps the option set small and phase-specialized, reducing interference and overfitting.\n\nOn-policy pseudo-labeling with a demonstrator fixes the classic distribution shift of offline hierarchy induction and supplies dense corrective signals to the high-level controller. The lightweight Bayesian prior injects inductive structure over subtask dependencies without incurring heavy inference costs, further accelerating exploration and choice at the high level. Finally, scaffolding—strong guidance and shaping early, annealed away later—provides a gentle optimization landscape that progressively hands credit from subgoal completion to the ultimate task reward.\n\nTogether, these components impose and learn a hierarchy that decomposes nested goals, shortens credit-assignment paths, and improves sample efficiency without relying on hand-labeled subgoals or expensive model-based planning.",
+    "final_inspired_by": [
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "selector-then-reasoning cascade for picking core elements"
+      },
+      {
+        "seed_id": "4a9de5f8c7ec",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "progress-aware supervision to localize key steps"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based latent space with uncertainty head"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "hierarchical screening with group sparsity for specialization and pruning"
+      },
+      {
+        "seed_id": "6bafdc8c3e0c",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "pseudo interactive demonstrator for on-policy labeling (DAgger-style)"
+      },
+      {
+        "seed_id": "69f9d4fc5e68",
+        "domain": "RL",
+        "borrowed_aspect": "sampling-based gradient training for a compact Bayesian prior"
+      },
+      {
+        "seed_id": "a680f4fc4baf",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "scaffolding curriculum via gradual removal of guidance"
+      }
+    ],
+    "wall_clock_s": 139.64,
+    "cost": {
+      "gen_prompt_tokens": 4804,
+      "gen_completion_tokens": 4394,
+      "judge_prompt_tokens": 122251,
+      "judge_completion_tokens": 1291,
+      "gen_cost_usd": 0.0499,
+      "judge_cost_usd": 0.3861,
+      "total_cost_usd": 0.4361
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of a Skill Effect Model (object-centric GNN predicting terminal states and costs), a structured symbolic memory (predicate-based state reader/writer), and a process-reward verifier that generates preference pairs for ranking-loss updates on the high-level selector. While each component has precedents, the specific combination of look-ahead planning with SEMs, symbolic predicate tracking, and verifier-driven listwise ranking is a fairly distinctive integration. Method B's strongest novel element is the prototype layer with uncertainty-driven spawning/pruning under group-sparsity regularization combined with a Bayesian network prior over subgoal dependencies trained with a sampling-based gradient estimator. The uncertainty-gated prototype library with phase-specialized group sparsity is a moderately novel mechanism, but the Bayesian network prior over subgoal sequencing is a genuinely unusual addition to hierarchical RL. However, Method A's process-reward verifier generating preference pairs and listwise orderings for high-level policy refinement—combined with the SEM-based look-ahead search and symbolic memory—represents a more distinctively non-standard combination that would be harder to find in existing hierarchical RL literature. Method B's components (prototype clustering, DAgger-style pseudo-supervision, hindsight relabeling) are individually more established, even if their combination is reasonable."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is credit assignment over long horizons due to flat policies lacking hierarchical decomposition. Both methods address this by learning hierarchical structures (options/skills + high-level controllers), but the directness differs. Method A explicitly addresses credit assignment through Stage 4's process-reward verifier that provides dense step-level signals (r_proc) tied to subgoal advancement, plus the structured memory (M_t) that tracks nested goal completion enabling mid-trajectory supervision—these directly target the credit assignment problem by densifying rewards at the subgoal level. Method B addresses credit assignment primarily through progress-to-prototype shaping and hindsight relabeling, which are also direct mechanisms for the credit assignment problem. However, Method A's causal pathway from \"long-horizon credit assignment\" to specific mechanisms is more explicit: the structured predicate memory tracks which subgoals are achieved, the process-reward verifier scores each step's contribution to subgoal progress, and the composite return directly combines sparse outcome rewards with dense step-level signals. Method B's approach is also valid but relies more on the hierarchy itself (prototype chaining) to implicitly solve credit assignment rather than explicitly addressing the assignment mechanism. Both are valid, but Method A more directly and traceably addresses the credit assignment failure mode with dedicated mechanisms."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's most serious coherence weakness is the Bayesian network component in Stage 3: it is introduced to provide a prior over subgoal dependencies but the \"sampling-based gradient estimator that avoids expensive full inference\" is vaguely specified and its integration with the dataset aggregation (DAgger) loop and the task graph planner creates multiple overlapping credit-assignment mechanisms that are not clearly reconciled. The prototype library's dynamic growth/pruning also interacts with the high-level policy in ways that could cause instability (the policy's action space changes during training), which is not addressed. Method B's most serious coherence weakness is the combination of Weighted A* search over continuous skill parameters with GNN-based Skill Effect Models in Stage 3: performing look-ahead search over continuous parameters requires either discretization or a separate optimization step that is not specified, making the planning procedure underspecified. However, the overall pipeline in Method B is more modular—each stage has clear inputs and outputs, the structured memory M_t provides a consistent interface across stages, and the process-reward verifier in Stage 4 connects cleanly to the ranking loss. Method A's dynamic action space and the underspecified Bayesian network integration represent more fundamental coherence problems than Method B's underspecified continuous parameter search, which is a more localized gap."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5799,
+    "judge_completion_tokens": 895,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0308,
+    "total_cost_usd": 0.0308
+  }
+}

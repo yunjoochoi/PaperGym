@@ -1,0 +1,229 @@
+{
+  "query_id": "Q05",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Low-bit quantization preserves perplexity but degrades emergent\nabilities like in-context learning and chain-of-thought; how\ncan we quantize weights and activations while protecting the\ncomponents most responsible for these abilities?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 5,
+    "round_scores": [
+      5
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Build a circuit-aware, mixed-precision quantization pipeline that first locates in-context learning (ICL) and chain-of-thought (CoT) critical substructures, then allocates precision and learns small corrective scalings specifically to preserve them. Start with a probing suite of ICL/CoT prompts (e.g., induction/copy tasks, few-shot function learning, GSM8K with rationales). On the full-precision model, compute per-head and per-MLP-neuron importance by (i) ablation delta-loss (zeroing a head/neuron’s output), (ii) gradient-based saliency on attention logits and MLP activations with respect to next-token loss under ICL prompts, and (iii) activation statistics that flag outlier channels during these prompts. Aggregate these into a protection score and tag the top bands of attention heads (often induction/copy heads, delimiter-bridging heads) and MLP channels as protected. Keep a light-weight runtime saliency signal (e.g., head-wise attentivity to instruction/BOS tokens) to optionally gate a small extra-precision budget per input.\n\nQuantize with module- and channel-granularity mixed precision: weights in non-critical paths use 3–4 bits per-channel/group-wise affine quantization; protected heads/channels and all attention softmax logits use 8–16 bits. For attention, keep Q and attention logits in higher precision; quantize K/V caches to 8 bits with per-head/group scales. Before activation quantization, learn per-channel refinement factors that tame activation outliers and fold these scalings into adjacent weights so the deployed graph still uses standard integer quantization. Use stochastic rounding and per-group clipping calibrated on ICL/CoT prompts; set stricter clip ranges on salient tokens while allowing looser ranges on low-saliency tokens to limit error where it matters.\n\nRun a brief quantization-aware tuning phase that explicitly preserves ICL/CoT behavior. During forward passes, randomly substitute a proportion r of hidden states with their quantized counterparts and compute: (a) a distillation loss on logits toward the full-precision teacher over ICL/CoT prompt distributions, (b) an attention-map alignment loss on protected heads to match teacher patterns, and (c) a lightweight contrastive alignment between teacher and student intermediate representations so that prompt/rationale pairs remain closer than mismatched pairs, reducing semantic drift under quantization. Gradually increase r and quantization aggressiveness over training.\n\nUse a curriculum over context length and task complexity: begin with short-range induction and simple few-shot tasks, then scale to longer contexts and multi-step CoT reasoning. Optionally, in deeper layers only, apply very light attentivity-guided token sparsification on low-saliency tokens (never on rationale or delimiter-adjacent tokens) to curb activation outliers and further stabilize activation quantization without harming long-range reasoning. Validate with head ablations post-quantization to confirm protected circuits retain their influence, and report both perplexity and ICL/CoT benchmarks to ensure the targets were preserved.",
+        "rationale": "Emergent abilities rely on a small set of specialized attention heads and MLP channels (e.g., induction/copy circuits). Uniform low-bit quantization disproportionately harms them because these components produce outlier activations and govern long-range dependencies. By first identifying and then protecting these substructures with mixed precision and learned per-channel scalings, we concentrate the limited high-precision budget where it most affects ICL/CoT while still reaping large memory and speed gains elsewhere.\n\nQuantization-aware tuning that mixes quantized activations into training and aligns student–teacher attention and representations on ICL/CoT prompts directly pressures the quantized model to encode the structures that support these abilities. A length/complexity curriculum makes the student robust to long-horizon accumulation of quantization noise. Together, the circuit-aware precision allocation, activation outlier refinement, and targeted QAT preserve emergent behaviors even at low bitwidths.",
+        "inspired_by": [
+          {
+            "seed_id": "44006e0647af",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "activation-aware outlier scaling (TRIP)"
+          },
+          {
+            "seed_id": "f27a9c485ed7",
+            "domain": "SPEECH",
+            "borrowed_aspect": "mixed-quantized substitution to guide codebooks toward task-discriminative units"
+          },
+          {
+            "seed_id": "dda08a804d9b",
+            "domain": "IR_REC",
+            "borrowed_aspect": "layer-wise contrastive alignment to prevent semantic loss under quantization"
+          },
+          {
+            "seed_id": "9102c8c37284",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "curriculum that progressively lengthens sequences to stabilize long-horizon behavior"
+          }
+        ],
+        "novelty_score": 5,
+        "novelty_reasoning": "The searches found no prior work that combines circuit/mechanistic interpretability (identifying induction heads, ICL/CoT circuits via ablation and gradient saliency) with mixed-precision quantization specifically to preserve emergent abilities like in-context learning and chain-of-thought. The closest related work includes: (1) mixed-precision quantization with importance/sensitivity scores (LRP-QViT, KVmix, InfoQ) but these target general accuracy, not ICL/CoT circuits; (2) Agile-Quant which uses activation-guided token pruning + per-channel refinement factors for quantization but doesn't use circuit analysis or target emergent abilities; (3) mechanistic interpretability work on attention head roles (Causal Head Gating, safety heads) but not combined with quantization. The proposed method introduces a novel combination: circuit-level identification of ICL/CoT-critical substructures (induction heads, copy heads) via ablation + gradient saliency on ICL/CoT prompts, followed by precision allocation protecting those circuits, plus QAT with attention-map alignment and contrastive intermediate representation loss on ICL/CoT distributions. This combination — mechanistic circuit discovery driving mixed-precision quantization with targeted QAT for emergent ability preservation — has no surfaced end-to-end match, matching the Score 4-5 range. The contrastive alignment between teacher/student intermediate representations on ICL/CoT prompts is a named new component not found in any search result, and the overall pipeline (circuit discovery → precision allocation → circuit-targeted QAT) is not present in any surfaced paper. This matches Score 5 given no near-clone was surfaced.\n\nPrior works:\n  - LRP-QViT: Mixed-Precision Vision Transformer Quantization Using Layer Importance Score (2025): uses importance scores for mixed-precision bit allocation, but targets ViT classification accuracy, not LLM ICL/CoT circuits\n  - KVmix: Gradient-Based Layer Importance-Aware Mixed-Precision Quantization for KV Cache (2025): gradient-based importance for KV cache mixed-precision, but no circuit analysis or emergent ability targeting\n  - Agile-Quant: Activation-Guided Quantization for Faster Inference of LLMs on the Edge (2023): activation-guided token pruning + per-channel refinement factors for LLM quantization, but no circuit identification or ICL/CoT preservation\n  - Causal Head Gating (2025): identifies functional roles of attention heads including ICL mechanisms, but not combined with quantization\n  - On the Role of Attention Heads in Large Language Model Safety (2024): head importance scoring via ablation for safety, analogous mechanism to proposed circuit identification but for safety not quantization",
+        "prior_works": [
+          "LRP-QViT: Mixed-Precision Vision Transformer Quantization Using Layer Importance Score (2025): uses importance scores for mixed-precision bit allocation, but targets ViT classification accuracy, not LLM ICL/CoT circuits",
+          "KVmix: Gradient-Based Layer Importance-Aware Mixed-Precision Quantization for KV Cache (2025): gradient-based importance for KV cache mixed-precision, but no circuit analysis or emergent ability targeting",
+          "Agile-Quant: Activation-Guided Quantization for Faster Inference of LLMs on the Edge (2023): activation-guided token pruning + per-channel refinement factors for LLM quantization, but no circuit identification or ICL/CoT preservation",
+          "Causal Head Gating (2025): identifies functional roles of attention heads including ICL mechanisms, but not combined with quantization",
+          "On the Role of Attention Heads in Large Language Model Safety (2024): head importance scoring via ablation for safety, analogous mechanism to proposed circuit identification but for safety not quantization"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Build a circuit-aware, mixed-precision quantization pipeline that first locates in-context learning (ICL) and chain-of-thought (CoT) critical substructures, then allocates precision and learns small corrective scalings specifically to preserve them. Start with a probing suite of ICL/CoT prompts (e.g., induction/copy tasks, few-shot function learning, GSM8K with rationales). On the full-precision model, compute per-head and per-MLP-neuron importance by (i) ablation delta-loss (zeroing a head/neuron’s output), (ii) gradient-based saliency on attention logits and MLP activations with respect to next-token loss under ICL prompts, and (iii) activation statistics that flag outlier channels during these prompts. Aggregate these into a protection score and tag the top bands of attention heads (often induction/copy heads, delimiter-bridging heads) and MLP channels as protected. Keep a light-weight runtime saliency signal (e.g., head-wise attentivity to instruction/BOS tokens) to optionally gate a small extra-precision budget per input.\n\nQuantize with module- and channel-granularity mixed precision: weights in non-critical paths use 3–4 bits per-channel/group-wise affine quantization; protected heads/channels and all attention softmax logits use 8–16 bits. For attention, keep Q and attention logits in higher precision; quantize K/V caches to 8 bits with per-head/group scales. Before activation quantization, learn per-channel refinement factors that tame activation outliers and fold these scalings into adjacent weights so the deployed graph still uses standard integer quantization. Use stochastic rounding and per-group clipping calibrated on ICL/CoT prompts; set stricter clip ranges on salient tokens while allowing looser ranges on low-saliency tokens to limit error where it matters.\n\nRun a brief quantization-aware tuning phase that explicitly preserves ICL/CoT behavior. During forward passes, randomly substitute a proportion r of hidden states with their quantized counterparts and compute: (a) a distillation loss on logits toward the full-precision teacher over ICL/CoT prompt distributions, (b) an attention-map alignment loss on protected heads to match teacher patterns, and (c) a lightweight contrastive alignment between teacher and student intermediate representations so that prompt/rationale pairs remain closer than mismatched pairs, reducing semantic drift under quantization. Gradually increase r and quantization aggressiveness over training.\n\nUse a curriculum over context length and task complexity: begin with short-range induction and simple few-shot tasks, then scale to longer contexts and multi-step CoT reasoning. Optionally, in deeper layers only, apply very light attentivity-guided token sparsification on low-saliency tokens (never on rationale or delimiter-adjacent tokens) to curb activation outliers and further stabilize activation quantization without harming long-range reasoning. Validate with head ablations post-quantization to confirm protected circuits retain their influence, and report both perplexity and ICL/CoT benchmarks to ensure the targets were preserved.",
+    "final_rationale": "Emergent abilities rely on a small set of specialized attention heads and MLP channels (e.g., induction/copy circuits). Uniform low-bit quantization disproportionately harms them because these components produce outlier activations and govern long-range dependencies. By first identifying and then protecting these substructures with mixed precision and learned per-channel scalings, we concentrate the limited high-precision budget where it most affects ICL/CoT while still reaping large memory and speed gains elsewhere.\n\nQuantization-aware tuning that mixes quantized activations into training and aligns student–teacher attention and representations on ICL/CoT prompts directly pressures the quantized model to encode the structures that support these abilities. A length/complexity curriculum makes the student robust to long-horizon accumulation of quantization noise. Together, the circuit-aware precision allocation, activation outlier refinement, and targeted QAT preserve emergent behaviors even at low bitwidths.",
+    "final_inspired_by": [
+      {
+        "seed_id": "44006e0647af",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "activation-aware outlier scaling (TRIP)"
+      },
+      {
+        "seed_id": "f27a9c485ed7",
+        "domain": "SPEECH",
+        "borrowed_aspect": "mixed-quantized substitution to guide codebooks toward task-discriminative units"
+      },
+      {
+        "seed_id": "dda08a804d9b",
+        "domain": "IR_REC",
+        "borrowed_aspect": "layer-wise contrastive alignment to prevent semantic loss under quantization"
+      },
+      {
+        "seed_id": "9102c8c37284",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "curriculum that progressively lengthens sequences to stabilize long-horizon behavior"
+      }
+    ],
+    "wall_clock_s": 200.08,
+    "cost": {
+      "gen_prompt_tokens": 6963,
+      "gen_completion_tokens": 6995,
+      "judge_prompt_tokens": 100848,
+      "judge_completion_tokens": 1113,
+      "gen_cost_usd": 0.0787,
+      "judge_cost_usd": 0.3192,
+      "total_cost_usd": 0.3979
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Ability-aware mixed-precision quantization proceeds in three stages: attribute, allocate, and adapt. First, we build an ability attribution map for in-context learning (ICL) and chain-of-thought (CoT). On a curated set of ICL/CoT prompts, we run a full-precision teacher to collect activations and outcomes on tasks that reflect emergent abilities (e.g., few-shot composition, induction heads, multi-step reasoning). We insert structured gates on heads and MLP channel groups and perform a short quantization-aware fine-tune with a sparsity penalty; components that cannot be suppressed without harming ICL/CoT accuracy receive high gate scores, yielding a ranked list of critical heads/channels per layer. In parallel, we train a tiny selector that reads layer-wise summaries (e.g., attention entropies, token-wise hidden states) and predicts which tokens/positions and which attention heads constitute the core reasoning pathway for a given prompt, producing per-token masks. A quick layer-wise probing pass corroborates that later decoder layers and specific attention projections contribute disproportionately to ICL/CoT, seeding an informative prior for downstream allocation.\n\nGiven a global bit budget, we construct a static precision plan by progressive promotion. We start from a strong baseline (e.g., W4A4 with per-channel symmetric weight quantization and per-group activation quantization), keep numerically fragile ops in higher precision by default (layer norm/RMSNorm, rotary embeddings, softmax, logits), and then iteratively promote the highest-ranked components to 8–16 bits until the budget is met. Promotion is decided by estimated marginal gain-per-bit computed on the ICL/CoT validation set: attention K/V and output projections in mid-to-late layers, and narrow MLP bottlenecks on reasoning-critical layers are typical beneficiaries. Activation ranges are calibrated on CoT-heavy traces, with per-token or small-group scales for attention blocks that carry reasoning tokens; the KV cache is kept at minimally 8-bit (or fp16 for promoted heads). Optionally, we insert tiny residual adapters (e.g., low-rank) only along the protected paths and keep these in higher precision to restore expressivity lost to quantization without inflating the overall memory footprint.\n\nAt inference, we adapt precision on the fly with a lightweight uncertainty head and the learned selector. A deterministic uncertainty estimator operating on pre-logit/attention statistics produces per-token confidence, which we fuse with the selector’s mask to detect CoT spans and moments of high epistemic demand. For tokens/heads flagged as critical or uncertain, we route matmuls through a higher-precision kernel for the promoted components (or temporarily dequantize activations for those heads/MLP groups), while the remainder continues with low-bit kernels; batching tokens by precision tier preserves throughput. This realizes token- and head-specific mixed precision: most of the sequence runs at low cost, while the model “spends” precision exactly where reasoning circuits are active.\n\nTraining uses quantization-aware fine-tuning with a scaffolded bit-width curriculum and explicit ability preservation. We begin from fp16/bf16, distill logits and intermediate features on ICL/CoT tasks, then progressively lower bit-widths and expand the set of quantized components, re-evaluating the gating ranks as we go. The objective combines standard LM loss with auxiliary losses that reward correct few-shot adaptation and multi-step CoT consistency from a full-precision teacher; we avoid self-evaluation signals and track external, reference-based ability metrics to steer optimization. A final calibration pass refreshes activation scales on CoT traces and freezes the selector and uncertainty head, yielding a deployable model with static promotions plus dynamic, token-aware precision routing.",
+        "rationale": "Emergent abilities are carried by sparse, compositional circuits (e.g., specific heads, late-layer MLP paths, and token-time slices during scratchpad reasoning). Uniform low-bit quantization maintains average-token likelihoods (perplexity) but injects noise into precisely these narrow pathways, disproportionately harming ICL/CoT. By first attributing where these abilities live, then statically promoting the most consequential components, we prevent large, localized error amplification while still quantizing the bulk of parameters and activations.\n\nDynamic, token-aware precision further limits cost by only elevating precision when the model is actively reasoning (as detected by a selector and uncertainty head), keeping the typical forward pass cheap while preserving reliability on hard steps. A scaffolded quantization curriculum with distillation preserves these behaviors as precision drops, and evaluating against external, task-grounded ability metrics ensures we optimize for the real objective rather than a proxy like perplexity or self-judged fluency.",
+        "inspired_by": [
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "hierarchical screening with group sparsity to rank and protect critical components"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector identifying core evidence to focus reasoning"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "deterministic uncertainty head for fast per-sample confidence"
+          },
+          {
+            "seed_id": "a680f4fc4baf",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "curriculum that gradually removes scaffolding to retain skill"
+          },
+          {
+            "seed_id": "3917da5fd88a",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "avoid self-evaluation bias; rely on external reference-based metrics"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "efficient iterative top-k refinement under a tight budget"
+          },
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "layer-wise probing to localize where capability gains concentrate"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The searches reveal that while there is substantial prior work on mixed-precision quantization for LLMs (SliM-LLM, KVTuner, FlexQuant, RAMP, etc.) using importance/salience/sensitivity-based bit allocation, and separate work on mechanistic interpretability/circuit analysis for reasoning in LLMs, no paper has been found that combines: (1) ability attribution maps specifically for ICL/CoT emergent abilities using structured gating, (2) static precision promotion guided by those attribution scores, AND (3) dynamic per-token/per-head precision routing at inference time guided by a learned selector and uncertainty head. The closest works are SliM-LLM (salience-driven mixed-precision), FlexQuant (dynamic layer-wise precision switching based on perplexity entropy), and STaMP (keeping some tokens at higher precision), but none target emergent ability preservation specifically, nor combine attribution-based static allocation with dynamic token-aware routing for ICL/CoT. This matches the Score 4 anchor: combining mechanism families (ability attribution + static mixed-precision promotion + dynamic token-aware routing + distillation with ability-specific losses) with no surfaced published joint application for this specific problem.\n\nPrior works:\n  - SliM-LLM: Salience-Driven Mixed-Precision Quantization for Large Language Models (2024): salience/importance-based group-wise bit allocation for LLMs, but targets perplexity not emergent abilities\n  - FlexQuant: A Flexible and Efficient Dynamic Precision Switching Framework for LLM Quantization (2025): dynamic layer-wise precision switching based on entropy/KL divergence, but not ability-specific\n  - STaMP: Sequence Transformation and Mixed Precision for Low-Precision Activation Quantization (2025): keeps some tokens at higher precision, but not ability-attribution-driven\n  - KVTuner: Sensitivity-Aware Layer-wise Mixed Precision KV Cache Quantization (2025): layer-wise sensitivity for KV cache, not targeting emergent abilities\n  - RAMP: Reinforcement Adaptive Mixed Precision Quantization (2026): RL-based per-layer bit allocation, targets perplexity not ICL/CoT",
+        "prior_works": [
+          "SliM-LLM: Salience-Driven Mixed-Precision Quantization for Large Language Models (2024): salience/importance-based group-wise bit allocation for LLMs, but targets perplexity not emergent abilities",
+          "FlexQuant: A Flexible and Efficient Dynamic Precision Switching Framework for LLM Quantization (2025): dynamic layer-wise precision switching based on entropy/KL divergence, but not ability-specific",
+          "STaMP: Sequence Transformation and Mixed Precision for Low-Precision Activation Quantization (2025): keeps some tokens at higher precision, but not ability-attribution-driven",
+          "KVTuner: Sensitivity-Aware Layer-wise Mixed Precision KV Cache Quantization (2025): layer-wise sensitivity for KV cache, not targeting emergent abilities",
+          "RAMP: Reinforcement Adaptive Mixed Precision Quantization (2026): RL-based per-layer bit allocation, targets perplexity not ICL/CoT"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Ability-aware mixed-precision quantization proceeds in three stages: attribute, allocate, and adapt. First, we build an ability attribution map for in-context learning (ICL) and chain-of-thought (CoT). On a curated set of ICL/CoT prompts, we run a full-precision teacher to collect activations and outcomes on tasks that reflect emergent abilities (e.g., few-shot composition, induction heads, multi-step reasoning). We insert structured gates on heads and MLP channel groups and perform a short quantization-aware fine-tune with a sparsity penalty; components that cannot be suppressed without harming ICL/CoT accuracy receive high gate scores, yielding a ranked list of critical heads/channels per layer. In parallel, we train a tiny selector that reads layer-wise summaries (e.g., attention entropies, token-wise hidden states) and predicts which tokens/positions and which attention heads constitute the core reasoning pathway for a given prompt, producing per-token masks. A quick layer-wise probing pass corroborates that later decoder layers and specific attention projections contribute disproportionately to ICL/CoT, seeding an informative prior for downstream allocation.\n\nGiven a global bit budget, we construct a static precision plan by progressive promotion. We start from a strong baseline (e.g., W4A4 with per-channel symmetric weight quantization and per-group activation quantization), keep numerically fragile ops in higher precision by default (layer norm/RMSNorm, rotary embeddings, softmax, logits), and then iteratively promote the highest-ranked components to 8–16 bits until the budget is met. Promotion is decided by estimated marginal gain-per-bit computed on the ICL/CoT validation set: attention K/V and output projections in mid-to-late layers, and narrow MLP bottlenecks on reasoning-critical layers are typical beneficiaries. Activation ranges are calibrated on CoT-heavy traces, with per-token or small-group scales for attention blocks that carry reasoning tokens; the KV cache is kept at minimally 8-bit (or fp16 for promoted heads). Optionally, we insert tiny residual adapters (e.g., low-rank) only along the protected paths and keep these in higher precision to restore expressivity lost to quantization without inflating the overall memory footprint.\n\nAt inference, we adapt precision on the fly with a lightweight uncertainty head and the learned selector. A deterministic uncertainty estimator operating on pre-logit/attention statistics produces per-token confidence, which we fuse with the selector’s mask to detect CoT spans and moments of high epistemic demand. For tokens/heads flagged as critical or uncertain, we route matmuls through a higher-precision kernel for the promoted components (or temporarily dequantize activations for those heads/MLP groups), while the remainder continues with low-bit kernels; batching tokens by precision tier preserves throughput. This realizes token- and head-specific mixed precision: most of the sequence runs at low cost, while the model “spends” precision exactly where reasoning circuits are active.\n\nTraining uses quantization-aware fine-tuning with a scaffolded bit-width curriculum and explicit ability preservation. We begin from fp16/bf16, distill logits and intermediate features on ICL/CoT tasks, then progressively lower bit-widths and expand the set of quantized components, re-evaluating the gating ranks as we go. The objective combines standard LM loss with auxiliary losses that reward correct few-shot adaptation and multi-step CoT consistency from a full-precision teacher; we avoid self-evaluation signals and track external, reference-based ability metrics to steer optimization. A final calibration pass refreshes activation scales on CoT traces and freezes the selector and uncertainty head, yielding a deployable model with static promotions plus dynamic, token-aware precision routing.",
+    "final_rationale": "Emergent abilities are carried by sparse, compositional circuits (e.g., specific heads, late-layer MLP paths, and token-time slices during scratchpad reasoning). Uniform low-bit quantization maintains average-token likelihoods (perplexity) but injects noise into precisely these narrow pathways, disproportionately harming ICL/CoT. By first attributing where these abilities live, then statically promoting the most consequential components, we prevent large, localized error amplification while still quantizing the bulk of parameters and activations.\n\nDynamic, token-aware precision further limits cost by only elevating precision when the model is actively reasoning (as detected by a selector and uncertainty head), keeping the typical forward pass cheap while preserving reliability on hard steps. A scaffolded quantization curriculum with distillation preserves these behaviors as precision drops, and evaluating against external, task-grounded ability metrics ensures we optimize for the real objective rather than a proxy like perplexity or self-judged fluency.",
+    "final_inspired_by": [
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "hierarchical screening with group sparsity to rank and protect critical components"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector identifying core evidence to focus reasoning"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "deterministic uncertainty head for fast per-sample confidence"
+      },
+      {
+        "seed_id": "a680f4fc4baf",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "curriculum that gradually removes scaffolding to retain skill"
+      },
+      {
+        "seed_id": "3917da5fd88a",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "avoid self-evaluation bias; rely on external reference-based metrics"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "efficient iterative top-k refinement under a tight budget"
+      },
+      {
+        "seed_id": "a9647aa8fe5e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "layer-wise probing to localize where capability gains concentrate"
+      }
+    ],
+    "wall_clock_s": 157.52,
+    "cost": {
+      "gen_prompt_tokens": 4810,
+      "gen_completion_tokens": 4840,
+      "judge_prompt_tokens": 120770,
+      "judge_completion_tokens": 1071,
+      "gen_cost_usd": 0.0544,
+      "judge_cost_usd": 0.3784,
+      "total_cost_usd": 0.4328
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the dynamic, token-and-head-specific precision routing at inference time: a learned selector combined with an uncertainty head that detects CoT spans and routes matmuls through higher-precision kernels on the fly, realizing per-token mixed precision during deployment. This runtime adaptive precision switching based on reasoning circuit activation is not a standard combination in the quantization literature. Method B's strongest novel element is the contrastive alignment loss between teacher and student intermediate representations to prevent semantic drift of ICL/CoT prompt-rationale pairs under quantization, combined with the circuit-identification pipeline (ablation delta-loss + gradient saliency + outlier statistics). While Method B's circuit identification is more grounded and its contrastive alignment is a meaningful addition, the contrastive loss applied to quantization preservation is a relatively modest extension of distillation. Method A's dynamic inference-time precision routing—where the model actively detects reasoning-critical tokens and heads per input and switches precision kernels accordingly—represents a more distinctly novel mechanism that is harder to find in prior quantization work as a complete system."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is that low-bit quantization degrades emergent abilities (ICL, CoT) even when perplexity is preserved, because the components responsible for these abilities (induction heads, reasoning circuits) are disproportionately harmed by uniform quantization. Both methods engage this failure mode directly by identifying critical components via attribution/saliency, allocating higher precision to them, and using ICL/CoT-specific calibration and fine-tuning. Method A adds dynamic token-level precision routing at inference and a more elaborate training curriculum, while Method B focuses more tightly on the circuit-identification step (using ablation delta-loss, gradient saliency, and activation statistics), attention-map alignment loss on protected heads, and post-quantization ablation validation to confirm circuits are preserved. Both trace a clear causal pathway from the problem (emergent ability degradation) to specific method steps (identify critical heads → protect with higher precision → fine-tune with ability-preserving losses). The engagement is comparably direct; Method B's explicit post-quantization circuit validation and attention-map alignment loss are slightly more tightly coupled to the failure mode, but Method A's dynamic inference-time routing also directly addresses the problem. The difference is marginal."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A is largely coherent: it identifies critical components via ablation/saliency, assigns mixed precision, folds corrective scalings into weights, and runs quantization-aware tuning with distillation and attention-map alignment. The steps are compatible and sequentially consistent. One mild coherence concern is the \"runtime saliency signal\" that optionally gates extra precision per input — this implies dynamic precision switching at inference, but the method doesn't fully specify how this is implemented in practice (kernel-level routing, etc.), leaving a small gap. The \"attentivity-guided token sparsification\" in deeper layers is also somewhat loosely specified but doesn't contradict other steps.\n\nMethod B introduces a \"tiny selector\" trained to predict per-token reasoning pathway masks, and an \"uncertainty head\" that routes matmuls through higher-precision kernels at inference. The dynamic routing at inference (batching tokens by precision tier) is described as preserving throughput, but the interaction between the static promotion plan and the dynamic selector/uncertainty head creates a coherence tension: the static plan already promotes certain heads to higher precision, yet the dynamic system also decides at runtime which heads/tokens get higher precision — the relationship between these two mechanisms is not clearly reconciled. Additionally, the \"structured gates with sparsity penalty\" used for attribution, combined with the selector training, the uncertainty head, and the QAT curriculum, involves many interdependent components whose training order and interaction are underspecified, making implementation harder to pin down without redesign.\n\nBoth methods are ambitious, but Method B has more unresolved interactions between its components (static promotion vs. dynamic routing, multiple simultaneously trained modules), whereas Method A's steps are more sequentially coherent even if some inference-time details are loose."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6204,
+    "judge_completion_tokens": 912,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0323,
+    "total_cost_usd": 0.0323
+  }
+}

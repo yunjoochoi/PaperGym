@@ -1,0 +1,243 @@
+{
+  "query_id": "Q10",
+  "natural_domain": "IR_REC",
+  "query_text": "Dense retrieval surfaces topically relevant documents but\nranks them poorly when relevance depends on subtle context;\nhow can we rerank candidates using contextual signals\nwithout re-encoding the entire corpus?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Context-Aware Cascade Reranking (CARE) augments a standard dense retriever with a lightweight, query-conditioned reranking pipeline that never re-encodes the full corpus. Offline, each document is enriched once with: (i) k multi-view embeddings (viewer tokens) that capture diverse facets of the same text and remain ANN-compatible; (ii) a compact, LLM-written synopsis that emphasizes claims, constraints, entities, and temporal qualifiers, which is then embedded; and (iii) optional token-level embeddings or sub-vector shards stored in a late-interaction index to enable query-only re-encoding. We also extract a small set of structured facets (entities, dates, locations, stance) to build a sparse feature sketch per document.\n\nAt query time, we derive the missing context the dense retriever ignores. A frozen LLM rewrites the current query (plus session history if available) into a short intent-and-constraint description that teases out skills, operations, entities, and boundary conditions (e.g., \"compare methods A vs B after 2021, prioritize causal evidence\"). We encode this description into a context vector, and we also parse out weighted facets (entities, time windows, polarity) for explicit matching. A first-stage ANN search over the base dense index returns top-N candidates.\n\nCARE then applies a three-pass cascade over only these N candidates. Pass A (cheap, vector-only) re-scores with max/aggregate similarity between the query’s context vector and each document’s k viewer vectors plus its synopsis embedding, and adds explicit facet-overlap bonuses (e.g., Jaccard on entities, time-window compatibility). This removes superficially similar but context-mismatched items and prunes to M candidates. Pass B (late interaction) encodes the query tokens once and computes MaxSim-style interactions against precomputed document token embeddings to capture subtle phrasings, negations, and attribute bindings, pruning to L. Pass C (neural listwise) presents the residual L candidates to a small LLM reranker using single-token decoding of an ordinal relevance label or a direct permutation head; the model judges nuanced contextual fit from short snippets and produces the final order without expensive multi-token generation.\n\nFor continuous improvement without corpus re-encoding, CARE distills the LLM’s listwise ordering into the query embedding with a weighted RankNet objective over the already-retrieved candidates, and (optionally) issues a second ANN query using the updated vector to recover any missed but highly contextual results. All heavy document-side computations were done offline; online work is confined to query rewriting, query-only encodings, sparse facet lookups, and scoring a few dozen candidates.",
+        "rationale": "Dense retrievers compress documents into single vectors, which fails when fine-grained constraints (e.g., dates, stance, attribute bindings) determine relevance. CARE injects these contextual signals in three complementary ways while avoiding any corpus-wide re-encoding: (1) intent/skill rewriting improves the query representation to target operations and constraints, (2) multi-view document embeddings and synopsis vectors expose diverse facets for better ANN-friendly matching, and (3) a late-interaction step and a compact listwise LLM reranker resolve the remaining hard cases with minimal additional latency. Because all document-side features are precomputed once, the online cost scales only with top-N candidates, not corpus size.\n\nThe cascade is designed to be cost-aware: cheap vector re-scoring and explicit facet checks quickly fix most mis-rankings; late interaction with query-only encoding captures subtle token-level alignments without reprocessing documents; and a single-token listwise LLM pass delivers robust judgments on the final shortlist. Finally, distilling the LLM’s ordering into the query vector provides immediate, session-level gains in recall and ranking without touching the corpus encodings.",
+        "inspired_by": [
+          {
+            "seed_id": "ebd6f8b54c24",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "rewrite-then-retrieve to expose task-relevant skills and constraints"
+          },
+          {
+            "seed_id": "cdb65a898b67",
+            "domain": "IR_REC",
+            "borrowed_aspect": "listwise LLM reranking with single-token decoding and RankNet distillation"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-view document embeddings aggregated by max-pooling"
+          },
+          {
+            "seed_id": "ac9d79a4fd87",
+            "domain": "IR_REC",
+            "borrowed_aspect": "LLM-based candidate relevance judgments on retrieved sets"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "CARE combines several known mechanisms: (1) multi-view document embeddings (directly covered by the 2022 ACL paper on Multi-View Document Representation Learning), (2) listwise LLM reranking with single-token decoding and RankNet distillation into query embeddings (directly covered by FIRST 2024), (3) late-interaction MaxSim scoring (ColBERT-style, well-established), (4) LLM query rewriting for intent/constraint extraction, and (5) LLM-written document synopses as additional embeddings, plus structured facet matching. The key question is whether the full combination has been published. Searches found no paper that jointly combines all five mechanisms into a single cascade pipeline. FIRST covers the RankNet distillation component; the multi-view embeddings paper covers component (1); but no paper surfaces the full combination of: multi-view doc embeddings + LLM synopsis embeddings + facet sketches + LLM intent rewriting + three-pass cascade (vector re-scoring → late interaction → listwise LLM) + RankNet distillation. The individual mechanisms are known, but their joint application in this specific cascade architecture for contextual reranking without corpus re-encoding has not been surfaced. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with searches returning prior work on individual mechanisms but not their combination as proposed.\n\nPrior works:\n  - Multi-View Document Representation Learning for Open-Domain Dense Retrieval (2022): introduces multiple viewer-token embeddings per document for ANN-compatible multi-view retrieval — directly covers CARE's multi-view embedding component\n  - FIRST: Faster Improved Listwise Reranking with Single Token Decoding (2024): introduces single-token listwise LLM reranking and RankNet distillation of LLM ordering into query embeddings — directly covers CARE's Pass C and distillation components\n  - ColBERT / late-interaction retrieval (2020): MaxSim token-level late interaction with precomputed document token embeddings — directly covers CARE's Pass B\n  - Meta Knowledge for Retrieval Augmented Large Language Models (2024): LLM-generated metadata/summaries embedded for improved retrieval — partially covers CARE's synopsis embedding idea",
+        "prior_works": [
+          "Multi-View Document Representation Learning for Open-Domain Dense Retrieval (2022): introduces multiple viewer-token embeddings per document for ANN-compatible multi-view retrieval — directly covers CARE's multi-view embedding component",
+          "FIRST: Faster Improved Listwise Reranking with Single Token Decoding (2024): introduces single-token listwise LLM reranking and RankNet distillation of LLM ordering into query embeddings — directly covers CARE's Pass C and distillation components",
+          "ColBERT / late-interaction retrieval (2020): MaxSim token-level late interaction with precomputed document token embeddings — directly covers CARE's Pass B",
+          "Meta Knowledge for Retrieval Augmented Large Language Models (2024): LLM-generated metadata/summaries embedded for improved retrieval — partially covers CARE's synopsis embedding idea"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Context-Aware Cascade Reranking (CARE) augments a standard dense retriever with a lightweight, query-conditioned reranking pipeline that never re-encodes the full corpus. Offline, each document is enriched once with: (i) k multi-view embeddings (viewer tokens) that capture diverse facets of the same text and remain ANN-compatible; (ii) a compact, LLM-written synopsis that emphasizes claims, constraints, entities, and temporal qualifiers, which is then embedded; and (iii) optional token-level embeddings or sub-vector shards stored in a late-interaction index to enable query-only re-encoding. We also extract a small set of structured facets (entities, dates, locations, stance) to build a sparse feature sketch per document.\n\nAt query time, we derive the missing context the dense retriever ignores. A frozen LLM rewrites the current query (plus session history if available) into a short intent-and-constraint description that teases out skills, operations, entities, and boundary conditions (e.g., \"compare methods A vs B after 2021, prioritize causal evidence\"). We encode this description into a context vector, and we also parse out weighted facets (entities, time windows, polarity) for explicit matching. A first-stage ANN search over the base dense index returns top-N candidates.\n\nCARE then applies a three-pass cascade over only these N candidates. Pass A (cheap, vector-only) re-scores with max/aggregate similarity between the query’s context vector and each document’s k viewer vectors plus its synopsis embedding, and adds explicit facet-overlap bonuses (e.g., Jaccard on entities, time-window compatibility). This removes superficially similar but context-mismatched items and prunes to M candidates. Pass B (late interaction) encodes the query tokens once and computes MaxSim-style interactions against precomputed document token embeddings to capture subtle phrasings, negations, and attribute bindings, pruning to L. Pass C (neural listwise) presents the residual L candidates to a small LLM reranker using single-token decoding of an ordinal relevance label or a direct permutation head; the model judges nuanced contextual fit from short snippets and produces the final order without expensive multi-token generation.\n\nFor continuous improvement without corpus re-encoding, CARE distills the LLM’s listwise ordering into the query embedding with a weighted RankNet objective over the already-retrieved candidates, and (optionally) issues a second ANN query using the updated vector to recover any missed but highly contextual results. All heavy document-side computations were done offline; online work is confined to query rewriting, query-only encodings, sparse facet lookups, and scoring a few dozen candidates.",
+    "final_rationale": "Dense retrievers compress documents into single vectors, which fails when fine-grained constraints (e.g., dates, stance, attribute bindings) determine relevance. CARE injects these contextual signals in three complementary ways while avoiding any corpus-wide re-encoding: (1) intent/skill rewriting improves the query representation to target operations and constraints, (2) multi-view document embeddings and synopsis vectors expose diverse facets for better ANN-friendly matching, and (3) a late-interaction step and a compact listwise LLM reranker resolve the remaining hard cases with minimal additional latency. Because all document-side features are precomputed once, the online cost scales only with top-N candidates, not corpus size.\n\nThe cascade is designed to be cost-aware: cheap vector re-scoring and explicit facet checks quickly fix most mis-rankings; late interaction with query-only encoding captures subtle token-level alignments without reprocessing documents; and a single-token listwise LLM pass delivers robust judgments on the final shortlist. Finally, distilling the LLM’s ordering into the query vector provides immediate, session-level gains in recall and ranking without touching the corpus encodings.",
+    "final_inspired_by": [
+      {
+        "seed_id": "ebd6f8b54c24",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "rewrite-then-retrieve to expose task-relevant skills and constraints"
+      },
+      {
+        "seed_id": "cdb65a898b67",
+        "domain": "IR_REC",
+        "borrowed_aspect": "listwise LLM reranking with single-token decoding and RankNet distillation"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-view document embeddings aggregated by max-pooling"
+      },
+      {
+        "seed_id": "ac9d79a4fd87",
+        "domain": "IR_REC",
+        "borrowed_aspect": "LLM-based candidate relevance judgments on retrieved sets"
+      }
+    ],
+    "wall_clock_s": 153.7,
+    "cost": {
+      "gen_prompt_tokens": 7255,
+      "gen_completion_tokens": 8821,
+      "judge_prompt_tokens": 107297,
+      "judge_completion_tokens": 1118,
+      "gen_cost_usd": 0.0973,
+      "judge_cost_usd": 0.3387,
+      "total_cost_usd": 0.4359
+    }
+  },
+  "d_loop": {
+    "rounds": 2,
+    "converged": true,
+    "final_score": 5,
+    "round_scores": [
+      3,
+      5
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Use a two-stage reranking cascade on the dense retriever’s top-K without touching the corpus index. First, freeze the dense retriever and keep its precomputed passage embeddings. At query time, fetch top-K via ANN and form a feature vector per candidate that combines: (a) the frozen dense similarity (dot/cosine) between the query and passage embeddings; (b) lightweight lexical signals computed on-the-fly over the candidate (BM25/tf-idf overlap, phrase/NE overlap, proximity); and (c) cheap structured matches from pre-extracted passage metadata (entities, dates, sections, authority/source). Optionally, select up to B evidence sentences per candidate by a fast sentence-level BM25 or MaxSim over token embeddings and run a tiny cross-encoder or late-interaction scorer only on those snippets to produce an evidence-alignment score. Concatenate these signals into a pointwise base score S(d|q) for each candidate.\n\nTrain a small pairwise preference head g(q, di, dj) that operates on frozen embeddings and the above features only. Concretely, g takes [q-emb || di-emb || dj-emb || Δlex || Δstruct || Δevidence] and outputs P(di ≻ dj | q). This can be implemented as a linear probe or shallow MLP; it never re-encodes documents and is trained from click/pairwise labels or supervised pairs. Because it consumes frozen vectors and cheap deltas, it is fast and data-efficient while being sensitive to subtle, context-dependent cues captured by the auxiliary features and evidence snippets.\n\nAt inference, apply an efficient adjacent-swap reranking on the top-K using g. Initialize with the dense order, then perform m right-to-left passes over the top-k window (k ≤ K): compare only adjacent items (i, i+1) with g and swap if P(di+1 ≻ di | q) > 0.5. Repeat for a small m (e.g., 1–3) until stable. This yields O(m·k) pairwise calls instead of O(K^2), captures non-linear pairwise preferences induced by contextual signals, and corrects many dense-order mistakes with minimal latency. Cache per-candidate features so each pairwise call is just a cheap concatenation and an MLP/linear pass.\n\nDeploy with guardrails: calibrate g with temperature scaling, blend the final score as S*(d|q) = S(d|q) + λ·LocalRank(d) to preserve coarse relevance, and fall back to pointwise S for very large K. Maintain a small, periodically refreshed metadata store (entities, timestamps) alongside the dense index so contextual features remain up to date without re-embedding passages.",
+        "rationale": "Dense retrievers excel at topical recall but miss fine-grained, query-dependent cues. The proposed reranker injects those cues as lightweight lexical, structural, and snippet-level evidence computed only for the retrieved top-K, avoiding any corpus-wide re-encoding. A frozen-embedding pairwise head learns preferences di ≻ dj conditioned on the query, leveraging precomputed vectors and cheap deltas to be sensitive to subtle context without incurring cross-encoder costs over the whole document set.\n\nUsing an adjacent-swap schedule concentrates pairwise comparisons where they matter (near the top) and achieves strong reorderings with O(K) complexity per pass, making the method practical under tight latency budgets. Training the pairwise head as a linear/shallow probe over frozen embeddings further reduces cost while empirically retaining much of the necessary discriminative power, yielding an efficient, context-aware reranker that complements dense retrieval.",
+        "inspired_by": [
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "adjacent-pair right-to-left passes for efficient top-k reranking"
+          },
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "linear probe over frozen query and passage embeddings for selection"
+          }
+        ],
+        "novelty_score": 3,
+        "novelty_reasoning": "The proposed method combines: (1) frozen dense retrieval embeddings with lexical/structural/metadata features, (2) a pairwise preference head (linear/MLP) trained on these combined features, and (3) an adjacent-swap (RTL bubble-sort) inference schedule. The GLIMPSE paper (seed 7) directly describes the adjacent-swap RTL reranking with pairwise models for news recommendation, which is the same inference algorithm. The broader combination of hybrid lexical+neural features for reranking without re-encoding is a well-known pattern (e.g., RankSVM, LambdaMART with BM25+dense features). However, the specific combination of frozen dense embeddings + lexical/structural/metadata feature deltas + pairwise MLP head + adjacent-swap schedule applied to dense retrieval reranking was not surfaced as a single published system. The adjacent-swap component is directly from GLIMPSE (seed 7), and the hybrid feature reranking is a known pattern, making this a combination of known mechanisms. The searches returned no paper that jointly applies all these mechanisms to dense retrieval reranking, but the individual components are well-established and the GLIMPSE paper covers the key inference novelty. This matches the Score 3 anchor: combines 2-3 known mechanisms with at least one paper pairing similar mechanisms for a closely related problem.\n\nPrior works:\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2409.17711): Directly describes the adjacent-swap RTL reranking with pairwise models, which is the core inference algorithm of the proposed method.\n  - LambdaMART / RankSVM (classic LTR): Well-established learning-to-rank with hybrid lexical+dense features for passage reranking without re-encoding.\n  - Two-stage RAG with ColBERTv2 + cross-encoder reranking (2026): Two-stage reranking cascade combining late-interaction and cross-encoder signals over dense retrieval candidates.",
+        "prior_works": [
+          "GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2409.17711): Directly describes the adjacent-swap RTL reranking with pairwise models, which is the core inference algorithm of the proposed method.",
+          "LambdaMART / RankSVM (classic LTR): Well-established learning-to-rank with hybrid lexical+dense features for passage reranking without re-encoding.",
+          "Two-stage RAG with ColBERTv2 + cross-encoder reranking (2026): Two-stage reranking cascade combining late-interaction and cross-encoder signals over dense retrieval candidates."
+        ],
+        "feedback_used": null
+      },
+      {
+        "round_num": 2,
+        "method": "We propose CONCERT: Context-Conditioned Evidence Routing for Reranking. Offline, each corpus document is segmented into sentences. For every sentence we store: (a) a frozen dense embedding from the base retriever backbone, (b) a sparse lexical signature (n-grams, entities), and (c) lightweight IE triples (subject, relation, object) with IDs and types. No query-time re-encoding of corpus text is required; only these cached per-sentence representations and metadata are used.\n\nAt query time, we form a compact context vector g by encoding the current query, conversational history, and optional user/task metadata. A tiny facetizer (rules + a small LLM) decomposes the query into facets (entities, relations, temporal/numeric constraints, polarity), each with a frozen embedding. Given the top-N dense-retrieved documents, we build a Contextual Evidence Graph (CEG) over the candidate set: facet nodes on one side and candidate evidence nodes (the l highest-scoring sentences per document found via ANN over cached sentence embeddings against each facet) on the other. Edges carry multi-view alignment features: dense similarity, lexical/entity overlap, triple compatibility, temporal/numeric agreement, and simple contradiction cues. A lightweight linear probe maps these frozen features to an edge support score s_ij, while a prototype-based head produces a calibration/confidence u_ij. We run 1–2 rounds of message passing on the CEG where attention weights are modulated by the global context g; evidence nodes aggregate messages from covered facets and return coverage/consistency signals, yielding a per-document state h_d that summarizes which facets are supported and where conflicts arise.\n\nWe then perform Active Glimpse Refinement under a fixed budget B. Using the current CEG, we compute a value-of-information score that combines (i) edge influence on the document’s objective (via the message-passing Jacobian) and (ii) uncertainty u_ij. The top-B edges (facet–sentence pairs) are re-examined with a tiny cross-encoder or constrained pattern matcher over just the sentence and facet text (never the full document). Each refined edge updates s_ij, and we incrementally update the document states h_d through a discretely-online evidence integrator that smoothly incorporates new signals without re-running the full propagation.\n\nFinally, we score each document with a context-faithful coverage objective: a soft-AND over critical facets plus weighted soft-OR over optional facets, minus penalties for contradiction (e.g., polarity or temporal mismatch) derived from the CEG. To ensure that improvements stem from contextual matching rather than topical proximity, we add a counterfactual sensitivity term: for each critical facet, we efficiently re-evaluate the document’s score with that facet masked using cached message-passing factors; documents whose scores do not decrease under facet removal are down-weighted. We sort candidates by the resulting score. This produces a context-aware reranking that uses precomputed sentence-level caches and only a handful of on-the-fly micro-glimpses, never re-encoding the corpus.\n",
+        "rationale": "Dense retrieval is strong at topical alignment but weak when subtle constraints (temporal, numeric, polarity, multi-entity relations) govern relevance. CONCERT explicitly models those constraints by factorizing the query into facets and routing evidence between facets and sentence-level caches within a per-query micro-graph. Global context g modulates edge attention so session/user signals shift which facets and evidence matter, while the counterfactual sensitivity term rewards candidates whose relevance truly depends on the specified context rather than surface similarity.\n\nCrucially, all heavy lifting is done over frozen, offline-computed sentence embeddings and light IE triples; at query time we only run graph computations and a budgeted number of micro cross-encodes on select facet–sentence pairs. The discretely-online integrator lets us incorporate these refinements incrementally without rebuilding scores from scratch, and the prototype-driven uncertainty head ensures we spend that compute where it is most impactful. Together, this yields reranking that is context-faithful and compute-efficient without re-encoding the corpus.\n",
+        "inspired_by": [
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global-attribute-conditioned message passing"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based deterministic uncertainty calibration"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector then focused reasoning on core evidence"
+          },
+          {
+            "seed_id": "9afe61a7b42b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "discretely-online integration of streaming updates"
+          },
+          {
+            "seed_id": "a9647aa8fe5e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "linear probing over frozen embeddings for candidate selection"
+          },
+          {
+            "seed_id": "978a9b5dcae8",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "repurposing extracted structured events for downstream triage"
+          }
+        ],
+        "novelty_score": 5,
+        "novelty_reasoning": "Across all searches, no paper was found that combines the specific set of mechanisms in CONCERT: (1) offline sentence-level caching of dense embeddings + IE triples + lexical signatures, (2) query facetization into a bipartite Contextual Evidence Graph (CEG) with multi-view edge features, (3) context-modulated message passing over the CEG, (4) value-of-information-driven Active Glimpse Refinement with budgeted micro cross-encodes guided by message-passing Jacobians and prototype uncertainty, and (5) counterfactual sensitivity scoring that masks facets using cached message-passing factors. The closest surfaced work (DMAR, CogitoRAG, REGENT) each share one or two individual mechanisms (GNN-based reranking, query decomposition, entity-aware attention) but none combines the full pipeline. The counterfactual sensitivity term and the discretely-online evidence integrator are named design choices not present in any surfaced paper. This matches the Score 4–5 boundary; given the multiple novel named components (CEG construction, Active Glimpse Refinement via Jacobian-guided VoI, counterfactual facet masking) with no surfaced end-to-end match, this is a strong Score 5.\n\nPrior works:\n  - REGENT: Relevance-Guided Attention for Entity-Aware Multi-Vector Neural Re-Ranking (2025): entity-aware attention for reranking, but no facet graph, no cached IE triples, no VoI-guided glimpses\n  - CogitoRAG (2026): query decomposition + graph-based retrieval reranking, but no sentence-level cache, no bipartite CEG, no counterfactual sensitivity\n  - DMAR: Dynamic Multi-Anchor Retrieval (2026): GNN-based structural reranking with query reformulation, but no facet-evidence bipartite graph, no budgeted micro cross-encodes, no counterfactual masking\n  - Learning to Retrieve Reasoning Paths over Wikipedia Graph (2019): graph-based multi-hop retrieval with recurrent path scoring, different problem and mechanism family",
+        "prior_works": [
+          "REGENT: Relevance-Guided Attention for Entity-Aware Multi-Vector Neural Re-Ranking (2025): entity-aware attention for reranking, but no facet graph, no cached IE triples, no VoI-guided glimpses",
+          "CogitoRAG (2026): query decomposition + graph-based retrieval reranking, but no sentence-level cache, no bipartite CEG, no counterfactual sensitivity",
+          "DMAR: Dynamic Multi-Anchor Retrieval (2026): GNN-based structural reranking with query reformulation, but no facet-evidence bipartite graph, no budgeted micro cross-encodes, no counterfactual masking",
+          "Learning to Retrieve Reasoning Paths over Wikipedia Graph (2019): graph-based multi-hop retrieval with recurrent path scoring, different problem and mechanism family"
+        ],
+        "feedback_used": "Your previous synthesis received a novelty score of 3/5 from a held-out novelty judge that ran a Semantic Scholar search.\n\nThe judge surfaced the following prior work that substantively covers your proposed mechanisms:\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2409.17711): Directly describes the adjacent-swap RTL reranking with pairwise models, which is the core inference algorithm of the proposed method.\n  - LambdaMART / RankSVM (classic LTR): Well-established learning-to-rank with hybrid lexical+dense features for passage reranking without re-encoding.\n  - Two-stage RAG with ColBERTv2 + cross-encoder reranking (2026): Two-stage reranking cascade combining late-interaction and cross-encoder signals over dense retrieval candidates.\n\nJudge's reasoning: The proposed method combines: (1) frozen dense retrieval embeddings with lexical/structural/metadata features, (2) a pairwise preference head (linear/MLP) trained on these combined features, and (3) an adjacent-swap (RTL bubble-sort) inference schedule. The GLIMPSE paper (seed 7) directly describes the adjacent-swap RTL reranking with pairwise models for news recommendation, which is the same inference algorithm. The broader combination of hybrid lexical+neural features for reranking without re-encoding is a well-known pattern (e.g., RankSVM, LambdaMART with BM25+dense features). However, the specific combination of frozen dense embeddings + lexical/structural/metadata feature deltas + pairwise MLP head + adjacent-swap schedule applied to dense retrieval reranking was not surfaced as a single published system. The adjacent-swap component is directly from GLIMPSE (seed 7), and the hybrid feature reranking is a known pattern, making this a combination of known mechanisms. The searches returned no paper that jointly applies all these mechanisms to dense retrieval reranking, but the individual components are well-established and the GLIMPSE paper covers the key inference novelty. This matches the Score 3 anchor: combines 2-3 known mechanisms with at least one paper pairing similar mechanisms for a closely related problem.\n\nPrior works:\n  - GLIMPSE: Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation (2409.17711): Directly describes the adjacent-swap RTL reranking with pairwise models, which is the core inference algorithm of the proposed method.\n  - LambdaMART / RankSVM (classic LTR): Well-established learning-to-rank with hybrid lexical+dense features for passage reranking without re-encoding.\n  - Two-stage RAG with ColBERTv2 + cross-encoder reranking (2026): Two-stage reranking cascade combining late-interaction and cross-encoder signals over dense retrieval candidates.\n\nPlease synthesize a substantially more novel method for the same research problem. You may use the same retrieved seeds in non-obvious ways, or introduce new mechanism families absent from the surfaced literature. The goal is a method whose mechanism combination is not already established."
+      }
+    ],
+    "final_method": "We propose CONCERT: Context-Conditioned Evidence Routing for Reranking. Offline, each corpus document is segmented into sentences. For every sentence we store: (a) a frozen dense embedding from the base retriever backbone, (b) a sparse lexical signature (n-grams, entities), and (c) lightweight IE triples (subject, relation, object) with IDs and types. No query-time re-encoding of corpus text is required; only these cached per-sentence representations and metadata are used.\n\nAt query time, we form a compact context vector g by encoding the current query, conversational history, and optional user/task metadata. A tiny facetizer (rules + a small LLM) decomposes the query into facets (entities, relations, temporal/numeric constraints, polarity), each with a frozen embedding. Given the top-N dense-retrieved documents, we build a Contextual Evidence Graph (CEG) over the candidate set: facet nodes on one side and candidate evidence nodes (the l highest-scoring sentences per document found via ANN over cached sentence embeddings against each facet) on the other. Edges carry multi-view alignment features: dense similarity, lexical/entity overlap, triple compatibility, temporal/numeric agreement, and simple contradiction cues. A lightweight linear probe maps these frozen features to an edge support score s_ij, while a prototype-based head produces a calibration/confidence u_ij. We run 1–2 rounds of message passing on the CEG where attention weights are modulated by the global context g; evidence nodes aggregate messages from covered facets and return coverage/consistency signals, yielding a per-document state h_d that summarizes which facets are supported and where conflicts arise.\n\nWe then perform Active Glimpse Refinement under a fixed budget B. Using the current CEG, we compute a value-of-information score that combines (i) edge influence on the document’s objective (via the message-passing Jacobian) and (ii) uncertainty u_ij. The top-B edges (facet–sentence pairs) are re-examined with a tiny cross-encoder or constrained pattern matcher over just the sentence and facet text (never the full document). Each refined edge updates s_ij, and we incrementally update the document states h_d through a discretely-online evidence integrator that smoothly incorporates new signals without re-running the full propagation.\n\nFinally, we score each document with a context-faithful coverage objective: a soft-AND over critical facets plus weighted soft-OR over optional facets, minus penalties for contradiction (e.g., polarity or temporal mismatch) derived from the CEG. To ensure that improvements stem from contextual matching rather than topical proximity, we add a counterfactual sensitivity term: for each critical facet, we efficiently re-evaluate the document’s score with that facet masked using cached message-passing factors; documents whose scores do not decrease under facet removal are down-weighted. We sort candidates by the resulting score. This produces a context-aware reranking that uses precomputed sentence-level caches and only a handful of on-the-fly micro-glimpses, never re-encoding the corpus.\n",
+    "final_rationale": "Dense retrieval is strong at topical alignment but weak when subtle constraints (temporal, numeric, polarity, multi-entity relations) govern relevance. CONCERT explicitly models those constraints by factorizing the query into facets and routing evidence between facets and sentence-level caches within a per-query micro-graph. Global context g modulates edge attention so session/user signals shift which facets and evidence matter, while the counterfactual sensitivity term rewards candidates whose relevance truly depends on the specified context rather than surface similarity.\n\nCrucially, all heavy lifting is done over frozen, offline-computed sentence embeddings and light IE triples; at query time we only run graph computations and a budgeted number of micro cross-encodes on select facet–sentence pairs. The discretely-online integrator lets us incorporate these refinements incrementally without rebuilding scores from scratch, and the prototype-driven uncertainty head ensures we spend that compute where it is most impactful. Together, this yields reranking that is context-faithful and compute-efficient without re-encoding the corpus.\n",
+    "final_inspired_by": [
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global-attribute-conditioned message passing"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based deterministic uncertainty calibration"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector then focused reasoning on core evidence"
+      },
+      {
+        "seed_id": "9afe61a7b42b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "discretely-online integration of streaming updates"
+      },
+      {
+        "seed_id": "a9647aa8fe5e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "linear probing over frozen embeddings for candidate selection"
+      },
+      {
+        "seed_id": "978a9b5dcae8",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "repurposing extracted structured events for downstream triage"
+      }
+    ],
+    "wall_clock_s": 252.98,
+    "cost": {
+      "gen_prompt_tokens": 10240,
+      "gen_completion_tokens": 7203,
+      "judge_prompt_tokens": 190020,
+      "judge_completion_tokens": 2064,
+      "gen_cost_usd": 0.0848,
+      "judge_cost_usd": 0.601,
+      "total_cost_usd": 0.6858
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "D",
+      "winner": "A",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the Contextual Evidence Graph (CEG) with Active Glimpse Refinement — specifically, the value-of-information scoring using message-passing Jacobians to selectively apply micro cross-encoder glimpses on only the highest-uncertainty facet-sentence pairs, combined with a counterfactual sensitivity term that masks critical facets to verify contextual dependence. This combination of graph-based evidence routing with budget-constrained targeted re-examination and counterfactual scoring is a non-trivial and relatively unexplored mechanism. Method B's strongest novel element is the combination of LLM-written offline synopses with multi-view viewer token embeddings and a three-pass cascade culminating in listwise LLM reranking with RankNet distillation back into the query vector for a second ANN pass. However, each of these components (late interaction à la ColBERT, LLM reranking with listwise scoring, query vector update via distillation) is individually well-established, and their combination, while competent, is more of an engineering assembly. Method A's counterfactual facet masking and Jacobian-guided glimpse budget allocation represent a more original mechanistic contribution that would be harder to find in prior literature as a unified system."
+    },
+    "validity": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is that dense retrieval ranks candidates poorly when relevance depends on subtle contextual signals (e.g., temporal constraints, entity specificity, nuanced intent), and the challenge is to rerank without re-encoding the entire corpus. Method A addresses this through a cascade pipeline that enriches documents offline with multi-view embeddings, synopses, and facets, then at query time rewrites the query to extract contextual intent and applies three reranking passes (vector similarity, late interaction, neural listwise) over only the retrieved candidates. Method B addresses this through a sentence-level evidence graph (CEG) that maps query facets to cached sentence embeddings, runs message passing to assess facet coverage and contradiction, and applies a counterfactual sensitivity term to ensure scores reflect contextual matching rather than topical proximity. Both methods directly engage the failure mode by operating only on retrieved candidates (not the full corpus) and using contextual signals. However, Method B's counterfactual sensitivity mechanism—explicitly penalizing documents whose scores don't drop when a critical facet is masked—provides a more direct, traceable causal pathway from the problem (subtle context determines relevance) to the method step (verify that the document's score is actually driven by the contextual facet, not topical overlap). This directly targets the \"ranks poorly when relevance depends on subtle context\" failure mode more precisely than Method A's cascade, which addresses it more broadly through layered scoring."
+    },
+    "coherence": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A is a cascade pipeline with well-defined stages (ANN retrieval, three reranking passes, optional distillation). Its steps are internally consistent and each component has clear inputs and outputs. The main coherence concern is the final \"distill LLM ordering into query embedding with RankNet then issue a second ANN query\" step, which is somewhat loosely specified but not contradictory. Overall the pipeline is straightforward and implementable.\n\nMethod B introduces a Contextual Evidence Graph with message passing, a prototype-based calibration head, Active Glimpse Refinement using \"message-passing Jacobians\" for value-of-information scoring, a \"discretely-online evidence integrator,\" and a counterfactual sensitivity term computed via \"cached message-passing factors.\" Several of these components are underspecified or internally strained: the \"message-passing Jacobian\" for computing edge influence is non-trivial to define and compute efficiently on a dynamic graph; the \"discretely-online evidence integrator that smoothly incorporates new signals without re-running full propagation\" is described in contradictory terms (discrete yet smooth); and the counterfactual re-evaluation via \"cached message-passing factors\" assumes a factorization of the graph computation that is not established. These are genuine coherence gaps that would require significant redesign to implement.\n\nMethod A has minor loose ends but no fundamental contradictions. Method B has multiple underspecified or internally inconsistent components that would require inventing missing pieces to implement."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5394,
+    "judge_completion_tokens": 950,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0304,
+    "total_cost_usd": 0.0304
+  }
+}

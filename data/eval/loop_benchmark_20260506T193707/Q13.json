@@ -1,0 +1,250 @@
+{
+  "query_id": "Q13",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Models reason over compositional task structure but learned\nrepresentations are continuous and entangled; how can we\ninduce discrete, reusable components that support\ncompositional reasoning over novel combinations?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Composable Discrete Abstractions (CoDA), a neuro-symbolic pipeline that learns a library of discrete, reusable components and composes them with typed operators to solve novel combinations. Perception-side, CoDA factors raw inputs into object-centric slots and induces atom codebooks for objects, attributes, and relations via a vector-quantized bottleneck. Each slot emits top-k atom codes per predicate type; codes are grounded to pixels (or tokens/spans) and to language using multi-task supervision. To stabilize semantics and promote reuse, we cluster occurrences for each code and keep medoid exemplars as the code’s canonical prototypes; the resulting component library pairs each discrete code with medoid evidence and lexical aliases. We maintain a typed scene graph (JSON) whose nodes reference code IDs and medoids, with edges for relations and attributes.\n\nGrounding is trained with three complementary signals: (i) VQ commit/reconstruction on slot features to induce discrete atoms; (ii) supervised grounding using question–segmentation links so each atom aligns to concrete evidence; and (iii) weak supervision from scene-graph parses of captions to encourage consistent atom usage across language and vision. A contrastive alignment loss ties codes to their textual aliases, and a sparsity/capacity regularizer encourages one code per attribute type per slot while allowing polysemy via top-k selection. This turns entangled embeddings into a small vocabulary of typed, evidence-backed atoms that remain reusable across examples and tasks.\n\nReasoning-side, CoDA defines a library of typed, parameterized operators (skills) that transform the discrete scene graph. Each operator declares preconditions over atom codes and predicts postconditions and costs via a learned Skill Effect Model (SEM). Given a current JSON state, an SEM takes operator parameters (e.g., which object-code pair and relation-code to change) and predicts the next JSON state and execution cost. At inference, we plan in operator space using Weighted A*: successors come from instantiating operators over currently bound codes, SEMs score feasibility and cost, and search produces a sequence of operator applications that compose atoms to meet a goal.\n\nTo interface naturally with open-ended tasks, CoDA wraps the planner in a logic-guided controller. A language model translates the user query into a Prolog-style goal with facts derived from the current JSON scene graph, proposes operator applications as clauses, and simulates backtracking traces. The controller maintains and updates the JSON world state explicitly after each operator via an update routine, enabling long-horizon reasoning, replanning, and faithful intermediate structure without depending on an external symbolic engine; the logic trace and the JSON state co-evolve during problem solving.\n\nTraining proceeds in alternating phases: (1) perceptual grounding and code learning (VQ + grounding + contrastive alignment) using paired vision–language data and question–segmentation supervision; (2) operator/SEM training from demonstrations or logged executions by minimizing state-delta and cost prediction losses on the discrete JSON graphs; and (3) joint fine-tuning where planner rollouts supply additional weak labels for rarely seen atoms/relations. Evaluation follows a systematic compositional protocol with Seen vs Unseen Compounds and Unseen Atoms splits to verify that performance stems from recombining learned atoms rather than memorizing compounds.",
+        "rationale": "Discrete, typed atom codebooks turn continuous, entangled features into a reusable vocabulary that can be bound, substituted, and recombined. Grounding these codes to concrete evidence (segments/tokens) and stabilizing them with medoid prototypes yields components that are interpretable, shareable across tasks, and resilient to drift. A small operator library with learned effect models gives the system the right granularity for reuse: operators are independent of specific compounds and act on typed codes, so planning over operators composes atoms systematically.\n\nA logic-guided controller that writes and executes Prolog-style traces over an explicit JSON world state enforces faithful, stepwise composition and affords backtracking when novel combinations require exploration. By searching in operator space with SEM costs, the system retains statistical robustness while preserving discrete structure. Systematic evaluation on splits that hold out compounds or atoms ensures the learned atoms and operators genuinely support compositional generalization rather than shortcutting via continuous entanglement.",
+        "inspired_by": [
+          {
+            "seed_id": "19282afa4ba0",
+            "domain": "SPEECH",
+            "borrowed_aspect": "vector-quantized tokenization to discretize continuous features"
+          },
+          {
+            "seed_id": "7f79d5d52bbc",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "supervised grounding of components via segmentation linked to QA"
+          },
+          {
+            "seed_id": "6acf3a6205f5",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "systematic compositional generalization splits for evaluation"
+          },
+          {
+            "seed_id": "b0f323c80ec7",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "parameterized skill effect models with search-based planning"
+          },
+          {
+            "seed_id": "3921bac123c3",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "Prolog-style program traces and backtracking without external solvers"
+          },
+          {
+            "seed_id": "01a93886164b",
+            "domain": "ROBOTICS",
+            "borrowed_aspect": "explicit external JSON world-state memory for stepwise updates"
+          },
+          {
+            "seed_id": "d50f31446970",
+            "domain": "IR_REC",
+            "borrowed_aspect": "medoid-based prototype clustering for a stable component library"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "CoDA combines five distinct mechanism families: (1) object-centric slot attention with VQ-based typed atom codebooks (objects/attributes/relations) stabilized by medoid prototypes, (2) multi-signal grounding (VQ commit, supervised segmentation links, scene-graph weak supervision, contrastive alignment), (3) typed JSON scene graphs as discrete world state, (4) learned Skill Effect Models (SEMs) with Weighted A* planning over operator space, and (5) a logic-guided LLM controller that co-evolves Prolog-style traces with the JSON state. Searches surfaced: slot attention + VQ-inspired grounded slot dictionaries (CoSA, 2023), object-centric learning for compositional generalization, SEMs with A* planning for robotics (Search-Based Task Planning, 2021; SEADS, 2022), and LLM world-state maintenance (Statler, 2023). However, no single paper combines VQ-typed atom codebooks with medoid-stabilized component libraries, typed scene graphs, SEM-based A* planning, AND a Prolog-style logic controller co-evolving with JSON state for compositional visual reasoning. The individual mechanisms are known but their specific joint application — particularly the typed predicate codebooks with medoid prototypes feeding into SEM-guided A* search wrapped by a Prolog-LLM controller — has no direct published match. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this problem, with individual mechanisms found separately but not their combination as proposed.\n\nPrior works:\n  - Object-Centric Learning with Slot Attention (2020): slot attention for object-centric representations, a core perception component of CoDA\n  - Grounded Object-Centric Learning / CoSA (2023): VQ-inspired grounded slot dictionary for specialized slots, closely related to CoDA's atom codebooks\n  - Search-Based Task Planning with Learned Skill Effect Models (2021): SEMs with Weighted A* planning over parameterized skills, directly matches CoDA's reasoning side\n  - SEADS: Learning Temporally Extended Skills as Symbolic Actions for Planning (2022): symbolic forward models + skill learning for long-horizon planning, overlaps with CoDA's operator/SEM framework\n  - Statler: State-Maintaining Language Models for Embodied Reasoning (2023): explicit JSON world-state maintenance with LLM, overlaps with CoDA's logic-guided controller\n  - FLARE: Faithful Logic-Aided Reasoning and Exploration (2024): Prolog-style LLM reasoning with backtracking, overlaps with CoDA's logic-guided controller",
+        "prior_works": [
+          "Object-Centric Learning with Slot Attention (2020): slot attention for object-centric representations, a core perception component of CoDA",
+          "Grounded Object-Centric Learning / CoSA (2023): VQ-inspired grounded slot dictionary for specialized slots, closely related to CoDA's atom codebooks",
+          "Search-Based Task Planning with Learned Skill Effect Models (2021): SEMs with Weighted A* planning over parameterized skills, directly matches CoDA's reasoning side",
+          "SEADS: Learning Temporally Extended Skills as Symbolic Actions for Planning (2022): symbolic forward models + skill learning for long-horizon planning, overlaps with CoDA's operator/SEM framework",
+          "Statler: State-Maintaining Language Models for Embodied Reasoning (2023): explicit JSON world-state maintenance with LLM, overlaps with CoDA's logic-guided controller",
+          "FLARE: Faithful Logic-Aided Reasoning and Exploration (2024): Prolog-style LLM reasoning with backtracking, overlaps with CoDA's logic-guided controller"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Composable Discrete Abstractions (CoDA), a neuro-symbolic pipeline that learns a library of discrete, reusable components and composes them with typed operators to solve novel combinations. Perception-side, CoDA factors raw inputs into object-centric slots and induces atom codebooks for objects, attributes, and relations via a vector-quantized bottleneck. Each slot emits top-k atom codes per predicate type; codes are grounded to pixels (or tokens/spans) and to language using multi-task supervision. To stabilize semantics and promote reuse, we cluster occurrences for each code and keep medoid exemplars as the code’s canonical prototypes; the resulting component library pairs each discrete code with medoid evidence and lexical aliases. We maintain a typed scene graph (JSON) whose nodes reference code IDs and medoids, with edges for relations and attributes.\n\nGrounding is trained with three complementary signals: (i) VQ commit/reconstruction on slot features to induce discrete atoms; (ii) supervised grounding using question–segmentation links so each atom aligns to concrete evidence; and (iii) weak supervision from scene-graph parses of captions to encourage consistent atom usage across language and vision. A contrastive alignment loss ties codes to their textual aliases, and a sparsity/capacity regularizer encourages one code per attribute type per slot while allowing polysemy via top-k selection. This turns entangled embeddings into a small vocabulary of typed, evidence-backed atoms that remain reusable across examples and tasks.\n\nReasoning-side, CoDA defines a library of typed, parameterized operators (skills) that transform the discrete scene graph. Each operator declares preconditions over atom codes and predicts postconditions and costs via a learned Skill Effect Model (SEM). Given a current JSON state, an SEM takes operator parameters (e.g., which object-code pair and relation-code to change) and predicts the next JSON state and execution cost. At inference, we plan in operator space using Weighted A*: successors come from instantiating operators over currently bound codes, SEMs score feasibility and cost, and search produces a sequence of operator applications that compose atoms to meet a goal.\n\nTo interface naturally with open-ended tasks, CoDA wraps the planner in a logic-guided controller. A language model translates the user query into a Prolog-style goal with facts derived from the current JSON scene graph, proposes operator applications as clauses, and simulates backtracking traces. The controller maintains and updates the JSON world state explicitly after each operator via an update routine, enabling long-horizon reasoning, replanning, and faithful intermediate structure without depending on an external symbolic engine; the logic trace and the JSON state co-evolve during problem solving.\n\nTraining proceeds in alternating phases: (1) perceptual grounding and code learning (VQ + grounding + contrastive alignment) using paired vision–language data and question–segmentation supervision; (2) operator/SEM training from demonstrations or logged executions by minimizing state-delta and cost prediction losses on the discrete JSON graphs; and (3) joint fine-tuning where planner rollouts supply additional weak labels for rarely seen atoms/relations. Evaluation follows a systematic compositional protocol with Seen vs Unseen Compounds and Unseen Atoms splits to verify that performance stems from recombining learned atoms rather than memorizing compounds.",
+    "final_rationale": "Discrete, typed atom codebooks turn continuous, entangled features into a reusable vocabulary that can be bound, substituted, and recombined. Grounding these codes to concrete evidence (segments/tokens) and stabilizing them with medoid prototypes yields components that are interpretable, shareable across tasks, and resilient to drift. A small operator library with learned effect models gives the system the right granularity for reuse: operators are independent of specific compounds and act on typed codes, so planning over operators composes atoms systematically.\n\nA logic-guided controller that writes and executes Prolog-style traces over an explicit JSON world state enforces faithful, stepwise composition and affords backtracking when novel combinations require exploration. By searching in operator space with SEM costs, the system retains statistical robustness while preserving discrete structure. Systematic evaluation on splits that hold out compounds or atoms ensures the learned atoms and operators genuinely support compositional generalization rather than shortcutting via continuous entanglement.",
+    "final_inspired_by": [
+      {
+        "seed_id": "19282afa4ba0",
+        "domain": "SPEECH",
+        "borrowed_aspect": "vector-quantized tokenization to discretize continuous features"
+      },
+      {
+        "seed_id": "7f79d5d52bbc",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "supervised grounding of components via segmentation linked to QA"
+      },
+      {
+        "seed_id": "6acf3a6205f5",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "systematic compositional generalization splits for evaluation"
+      },
+      {
+        "seed_id": "b0f323c80ec7",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "parameterized skill effect models with search-based planning"
+      },
+      {
+        "seed_id": "3921bac123c3",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "Prolog-style program traces and backtracking without external solvers"
+      },
+      {
+        "seed_id": "01a93886164b",
+        "domain": "ROBOTICS",
+        "borrowed_aspect": "explicit external JSON world-state memory for stepwise updates"
+      },
+      {
+        "seed_id": "d50f31446970",
+        "domain": "IR_REC",
+        "borrowed_aspect": "medoid-based prototype clustering for a stable component library"
+      }
+    ],
+    "wall_clock_s": 165.16,
+    "cost": {
+      "gen_prompt_tokens": 6896,
+      "gen_completion_tokens": 7354,
+      "judge_prompt_tokens": 98671,
+      "judge_completion_tokens": 1171,
+      "gen_cost_usd": 0.0822,
+      "judge_cost_usd": 0.3136,
+      "total_cost_usd": 0.3957
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose learning a compact library of discrete, reusable \"atoms\" and a lightweight reasoning layer that composes them. Concretely, we insert a prototype layer over a backbone encoder that maps inputs to feature maps. The layer maintains K trainable prototypes and computes cosine similarities between features and prototypes with an exponential sharpening to produce peaky affinities. We open S slots and assign features to slots with attention; each slot then selects one prototype via a straight-through Gumbel-Softmax, yielding S discrete atom IDs plus slot-specific attributes (e.g., pooled features conditioned on the chosen prototype). The active atoms and their attributes are emitted as a small set of symbolic tokens. A typed, sparsely connected AtomGraph is formed on these tokens, and a small graph transformer performs the downstream reasoning.\n\nTo make atoms disentangled and reusable, training couples three signals. First, a distinction-maximization loss over the prototype layer pushes prototypes to be discriminative and confident, and a single-pass uncertainty head scores how well each slot is explained by its chosen prototype, with a dedicated \"unknown\" bucket. Second, a mix-and-separate augmentation enforces additivity and separability: we synthetically mix pairs of inputs (or factorized views) and require that the active atom set approximates the union of the two originals and that per-slot decoders can reconstruct masked targets for each component when given only its atoms, while discouraging cross-talk between slots. Third, hard-discreteness is promoted with entropy and exclusivity regularizers over slot assignments and a coverage term that rewards explaining most input evidence with few atoms.\n\nWe structure the atom library hierarchically and modularly. During training, a group-sparse regularizer ranks and prunes prototype-to-module connections, automatically deriving compact sub-libraries specialized for perceptual factors (objects, parts, attributes) and relational factors (spatial, causal). This hierarchical screening stabilizes selection and encourages reuse of a small, tailored set of atoms per subtask. To transfer across domains or tasks without re-entangling, we factor the atom prior into shared and domain-specific components: a shared prior encourages reuse of universal atoms, while lightweight domain-specific priors gate a subset of atoms when context indicates domain shifts, enabling adaptation without altering the shared library.\n\nFor reasoning over novel combinations, we operate only on the top-M confident atoms selected by a tiny selector (a shallow scorer over atom IDs and attributes), keeping compute low and reducing spurious interactions. The AtomGraph uses typed edges (e.g., object–attribute, object–object–relation) with a small number of learnable relation types and optional parent nodes that summarize coarse-grained atoms, letting the graph transformer aggregate evidence and apply reusable patterns over symbol IDs rather than raw features. Supervised objectives (task loss) backpropagate through the graph to the atoms; auxiliary consistency checks enforce that reordering or substituting atoms in held-out combinations yields predictable changes in outputs, directly training for compositional generalization.\n\nAt inference, the model emits a discrete set of atom IDs with attributes, an uncertainty score per slot, and a reasoning trace over the AtomGraph. High-uncertainty slots fall back to parent atoms or are masked, preserving robustness. Because the reasoning operates over a small, typed, reusable vocabulary, it generalizes to unseen combinations by recombining known atoms and relations rather than relearning entangled continuous codes.",
+        "rationale": "Discrete prototype selection ensures that the same few atoms are reused across many inputs, turning entangled features into a symbolic vocabulary. The distinction-maximization and entropy/exclusivity losses make these atoms sharp and non-overlapping, while the uncertainty head prevents forcing bad assignments. The mix-and-separate training pressure explicitly teaches the model that factors add and can be pulled apart, a key ingredient for making atoms independent and composable rather than fused.\n\nOrganizing the library with hierarchical, group-sparse screening yields small, specialized sub-libraries that are easier to reuse and compose. Shared vs domain-specific priors further protect reusability by separating what should transfer from what should adapt. Finally, casting reasoning as message passing over a typed graph of atom IDs converts continuous entanglement into discrete structure; the lightweight selector and parent nodes keep the graph compact and stable, letting the same relation types fire over novel atom combinations and thereby deliver compositional generalization.",
+        "inspired_by": [
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based distinction maximization and single-pass uncertainty head"
+          },
+          {
+            "seed_id": "f41ac7143cfe",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "mix-and-separate auxiliary training to enforce source disentanglement"
+          },
+          {
+            "seed_id": "f4c1229aa1a5",
+            "domain": "CV",
+            "borrowed_aspect": "hierarchical screening with group sparsity to derive compact, specialized subspaces"
+          },
+          {
+            "seed_id": "3e4700d9e4a8",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "typed graph structure with parent nodes to organize and compose components"
+          },
+          {
+            "seed_id": "d3526c0b7e81",
+            "domain": "CV",
+            "borrowed_aspect": "factorized priors for shared versus domain-specific latents"
+          },
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector preceding a heavier reasoning module"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines: (1) a distinction-maximization prototype layer with cosine similarity + exponential sharpening (directly from LDU/DDAR), (2) straight-through Gumbel-Softmax for discrete slot-to-prototype assignment (known mechanism), (3) slot attention (Slot Attention, 2020), (4) mix-and-separate augmentation for additivity/separability (no direct match found), (5) hierarchical group-sparse prototype pruning (inspired by Hit-Detector but not applied to this problem), (6) shared/domain-specific atom priors (similar to Learning Predictive Models From Observation and Interaction), and (7) a typed AtomGraph with graph transformer for compositional reasoning. No single paper combines all these mechanisms for the problem of inducing discrete reusable compositional atoms. The LDU paper covers the DM layer; slot attention covers the slot mechanism; object-centric + GNN papers cover parts of the reasoning layer. However, the full combination — DM prototype layer + Gumbel-Softmax discrete slot assignment + mix-and-separate augmentation + hierarchical group-sparse library + shared/domain priors + typed graph transformer reasoning — has no direct published match. The mix-and-separate training signal for enforcing atom additivity/separability is a named novel component not found in any search result. This matches the Score 4-5 range. Since the mix-and-separate component is a genuinely new training signal for this problem and the full combination is not surfaced, this leans toward 4-5. The individual mechanisms are all known, but their specific combination with the mix-and-separate additivity signal and the AtomGraph reasoning layer is not published. I'll score this a 4, as the individual mechanisms are well-known and the combination, while not directly published, draws heavily from existing components without introducing a fundamentally new mechanism class.\n\nPrior works:\n  - Latent Discriminant Deterministic Uncertainty / LDU (2022): Uses distinction maximization layer with cosine similarity + exponential sharpening + prototype-based uncertainty head — directly covers the prototype layer design.\n  - Object-Centric Learning with Slot Attention (2020): Slot attention mechanism for binding inputs to slots — directly covers the slot assignment component.\n  - OC-NMN: Object-centric Compositional Neural Module Network (2023): Object-centric decomposition + compositional data augmentation for visual reasoning generalization — overlaps with the compositional generalization goal and modular structure.\n  - Learning Predictive Models From Observation and Interaction (2019): Shared vs. domain-specific latent priors for transfer — directly covers the shared/domain-specific atom prior design.\n  - Hit-Detector: Hierarchical Trinity Architecture Search (2020): Group-sparse regularization for hierarchical screening of sub-libraries — covers the hierarchical group-sparse prototype pruning component.",
+        "prior_works": [
+          "Latent Discriminant Deterministic Uncertainty / LDU (2022): Uses distinction maximization layer with cosine similarity + exponential sharpening + prototype-based uncertainty head — directly covers the prototype layer design.",
+          "Object-Centric Learning with Slot Attention (2020): Slot attention mechanism for binding inputs to slots — directly covers the slot assignment component.",
+          "OC-NMN: Object-centric Compositional Neural Module Network (2023): Object-centric decomposition + compositional data augmentation for visual reasoning generalization — overlaps with the compositional generalization goal and modular structure.",
+          "Learning Predictive Models From Observation and Interaction (2019): Shared vs. domain-specific latent priors for transfer — directly covers the shared/domain-specific atom prior design.",
+          "Hit-Detector: Hierarchical Trinity Architecture Search (2020): Group-sparse regularization for hierarchical screening of sub-libraries — covers the hierarchical group-sparse prototype pruning component."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose learning a compact library of discrete, reusable \"atoms\" and a lightweight reasoning layer that composes them. Concretely, we insert a prototype layer over a backbone encoder that maps inputs to feature maps. The layer maintains K trainable prototypes and computes cosine similarities between features and prototypes with an exponential sharpening to produce peaky affinities. We open S slots and assign features to slots with attention; each slot then selects one prototype via a straight-through Gumbel-Softmax, yielding S discrete atom IDs plus slot-specific attributes (e.g., pooled features conditioned on the chosen prototype). The active atoms and their attributes are emitted as a small set of symbolic tokens. A typed, sparsely connected AtomGraph is formed on these tokens, and a small graph transformer performs the downstream reasoning.\n\nTo make atoms disentangled and reusable, training couples three signals. First, a distinction-maximization loss over the prototype layer pushes prototypes to be discriminative and confident, and a single-pass uncertainty head scores how well each slot is explained by its chosen prototype, with a dedicated \"unknown\" bucket. Second, a mix-and-separate augmentation enforces additivity and separability: we synthetically mix pairs of inputs (or factorized views) and require that the active atom set approximates the union of the two originals and that per-slot decoders can reconstruct masked targets for each component when given only its atoms, while discouraging cross-talk between slots. Third, hard-discreteness is promoted with entropy and exclusivity regularizers over slot assignments and a coverage term that rewards explaining most input evidence with few atoms.\n\nWe structure the atom library hierarchically and modularly. During training, a group-sparse regularizer ranks and prunes prototype-to-module connections, automatically deriving compact sub-libraries specialized for perceptual factors (objects, parts, attributes) and relational factors (spatial, causal). This hierarchical screening stabilizes selection and encourages reuse of a small, tailored set of atoms per subtask. To transfer across domains or tasks without re-entangling, we factor the atom prior into shared and domain-specific components: a shared prior encourages reuse of universal atoms, while lightweight domain-specific priors gate a subset of atoms when context indicates domain shifts, enabling adaptation without altering the shared library.\n\nFor reasoning over novel combinations, we operate only on the top-M confident atoms selected by a tiny selector (a shallow scorer over atom IDs and attributes), keeping compute low and reducing spurious interactions. The AtomGraph uses typed edges (e.g., object–attribute, object–object–relation) with a small number of learnable relation types and optional parent nodes that summarize coarse-grained atoms, letting the graph transformer aggregate evidence and apply reusable patterns over symbol IDs rather than raw features. Supervised objectives (task loss) backpropagate through the graph to the atoms; auxiliary consistency checks enforce that reordering or substituting atoms in held-out combinations yields predictable changes in outputs, directly training for compositional generalization.\n\nAt inference, the model emits a discrete set of atom IDs with attributes, an uncertainty score per slot, and a reasoning trace over the AtomGraph. High-uncertainty slots fall back to parent atoms or are masked, preserving robustness. Because the reasoning operates over a small, typed, reusable vocabulary, it generalizes to unseen combinations by recombining known atoms and relations rather than relearning entangled continuous codes.",
+    "final_rationale": "Discrete prototype selection ensures that the same few atoms are reused across many inputs, turning entangled features into a symbolic vocabulary. The distinction-maximization and entropy/exclusivity losses make these atoms sharp and non-overlapping, while the uncertainty head prevents forcing bad assignments. The mix-and-separate training pressure explicitly teaches the model that factors add and can be pulled apart, a key ingredient for making atoms independent and composable rather than fused.\n\nOrganizing the library with hierarchical, group-sparse screening yields small, specialized sub-libraries that are easier to reuse and compose. Shared vs domain-specific priors further protect reusability by separating what should transfer from what should adapt. Finally, casting reasoning as message passing over a typed graph of atom IDs converts continuous entanglement into discrete structure; the lightweight selector and parent nodes keep the graph compact and stable, letting the same relation types fire over novel atom combinations and thereby deliver compositional generalization.",
+    "final_inspired_by": [
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based distinction maximization and single-pass uncertainty head"
+      },
+      {
+        "seed_id": "f41ac7143cfe",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "mix-and-separate auxiliary training to enforce source disentanglement"
+      },
+      {
+        "seed_id": "f4c1229aa1a5",
+        "domain": "CV",
+        "borrowed_aspect": "hierarchical screening with group sparsity to derive compact, specialized subspaces"
+      },
+      {
+        "seed_id": "3e4700d9e4a8",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "typed graph structure with parent nodes to organize and compose components"
+      },
+      {
+        "seed_id": "d3526c0b7e81",
+        "domain": "CV",
+        "borrowed_aspect": "factorized priors for shared versus domain-specific latents"
+      },
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector preceding a heavier reasoning module"
+      }
+    ],
+    "wall_clock_s": 131.68,
+    "cost": {
+      "gen_prompt_tokens": 4804,
+      "gen_completion_tokens": 4019,
+      "judge_prompt_tokens": 87773,
+      "judge_completion_tokens": 1190,
+      "gen_cost_usd": 0.0462,
+      "judge_cost_usd": 0.2812,
+      "total_cost_usd": 0.3274
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A's strongest novel element is the combination of a typed JSON scene graph with a Prolog-style logic-guided controller that co-evolves with a Weighted A* planner over discrete VQ atom codes, plus the medoid-exemplar prototype library with lexical aliases — this neuro-symbolic planning loop with co-evolving logical and structural state is a distinctive architectural contribution. Method B's strongest novel element is the mix-and-separate augmentation enforcing additivity/separability of discrete atoms, combined with a hierarchical group-sparse pruning of prototype-to-module connections and shared/domain-specific atom priors. Both methods combine several known components (VQ/codebooks, slot attention, Gumbel-Softmax, graph transformers), but Method A introduces a more architecturally distinctive combination: the co-evolving JSON world state + Prolog-style backtracking controller + A* planning over discrete codes is a less precedented integration than Method B's prototype layer with mix-and-separate augmentation, which draws more directly from existing disentanglement and prototype network literature."
+    },
+    "validity": {
+      "verdict": "C",
+      "winner": "A",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "The failure mode is that learned representations are continuous and entangled, preventing discrete, reusable components that support compositional reasoning over novel combinations. Method A addresses this through a vector-quantized bottleneck with typed atom codebooks, grounding supervision, and a planner that operates over discrete scene graphs—each step has a traceable causal pathway from the entanglement problem to the VQ discretization mechanism to the compositional reasoning layer. Method B also addresses the failure mode through prototype layers with Gumbel-Softmax discretization, mix-and-separate augmentation for disentanglement, and an AtomGraph for compositional reasoning, with auxiliary consistency checks explicitly targeting novel combinations. Both methods directly engage the failure mode, but Method A's causal pathway is more tightly specified: the VQ bottleneck induces discrete atoms, grounding supervision ensures semantic consistency, and the typed operator/planner system directly leverages those discrete codes for compositional reasoning—each component mechanistically resolves a specific aspect of the entanglement/compositionality problem. Method B's mechanisms are comparably direct but somewhat more loosely connected, with the mix-and-separate augmentation and hierarchical pruning adding indirection before reaching the compositional reasoning step."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A has a notable coherence tension in its reasoning pipeline: it proposes using a language model to translate queries into Prolog-style goals and simulate backtracking traces, while simultaneously claiming the system operates \"without depending on an external symbolic engine\" and that \"the logic trace and the JSON world state co-evolve.\" This is internally contradictory — Prolog-style backtracking is a symbolic execution paradigm that either requires an actual Prolog engine or a reimplemented equivalent, and claiming to avoid external symbolic engines while simulating backtracking traces is not resolved by the description. Additionally, the alternating three-phase training with planner rollouts supplying weak labels for atoms creates a circular dependency that is underspecified. Method B is largely self-consistent: the prototype layer, Gumbel-Softmax discretization, slot attention, AtomGraph, and graph transformer form a coherent differentiable pipeline with well-defined training signals. The mix-and-separate augmentation, hierarchical pruning, and domain-specific priors are all standard or straightforward extensions. The main weakness is that the \"mix-and-separate\" augmentation for arbitrary inputs is somewhat underspecified in how synthetic mixing is performed, but this is a minor implementation detail rather than a structural contradiction. Overall, Method B holds together more cleanly as an implementable system."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 5976,
+    "judge_completion_tokens": 822,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0303,
+    "total_cost_usd": 0.0303
+  }
+}

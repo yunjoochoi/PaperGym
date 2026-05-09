@@ -1,0 +1,252 @@
+{
+  "query_id": "Q04",
+  "natural_domain": "LLM_NLP",
+  "query_text": "Long-context LLMs accumulate large KV caches that dominate\nmemory bandwidth; how can we compress or selectively evict\ncache entries while preserving the model's ability to attend\nto distant relevant tokens?\n",
+  "c_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "We propose Predictive Hierarchical KV (PHKV), a three-part caching system that keeps exact recent context, compresses the distant past into a small set of multi-aspect summary slots per chunk, and recalls exact keys/values on demand via a lightweight predictor and an ANN index. At runtime, the model holds a full-fidelity sliding window (e.g., last W tokens) in DRAM. Older tokens are grouped into fixed-size chunks; each chunk is replaced by k summary KV slots that approximate the chunk’s attention behavior. A tiny predictor, queried with the current query vector Q_t and cheap metadata, decides which summaries (and, when needed, which exact evicted tokens) to materialize for attention at this step. Evicted exact KV entries are quantized and parked off-DRAM together with an ANN index over their keys to enable fast recall when Q_t demands it.\n\nChunk compression is multi-view and hierarchical. For each aging chunk, we cluster or low-rank factorize its key matrix to produce k centroids that act like viewer tokens capturing different semantic aspects of the chunk; corresponding summary values are fitted (e.g., via attention-weighted regression) so that attending to these k slots approximates attending to the full chunk. As chunks age further, we pyramid-merge summaries across adjacent chunks (k -> k/2) to cap memory growth while preserving a coarse global signal. Summaries retain position encodings (e.g., via centroided rotary phases) so relative alignment is not lost, and all summaries and their small per-slot stats (token counts, last-hit time) remain resident; full KVs are evicted.\n\nEviction and recall are predictor-guided to save bandwidth. A small MLP or logistic head takes features such as dot-products between Q_t and each summary key, recency, usage, and entropy of past attentions to predict which summaries will receive nontrivial attention mass. Only predicted-relevant summaries are exposed to the attention kernel. If a chosen summary’s pre-softmax score crosses a threshold, we probe the off-DRAM ANN index with Q_t (or the summary key) to fetch the top-r exact KVs from the corresponding chunk and transiently splice them into the attention computation, replacing or augmenting the coarse slot. This prefetch is quantized and batched across layers to amortize I/O. A strict bandwidth budget governs how many exact KVs can be pulled per step; when exceeded, we fall back to the summaries (graceful degradation).\n\nTraining makes the model robust to partial and summarized caches and teaches the predictor what to keep. We fine-tune with KV-dropout that randomly replaces old chunks by their k-slot summaries (and zero-pads missing entries) to match target retention rates, so the decoder learns to operate when only summaries are present. In parallel, we generate pseudo-relevance labels for chunks: for a small subset of steps during fine-tuning, we measure the change in next-token loss when including vs excluding a chunk (or its exact top-r tokens) and train the predictor to classify chunks as helpful or not; simple cosine-similarity gates with Q_t serve as a cheap proxy feature during inference. Distillation from full-cache teacher runs can further shape the summary fitting and predictor thresholds. At deployment, PHKV delivers: exact KVs for the recent window; k-per-chunk summaries for the distant past; a predictor that minimizes unnecessary memory traffic; and an ANN-backed, on-the-fly recall path that restores fidelity only where the model would otherwise under-attend to distant but relevant tokens.",
+        "rationale": "Long contexts overload DRAM with large KV caches and saturate bandwidth, yet uniformly truncating or naively compressing distant tokens harms the ability to retrieve far-away facts. PHKV cuts bandwidth by (a) pyramiding older tokens into a tiny number of multi-aspect summaries, so the attention kernel rarely touches large blocks of KVs, and (b) using a learned predictor to avoid moving data that will not affect the softmax—only when the model is likely to need specificity do we fetch a small set of exact KVs. This preserves recall for distant evidence because every chunk remains represented by semantically diverse keys, and exact tokens can be reinstated on demand within a strict bandwidth budget.\n\nRobustness comes from aligning training and inference: the model is explicitly exposed to partial/summarized caches and learns to treat missing tokens as zero-padded while relying on summaries, eliminating the distribution shift that typically degrades performance under cache thinning. Pseudo-relevance supervision and similarity-based gating provide a practical signal for what to keep, while the ANN index ensures that even if a useful token was evicted, it remains recoverable with low overhead. Together, these mechanisms maintain long-range attention quality while substantially reducing memory movement.",
+        "inspired_by": [
+          {
+            "seed_id": "cc388ce5379c",
+            "domain": "LLM_NLP",
+            "borrowed_aspect": "predictor-guided selective loading under bandwidth constraints"
+          },
+          {
+            "seed_id": "41cc91036661",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "robustness to partial inputs via zero-padding and token-drop alignment"
+          },
+          {
+            "seed_id": "80c6fcc2f5d6",
+            "domain": "IR_REC",
+            "borrowed_aspect": "multi-aspect summary embeddings for a sequence via multiple viewer tokens"
+          },
+          {
+            "seed_id": "bd5faa58d569",
+            "domain": "CV",
+            "borrowed_aspect": "pyramid downsampling to progressively reduce resolution with age"
+          },
+          {
+            "seed_id": "bdc0d967f340",
+            "domain": "IR_REC",
+            "borrowed_aspect": "pseudo-relevance labeling of historical context to guide selection"
+          },
+          {
+            "seed_id": "c434a41590b3",
+            "domain": "SPEECH",
+            "borrowed_aspect": "ANN index for on-the-fly retrieval of evicted context"
+          },
+          {
+            "seed_id": "3d9c168d7045",
+            "domain": "IR_REC",
+            "borrowed_aspect": "cosine-similarity gated filtering of irrelevant history items"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed PHKV method combines: (1) a sliding window of exact recent KVs, (2) multi-aspect summary slots per chunk via clustering/low-rank factorization with hierarchical pyramid-merging, (3) a learned MLP predictor for eviction/recall decisions, (4) ANN-indexed off-DRAM exact KV retrieval on demand, and (5) KV-dropout fine-tuning with pseudo-relevance supervision. \n\nRetrievalAttention (2024) covers ANN-based KV retrieval from CPU memory. InfLLM (2024) covers sliding window + memory units for distant context with lookup. TRIM-KV covers learned retention gates. HeteroCache covers hierarchical storage with on-demand retrieval. However, no single paper combines all five components: the multi-aspect centroid summary slots with pyramid-merging, the learned predictor using Q_t dot-products with summary keys plus recency/entropy features, the ANN-backed on-demand exact recall as a fallback from summaries, AND the KV-dropout + pseudo-relevance training regime. The combination of hierarchical multi-view chunk summaries (with centroided rotary phases) + predictor-gated recall + ANN exact-KV fallback + training robustness via KV-dropout is not matched end-to-end by any surfaced paper. The closest overlap is InfLLM (memory units + lookup) and RetrievalAttention (ANN retrieval), but neither combines the multi-aspect summary compression with pyramid merging, the learned predictor, and the training regime. This matches the Score 4 anchor: combines mechanism families with no surfaced published joint application for this exact problem, introducing named design choices (pyramid-merge summaries, predictor-gated recall with ANN fallback, KV-dropout training) not present as a combination in the literature.\n\nPrior works:\n  - RetrievalAttention (2024): ANN index over KV vectors in CPU memory for on-demand retrieval during LLM inference — covers the ANN-based exact KV recall component\n  - InfLLM (2024): sliding window + distant context memory units with efficient lookup for long-context LLM inference — covers sliding window + memory unit retrieval structure\n  - TRIM-KV / Cache What Lasts (2025): learned retention gate predicting token importance for KV eviction — covers the learned predictor for eviction decisions\n  - HeteroCache (2026): hierarchical storage with on-demand context retrieval for KV cache — covers hierarchical storage with retrieval\n  - ChunkKV (2025): chunk-based semantic KV cache compression — covers chunk-level compression\n  - Multi-View Document Representation Learning (2022): multiple viewer tokens producing k embeddings capturing different semantic aspects — covers the multi-aspect summary slot concept",
+        "prior_works": [
+          "RetrievalAttention (2024): ANN index over KV vectors in CPU memory for on-demand retrieval during LLM inference — covers the ANN-based exact KV recall component",
+          "InfLLM (2024): sliding window + distant context memory units with efficient lookup for long-context LLM inference — covers sliding window + memory unit retrieval structure",
+          "TRIM-KV / Cache What Lasts (2025): learned retention gate predicting token importance for KV eviction — covers the learned predictor for eviction decisions",
+          "HeteroCache (2026): hierarchical storage with on-demand context retrieval for KV cache — covers hierarchical storage with retrieval",
+          "ChunkKV (2025): chunk-based semantic KV cache compression — covers chunk-level compression",
+          "Multi-View Document Representation Learning (2022): multiple viewer tokens producing k embeddings capturing different semantic aspects — covers the multi-aspect summary slot concept"
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "We propose Predictive Hierarchical KV (PHKV), a three-part caching system that keeps exact recent context, compresses the distant past into a small set of multi-aspect summary slots per chunk, and recalls exact keys/values on demand via a lightweight predictor and an ANN index. At runtime, the model holds a full-fidelity sliding window (e.g., last W tokens) in DRAM. Older tokens are grouped into fixed-size chunks; each chunk is replaced by k summary KV slots that approximate the chunk’s attention behavior. A tiny predictor, queried with the current query vector Q_t and cheap metadata, decides which summaries (and, when needed, which exact evicted tokens) to materialize for attention at this step. Evicted exact KV entries are quantized and parked off-DRAM together with an ANN index over their keys to enable fast recall when Q_t demands it.\n\nChunk compression is multi-view and hierarchical. For each aging chunk, we cluster or low-rank factorize its key matrix to produce k centroids that act like viewer tokens capturing different semantic aspects of the chunk; corresponding summary values are fitted (e.g., via attention-weighted regression) so that attending to these k slots approximates attending to the full chunk. As chunks age further, we pyramid-merge summaries across adjacent chunks (k -> k/2) to cap memory growth while preserving a coarse global signal. Summaries retain position encodings (e.g., via centroided rotary phases) so relative alignment is not lost, and all summaries and their small per-slot stats (token counts, last-hit time) remain resident; full KVs are evicted.\n\nEviction and recall are predictor-guided to save bandwidth. A small MLP or logistic head takes features such as dot-products between Q_t and each summary key, recency, usage, and entropy of past attentions to predict which summaries will receive nontrivial attention mass. Only predicted-relevant summaries are exposed to the attention kernel. If a chosen summary’s pre-softmax score crosses a threshold, we probe the off-DRAM ANN index with Q_t (or the summary key) to fetch the top-r exact KVs from the corresponding chunk and transiently splice them into the attention computation, replacing or augmenting the coarse slot. This prefetch is quantized and batched across layers to amortize I/O. A strict bandwidth budget governs how many exact KVs can be pulled per step; when exceeded, we fall back to the summaries (graceful degradation).\n\nTraining makes the model robust to partial and summarized caches and teaches the predictor what to keep. We fine-tune with KV-dropout that randomly replaces old chunks by their k-slot summaries (and zero-pads missing entries) to match target retention rates, so the decoder learns to operate when only summaries are present. In parallel, we generate pseudo-relevance labels for chunks: for a small subset of steps during fine-tuning, we measure the change in next-token loss when including vs excluding a chunk (or its exact top-r tokens) and train the predictor to classify chunks as helpful or not; simple cosine-similarity gates with Q_t serve as a cheap proxy feature during inference. Distillation from full-cache teacher runs can further shape the summary fitting and predictor thresholds. At deployment, PHKV delivers: exact KVs for the recent window; k-per-chunk summaries for the distant past; a predictor that minimizes unnecessary memory traffic; and an ANN-backed, on-the-fly recall path that restores fidelity only where the model would otherwise under-attend to distant but relevant tokens.",
+    "final_rationale": "Long contexts overload DRAM with large KV caches and saturate bandwidth, yet uniformly truncating or naively compressing distant tokens harms the ability to retrieve far-away facts. PHKV cuts bandwidth by (a) pyramiding older tokens into a tiny number of multi-aspect summaries, so the attention kernel rarely touches large blocks of KVs, and (b) using a learned predictor to avoid moving data that will not affect the softmax—only when the model is likely to need specificity do we fetch a small set of exact KVs. This preserves recall for distant evidence because every chunk remains represented by semantically diverse keys, and exact tokens can be reinstated on demand within a strict bandwidth budget.\n\nRobustness comes from aligning training and inference: the model is explicitly exposed to partial/summarized caches and learns to treat missing tokens as zero-padded while relying on summaries, eliminating the distribution shift that typically degrades performance under cache thinning. Pseudo-relevance supervision and similarity-based gating provide a practical signal for what to keep, while the ANN index ensures that even if a useful token was evicted, it remains recoverable with low overhead. Together, these mechanisms maintain long-range attention quality while substantially reducing memory movement.",
+    "final_inspired_by": [
+      {
+        "seed_id": "cc388ce5379c",
+        "domain": "LLM_NLP",
+        "borrowed_aspect": "predictor-guided selective loading under bandwidth constraints"
+      },
+      {
+        "seed_id": "41cc91036661",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "robustness to partial inputs via zero-padding and token-drop alignment"
+      },
+      {
+        "seed_id": "80c6fcc2f5d6",
+        "domain": "IR_REC",
+        "borrowed_aspect": "multi-aspect summary embeddings for a sequence via multiple viewer tokens"
+      },
+      {
+        "seed_id": "bd5faa58d569",
+        "domain": "CV",
+        "borrowed_aspect": "pyramid downsampling to progressively reduce resolution with age"
+      },
+      {
+        "seed_id": "bdc0d967f340",
+        "domain": "IR_REC",
+        "borrowed_aspect": "pseudo-relevance labeling of historical context to guide selection"
+      },
+      {
+        "seed_id": "c434a41590b3",
+        "domain": "SPEECH",
+        "borrowed_aspect": "ANN index for on-the-fly retrieval of evicted context"
+      },
+      {
+        "seed_id": "3d9c168d7045",
+        "domain": "IR_REC",
+        "borrowed_aspect": "cosine-similarity gated filtering of irrelevant history items"
+      }
+    ],
+    "wall_clock_s": 186.46,
+    "cost": {
+      "gen_prompt_tokens": 7017,
+      "gen_completion_tokens": 8032,
+      "judge_prompt_tokens": 128766,
+      "judge_completion_tokens": 1239,
+      "gen_cost_usd": 0.0891,
+      "judge_cost_usd": 0.4049,
+      "total_cost_usd": 0.494
+    }
+  },
+  "d_loop": {
+    "rounds": 1,
+    "converged": true,
+    "final_score": 4,
+    "round_scores": [
+      4
+    ],
+    "round_records": [
+      {
+        "round_num": 1,
+        "method": "Build a dual-scale memory for long-context decoding: (1) a recent-window cache that stores full-precision keys/values (K,V) for the last W tokens per head, and (2) a long-range bank organized into fixed-length segments (e.g., 512–2k tokens) where each segment holds a compact summary per head plus a small set of high-importance \"support\" tokens. At inference, attention over distant context first consults each segment’s summary prototypes; only if a prototype scores highly does the model optionally touch its associated support tokens. This keeps most memory bandwidth on the recent window and a tiny set of routed long-range entries.\n\nAttach a lightweight relevance selector that runs alongside decoding to assign keep scores to tokens and segments. The selector uses cheap features available at decode time (position, per-head key norms, a down-projected query·key score, cumulative attention so far, and topic/entity cues) to predict each token’s future utility. Periodically (e.g., at segment boundaries or every M tokens), perform an O(K) refinement pass over the candidate set to retain—using adjacent local swaps to bubble up the top-K tokens/segments—and evict the rest. Before eviction, roll evicted tokens into the segment summary using an uncertainty-gated exponential moving average: if the selector (or an auxiliary uncertainty head) is unsure the summary already captures a token, its contribution is up-weighted or the token is temporarily kept as a support exemplar.\n\nCompress long-range memory per head with a prototype low-rank representation. For keys, maintain a small dictionary of head-specific prototype directions (e.g., 16–64 per segment) and store each rolled-up token as a soft assignment to prototypes (or a quantized residual). For values, learn a head-specific projection to a low-dimensional subspace and accumulate summary coefficients there. Each segment thus provides: prototype keys, low-rank value coefficients, and a handful of support tokens (original K,V) for hard cases. At query time, attention first scores prototype keys; their weights linearly combine low-rank values to yield an approximate context vector. If the max prototype score or a confidence metric exceeds a threshold, the model optionally re-attends to the few linked support tokens to refine the result, amortizing bandwidth to rare, high-gain lookups.\n\nAllocate memory budgets and compression granularities per head, since some heads are dominantly local while others carry global signals. Learn these budgets with a sparsity-regularized allocation during distillation: train a student that uses the compressed/evicted memory against a teacher with a full cache, minimizing next-token loss and matching teacher attentions on sampled heads/layers, plus a reconstruction loss for prototype attention vs true attention over distant tokens. A mild group-sparsity penalty on per-head long-range usage encourages specialization and yields stable head-wise budgets. Deploy with infrequent maintenance steps (at segment boundaries) to bound CPU/GPU cache traffic; most tokens are written once then either summarized or dropped, and most long-range attention touches only prototypes, cutting both storage and memory bandwidth while preserving access to genuinely relevant distant content.",
+        "rationale": "The approach reduces bandwidth by (a) sharply limiting how many distant tokens remain in full precision, (b) routing most long-range attention through tiny per-segment prototype summaries, and (c) performing eviction and summary updates only at coarse intervals. At the same time, it preserves the ability to use faraway context by keeping a small, relevance-scored set of support tokens and enabling a two-step retrieval: cheap prototype attention followed by selective refinement when the summary indicates a strong match.\n\nKey design choices make this practical: a learned lightweight selector avoids scanning all distant tokens at full cost; an O(K) adjacent-swap refinement pass maintains a high-quality top-K keep set without quadratic work; prototype-based, low-rank K/V summaries retain the principal long-range signals per head; uncertainty-gated EMA roll-ups prevent premature overcompression; and per-head budget specialization focuses capacity on the heads that actually exploit long-range cues. Distillation from a full-cache teacher aligns the compressed memory’s attentions and token predictions with the original model, yielding strong fidelity under tight memory budgets.",
+        "inspired_by": [
+          {
+            "seed_id": "6d9839993b4e",
+            "domain": "MULTIMODAL",
+            "borrowed_aspect": "lightweight selector for core evidence selection"
+          },
+          {
+            "seed_id": "57b1e475a15e",
+            "domain": "IR_REC",
+            "borrowed_aspect": "adjacent-swap top-k refinement"
+          },
+          {
+            "seed_id": "0b8e0ee039a0",
+            "domain": "CV",
+            "borrowed_aspect": "prototype-based latent summarization with confidence"
+          },
+          {
+            "seed_id": "2112b9511767",
+            "domain": "IR_REC",
+            "borrowed_aspect": "global attribute style summary via self-attention"
+          },
+          {
+            "seed_id": "4a9de5f8c7ec",
+            "domain": "CV",
+            "borrowed_aspect": "group-sparsity-driven specialization"
+          },
+          {
+            "seed_id": "ed8619fe7688",
+            "domain": "CV",
+            "borrowed_aspect": "uncertainty-guided EMA updating"
+          }
+        ],
+        "novelty_score": 4,
+        "novelty_reasoning": "The proposed method combines: (1) a dual-scale memory with recent window + segmented long-range bank, (2) prototype/low-rank K/V summaries per segment with support tokens, (3) a two-step coarse-to-fine retrieval (prototype scoring then optional support token refinement), (4) a learned lightweight relevance selector with O(K) adjacent-swap refinement, (5) uncertainty-gated EMA roll-ups for evicted tokens, and (6) per-head budget allocation via distillation. InfLLM (2024) uses memory units for distant context with lookup, but without prototype/low-rank compression or uncertainty-gated EMA. \"Forget, Then Recall\" (GSA, 2026) introduces gist tokens as coarse summaries with selective unfolding to raw chunks — this is the closest match to the two-step prototype→support-token retrieval. KVSculpt uses distillation for KV compression. KV-Compress and BaKlaVa address per-head budget allocation. TRIM-KV uses learned retention gates with distillation. However, no single paper combines all these mechanisms: the uncertainty-gated EMA roll-up, the O(K) adjacent-swap refinement, the prototype low-rank representation per segment with support tokens, and per-head budget specialization via distillation together. The GSA paper is the closest to the two-step retrieval idea, but lacks the prototype low-rank compression, uncertainty-gated EMA, and per-head budget aspects. This combination is non-trivial and not surfaced as a joint application, matching the Score 4 anchor — combining mechanism families with no surfaced published joint application for this exact problem configuration, though individual components appear in separate papers.\n\nPrior works:\n  - InfLLM (2024): Memory units for distant context with efficient lookup mechanism for long-context LLM inference — overlaps with segmented long-range memory bank concept.\n  - Forget Then Recall / GSA (2026): Gist tokens as coarse summaries with selective unfolding to raw chunks — overlaps with two-step prototype→support-token retrieval.\n  - TRIM-KV (2025): Learned retention gate predicting token importance at creation time with distillation — overlaps with learned relevance selector and distillation training.\n  - KVSculpt (2026): KV cache compression via distillation with adaptive per-head budget allocation — overlaps with distillation and per-head budget aspects.\n  - KV-Compress (2024): Variable compression rates per attention head in KV cache — overlaps with per-head budget allocation.\n  - BaKlaVa (2025): Per-KV-cache budget allocation based on head importance profiling — overlaps with per-head budget specialization.\n  - SCOUT (2025): Segment compression with checkpoint tokens summarizing history plus local mixer — overlaps with segmented long-range memory with summaries.",
+        "prior_works": [
+          "InfLLM (2024): Memory units for distant context with efficient lookup mechanism for long-context LLM inference — overlaps with segmented long-range memory bank concept.",
+          "Forget Then Recall / GSA (2026): Gist tokens as coarse summaries with selective unfolding to raw chunks — overlaps with two-step prototype→support-token retrieval.",
+          "TRIM-KV (2025): Learned retention gate predicting token importance at creation time with distillation — overlaps with learned relevance selector and distillation training.",
+          "KVSculpt (2026): KV cache compression via distillation with adaptive per-head budget allocation — overlaps with distillation and per-head budget aspects.",
+          "KV-Compress (2024): Variable compression rates per attention head in KV cache — overlaps with per-head budget allocation.",
+          "BaKlaVa (2025): Per-KV-cache budget allocation based on head importance profiling — overlaps with per-head budget specialization.",
+          "SCOUT (2025): Segment compression with checkpoint tokens summarizing history plus local mixer — overlaps with segmented long-range memory with summaries."
+        ],
+        "feedback_used": null
+      }
+    ],
+    "final_method": "Build a dual-scale memory for long-context decoding: (1) a recent-window cache that stores full-precision keys/values (K,V) for the last W tokens per head, and (2) a long-range bank organized into fixed-length segments (e.g., 512–2k tokens) where each segment holds a compact summary per head plus a small set of high-importance \"support\" tokens. At inference, attention over distant context first consults each segment’s summary prototypes; only if a prototype scores highly does the model optionally touch its associated support tokens. This keeps most memory bandwidth on the recent window and a tiny set of routed long-range entries.\n\nAttach a lightweight relevance selector that runs alongside decoding to assign keep scores to tokens and segments. The selector uses cheap features available at decode time (position, per-head key norms, a down-projected query·key score, cumulative attention so far, and topic/entity cues) to predict each token’s future utility. Periodically (e.g., at segment boundaries or every M tokens), perform an O(K) refinement pass over the candidate set to retain—using adjacent local swaps to bubble up the top-K tokens/segments—and evict the rest. Before eviction, roll evicted tokens into the segment summary using an uncertainty-gated exponential moving average: if the selector (or an auxiliary uncertainty head) is unsure the summary already captures a token, its contribution is up-weighted or the token is temporarily kept as a support exemplar.\n\nCompress long-range memory per head with a prototype low-rank representation. For keys, maintain a small dictionary of head-specific prototype directions (e.g., 16–64 per segment) and store each rolled-up token as a soft assignment to prototypes (or a quantized residual). For values, learn a head-specific projection to a low-dimensional subspace and accumulate summary coefficients there. Each segment thus provides: prototype keys, low-rank value coefficients, and a handful of support tokens (original K,V) for hard cases. At query time, attention first scores prototype keys; their weights linearly combine low-rank values to yield an approximate context vector. If the max prototype score or a confidence metric exceeds a threshold, the model optionally re-attends to the few linked support tokens to refine the result, amortizing bandwidth to rare, high-gain lookups.\n\nAllocate memory budgets and compression granularities per head, since some heads are dominantly local while others carry global signals. Learn these budgets with a sparsity-regularized allocation during distillation: train a student that uses the compressed/evicted memory against a teacher with a full cache, minimizing next-token loss and matching teacher attentions on sampled heads/layers, plus a reconstruction loss for prototype attention vs true attention over distant tokens. A mild group-sparsity penalty on per-head long-range usage encourages specialization and yields stable head-wise budgets. Deploy with infrequent maintenance steps (at segment boundaries) to bound CPU/GPU cache traffic; most tokens are written once then either summarized or dropped, and most long-range attention touches only prototypes, cutting both storage and memory bandwidth while preserving access to genuinely relevant distant content.",
+    "final_rationale": "The approach reduces bandwidth by (a) sharply limiting how many distant tokens remain in full precision, (b) routing most long-range attention through tiny per-segment prototype summaries, and (c) performing eviction and summary updates only at coarse intervals. At the same time, it preserves the ability to use faraway context by keeping a small, relevance-scored set of support tokens and enabling a two-step retrieval: cheap prototype attention followed by selective refinement when the summary indicates a strong match.\n\nKey design choices make this practical: a learned lightweight selector avoids scanning all distant tokens at full cost; an O(K) adjacent-swap refinement pass maintains a high-quality top-K keep set without quadratic work; prototype-based, low-rank K/V summaries retain the principal long-range signals per head; uncertainty-gated EMA roll-ups prevent premature overcompression; and per-head budget specialization focuses capacity on the heads that actually exploit long-range cues. Distillation from a full-cache teacher aligns the compressed memory’s attentions and token predictions with the original model, yielding strong fidelity under tight memory budgets.",
+    "final_inspired_by": [
+      {
+        "seed_id": "6d9839993b4e",
+        "domain": "MULTIMODAL",
+        "borrowed_aspect": "lightweight selector for core evidence selection"
+      },
+      {
+        "seed_id": "57b1e475a15e",
+        "domain": "IR_REC",
+        "borrowed_aspect": "adjacent-swap top-k refinement"
+      },
+      {
+        "seed_id": "0b8e0ee039a0",
+        "domain": "CV",
+        "borrowed_aspect": "prototype-based latent summarization with confidence"
+      },
+      {
+        "seed_id": "2112b9511767",
+        "domain": "IR_REC",
+        "borrowed_aspect": "global attribute style summary via self-attention"
+      },
+      {
+        "seed_id": "4a9de5f8c7ec",
+        "domain": "CV",
+        "borrowed_aspect": "group-sparsity-driven specialization"
+      },
+      {
+        "seed_id": "ed8619fe7688",
+        "domain": "CV",
+        "borrowed_aspect": "uncertainty-guided EMA updating"
+      }
+    ],
+    "wall_clock_s": 114.61,
+    "cost": {
+      "gen_prompt_tokens": 4805,
+      "gen_completion_tokens": 3319,
+      "judge_prompt_tokens": 150585,
+      "judge_completion_tokens": 1432,
+      "gen_cost_usd": 0.0392,
+      "judge_cost_usd": 0.4732,
+      "total_cost_usd": 0.5124
+    }
+  },
+  "pairwise": {
+    "novelty": {
+      "verdict": "C",
+      "winner": "B",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "Method A's strongest novel element is the uncertainty-gated exponential moving average for rolling evicted tokens into segment summaries, combined with per-head budget allocation learned via sparsity-regularized distillation. These are interesting but individually recognizable components (EMA summarization, head-wise specialization, distillation). Method B's strongest novel element is the ANN-backed on-demand exact KV recall path: evicted tokens are quantized and stored off-DRAM with an ANN index, and a lightweight predictor decides at each decoding step whether to fetch exact KVs back transiently and splice them into the attention computation. This \"evict-but-recall-on-demand via ANN\" mechanism—where the cache is not truly discarded but becomes a queryable external store with bandwidth-budgeted retrieval—is a more distinctive and harder-to-find combination than Method A's prototype/EMA approach, which more closely resembles existing streaming attention and token merging literature. The pyramid-merging of summaries across aging chunks also adds a hierarchical compression angle not present in Method A."
+    },
+    "validity": {
+      "verdict": "tie",
+      "winner": "tie",
+      "condition_for_a": "D",
+      "condition_for_b": "C",
+      "reasoning": "The failure mode is that large KV caches dominate memory bandwidth, causing models to lose access to distant relevant tokens when entries are evicted. Both methods address this directly: Method A uses dual-scale memory with prototype-based compression, selective eviction with uncertainty-gated summarization, and per-head budget allocation, with a traceable pathway from bandwidth reduction (prototypes instead of full KVs) to preserving distant relevant tokens (support tokens + prototype scoring). Method B uses chunk-based summarization, a predictor-guided recall system, and an ANN index for on-demand exact KV retrieval, with a traceable pathway from eviction (chunks replaced by summary slots) to preserving distant relevant tokens (predictor + ANN recall of exact KVs when needed). Both methods engage the failure mode head-on. However, Method B's ANN-backed exact recall path more directly addresses the specific concern of \"preserving the model's ability to attend to distant relevant tokens\" — it can restore full-fidelity KVs on demand rather than relying solely on approximate summaries. Method A's support tokens serve a similar role but are more constrained (fixed small set per segment). The two methods are comparably direct in their engagement with the failure mode overall."
+    },
+    "coherence": {
+      "verdict": "D",
+      "winner": "B",
+      "condition_for_a": "C",
+      "condition_for_b": "D",
+      "reasoning": "Method A has a coherence tension in its recall mechanism: it proposes fetching exact evicted KVs from off-DRAM via an ANN index and \"splicing\" them transiently into the attention computation mid-decoding. This requires a well-defined mechanism for dynamically inserting tokens into the attention kernel at inference time, which is non-trivial and not fully specified. Additionally, the \"centroided rotary phases\" for position encodings of summary slots is hand-waved — RoPE is position-specific and averaging or centroiding phases is not a standard or clearly defined operation. The predictor training via loss-difference pseudo-labels during fine-tuning is also computationally expensive and the pipeline interaction is complex enough to raise implementation concerns. Method B is more internally consistent: its dual-scale memory (recent window + segmented long-range with prototypes and support tokens), relevance selector, per-head budget allocation, and distillation training all fit together without contradictory steps. The prototype low-rank representation, uncertainty-gated EMA rollup, and optional support token re-attention form a coherent cascade. The per-head budget learning via distillation is standard. Method B's main weakness is that the \"adjacent local swaps\" O(K) refinement is an unusual sorting heuristic that may not reliably find top-K, but this is a minor concern compared to Method A's more fundamental gaps around dynamic KV splicing and RoPE centroiding."
+    }
+  },
+  "pairwise_cost": {
+    "gen_prompt_tokens": 0,
+    "gen_completion_tokens": 0,
+    "judge_prompt_tokens": 6081,
+    "judge_completion_tokens": 864,
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.0312,
+    "total_cost_usd": 0.0312
+  }
+}
