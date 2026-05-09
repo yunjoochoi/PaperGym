@@ -4,14 +4,33 @@ ML idea-synthesis systems typically retrieve prior work from the same subfield a
 
 Each paper becomes an interactive environment: a tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores the paper, then distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
 
+![PaperGym pipeline overview](docs/fig1_pipeline.png)
+
 ## Setup
+
+Install [uv](https://github.com/astral-sh/uv) if you don't have it:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then set up the project environment:
 
 ```bash
 uv venv .venv --python 3.11
 uv pip install -e ".[dev]"
 source .venv/bin/activate
-cp .env.examples .env   # edit with your keys
+cp .env.examples .env
 ```
+
+Edit `.env` to set the required environment variables:
+
+| Variable | Used for |
+|---|---|
+| `LITELLM_MODEL` | Generator model (e.g., `gpt-5`) |
+| `JUDGE_MODEL` | Judge model in a different family (e.g., `anthropic/claude-sonnet-4-6`) |
+| `EMBEDDING_MODEL` | Embedding model (e.g., `text-embedding-3-small`) |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Provider keys for the models above |
 
 Host requirements: Docker daemon (only for Bootstrap). The Accumulator runs inside Docker (one container per paper); orchestration and synthesis run on the host.
 
@@ -25,9 +44,9 @@ bash scripts/reproduce_paper.sh
 
 Each stage writes a timestamped run directory under `data/eval/`.
 
-Both the generator (`LITELLM_MODEL`) and the held-out judge (`JUDGE_MODEL`) are read from `.env`. The judge must be in a different model family from the generator for self-bias control; the `.env.examples` defaults pair a GPT-5 generator with a Sonnet 4.6 judge.
+Both the generator (`LITELLM_MODEL`) and the independent judge (`JUDGE_MODEL`) are read from `.env`. The judge must be in a different model family from the generator for self-bias control; the `.env.examples` defaults pair a GPT-5 generator with a Sonnet 4.6 judge.
 
-The script runs Stages 2, 3, and the novelty iteration loop. The Stage 1 *no-tool extraction baseline* lives in the [`PaperGym_notool`](https://github.com/yunjoochoi/PaperGym_notool) companion repo; the Stage 1 rubric judges (`seed_quality_eval.py`, `seed_shuffled.py`) live here and consume both libraries — see [`docs/REPRODUCE.md`](docs/REPRODUCE.md#stage-1--tool-augmented-seed-extraction-section-32).
+The script runs Stages 2, 3, and the novelty iteration loop. The Stage 1 *no-tool extraction baseline* is in the [`PaperGym_notool`](https://github.com/yunjoochoi/PaperGym_notool) companion repo; the Stage 1 rubric judges (`seed_quality_eval.py`, `seed_shuffled.py`) are in this repo and consume both libraries — see [`docs/REPRODUCE.md`](docs/REPRODUCE.md#stage-1--tool-augmented-seed-extraction-section-32).
 
 ### Bootstrap
 
@@ -36,15 +55,15 @@ A pre-built library ships at [`data/library/`](data/library/) (1,167 seeds acros
 One-time library build from arxiv:
 
 ```bash
-bash scripts/build_image.sh                                          # Accumulator Docker image
-.venv/bin/python scripts/sample_envs.py --out data/arxiv_ids.jsonl   # arxiv id list
-.venv/bin/python scripts/run_accumulator.py \
+bash scripts/build_image.sh                                          # Build paper-sandbox Docker image
+uv run python scripts/sample_envs.py --out data/arxiv_ids.jsonl   # arxiv id list
+uv run python scripts/run_accumulator.py \
     --arxiv-ids data/arxiv_ids.jsonl \
     --library-root data/library \
     --events-dir data/events
 ```
 
-Per-domain sampling defaults are documented in `scripts/sample_envs.py --help`. The Accumulator runs untrusted paper repos inside Docker and wipes the container on exit; only the extracted seeds and event traces persist on the host.
+Per-domain sampling defaults are in `scripts/sample_envs.py` (`DEFAULT_BUDGET`); override with `--budget-per-domain N`. The Accumulator investigates paper repos inside Docker and wipes the container on exit; only the extracted seeds and event traces persist on the host.
 
 ## Code layout
 

@@ -8,13 +8,13 @@ Stage 2/3 read from [`data/library/`](../data/library/) and [`data/queries.yaml`
 
 ## Conventions
 
-- `<JUDGE>` = `openai/bedrock.anthropic.claude-sonnet-4-6` (held-out judge family, different from the GPT-5 generator)
+- `<JUDGE>` = `openai/bedrock.anthropic.claude-sonnet-4-6` (independent judge family, different from the GPT-5 generator)
 - `<LIB>` = `data/library` (path to the built seed library)
 - `<RUN>` = the timestamped directory the previous step wrote to (e.g. `data/eval/ideation_20260507T090814`)
 
 ## Stage 1 — Tool-augmented seed extraction (Section 3.2)
 
-The A condition (no-tool extraction baseline) lives in [PaperGym_notool](https://github.com/yunjoochoi/PaperGym_notool); the judges below run here and score both libraries.
+The A condition (no-tool extraction baseline) is in [PaperGym_notool](https://github.com/yunjoochoi/PaperGym_notool); the judges below run in this repo and score both libraries.
 
 | Paper claim | Script | Output file | Field |
 |---|---|---|---|
@@ -102,7 +102,7 @@ uv run python scripts/inspired_by_grounding_eval.py \
 
 ## Appendix A — Q23 walkthrough (STAMM)
 
-STAMM and GMRP method texts, attributed seeds, and per-axis scores all live in the canonical Stage 3 ideation run's Q23 record. Pairwise verdicts are the Q23 rows of the main `layer12` and `coherence` files.
+STAMM and GMRP method texts, attributed seeds, and per-axis scores are all in the canonical Stage 3 ideation run's Q23 record. Pairwise verdicts are the Q23 rows of the main `layer12` and `coherence` files.
 
 | Paper claim | Source | Field (filter `query_id == "Q23"`) |
 |---|---|---|
