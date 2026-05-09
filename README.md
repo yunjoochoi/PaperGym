@@ -1,8 +1,8 @@
 # PaperGym
 
-ML idea-synthesis systems typically retrieve prior work from the same subfield as the query. PaperGym evaluates a different stance: paraphrase the query into each of 7 ML domains, retrieve mechanism seeds grounded in each domain, and synthesize a method that explicitly cites which mechanism it borrowed from where.
+PaperGym treats each ML paper as an interactive environment — a *gym* — for an LLM agent to investigate. A tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores each paper and distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
 
-Each paper becomes an interactive environment: a tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores the paper, then distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
+ML idea-synthesis systems typically retrieve prior work from the same subfield as the query. On top of this library, PaperGym evaluates a different stance: paraphrase the query into each of 7 ML domains, retrieve mechanism seeds grounded in each domain, and synthesize a method that explicitly cites which mechanism it borrowed from where.
 
 ![PaperGym pipeline overview](docs/fig1_pipeline.png)
 
@@ -122,4 +122,4 @@ print(out.method, out.inspired_by)
 
 ## License
 
-Apache License 2.0. See [`LICENSE`](LICENSE) for details.
+Apache License 2.0.
