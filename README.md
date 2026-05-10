@@ -4,7 +4,9 @@ PaperGym treats each ML paper as an interactive environment — a *gym* — for 
 
 ML idea-synthesis systems typically retrieve prior work from the same subfield as the query. On top of this library, PaperGym evaluates a different stance: paraphrase the query into each of 7 ML domains, retrieve mechanism seeds grounded in each domain, and synthesize a method that explicitly cites which mechanism it borrowed from where.
 
-![PaperGym pipeline overview](docs/fig1_pipeline.png)
+![PaperGym pipeline overview](docs/fig.png)
+
+Jump to [Quick start](#quick-start) to run it on your own query.
 
 ## Setup
 
@@ -12,7 +14,7 @@ Set up the project environment:
 
 ```bash
 uv venv .venv --python 3.11
-uv pip install -e ".[dev]"
+uv sync
 source .venv/bin/activate
 cp .env.examples .env
 ```
@@ -28,7 +30,26 @@ Edit `.env` to set the required environment variables:
 
 Host requirements: Docker daemon (only for Bootstrap). The Accumulator runs inside Docker (one container per paper); orchestration and synthesis run on the host.
 
-## Run
+## Quick start
+
+```python
+from dotenv import load_dotenv; load_dotenv()
+from pathlib import Path
+from eval.ideation import run_condition_c
+from papergym.library import LibraryStore
+from papergym.llm import LLMClient
+
+library = LibraryStore.open_merged(Path('data/library'))
+out = run_condition_c(query='long-context efficient inference',
+                      library=library, llm=LLMClient(),
+                      natural_domain='LLM_NLP', k_per_domain=3)
+print('METHOD:', out.method)
+print('INSPIRED_BY:', out.inspired_by)
+```
+
+`LibraryStore.open_merged` auto-detects sharded subdirs. The query is paraphrased into 7 domain reframings, top-k seeds retrieved per paraphrase, and the synthesizer composes a method with per-seed `borrowed_aspect`.
+
+## End-to-end reproduction
 
 End-to-end paper pipeline (assumes the seed library is already built; see [Bootstrap](#bootstrap) for the library-building step):
 
@@ -102,23 +123,6 @@ PaperGym/
 ├── docker/Dockerfile                   # Accumulator sandbox
 └── tests/                              # pytest unit tests
 ```
-
-## Custom queries
-
-```python
-from pathlib import Path
-from eval.ideation import run_condition_c
-from papergym.library import LibraryStore
-from papergym.llm import LLMClient
-
-library = LibraryStore.open_merged(Path("data/library"))
-out = run_condition_c(query="long-context efficient inference",
-                      library=library, llm=LLMClient(),
-                      natural_domain="LLM_NLP", k_per_domain=3)
-print(out.method, out.inspired_by)
-```
-
-`LibraryStore.open_merged` auto-detects sharded subdirs. The query is paraphrased into 7 domain reframings, top-k seeds retrieved per paraphrase, and the synthesizer composes a method with per-seed `borrowed_aspect`.
 
 ## License
 
