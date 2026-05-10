@@ -31,6 +31,8 @@ if [[ -f .env ]]; then
 fi
 
 JUDGE="${JUDGE_MODEL:?set JUDGE_MODEL in .env}"
+: "${LITELLM_MODEL:?set LITELLM_MODEL in .env}"
+: "${EMBEDDING_MODEL:?set EMBEDDING_MODEL in .env}"
 LIB="data/library"
 QUERIES="data/queries.yaml"
 
@@ -101,8 +103,9 @@ for path in sorted(glob.glob("data/eval/*/summary.json")
         total_cost += c
         total_wall += w
         print(f"  {path:60s}  ${c:7.3f}  {w:8.1f} s")
-    elif "total_cost_usd" in d:  # loop_benchmark aggregate.json
-        c = d["c_total_cost_usd"] + d.get("d_total_cost_usd", 0)
+    elif "c_total_cost_usd" in d:  # loop_benchmark aggregate.json
+        c = (d["c_total_cost_usd"] + d.get("d_total_cost_usd", 0)
+             + d.get("pairwise_total_cost_usd", 0))
         w = d.get("total_wall_clock_s", 0.0)
         total_cost += c
         total_wall += w

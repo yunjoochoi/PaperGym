@@ -15,6 +15,7 @@ uv run python scripts/loop_benchmark.py
 from __future__ import annotations
 
 import json
+import os
 import random
 import statistics
 import sys
@@ -89,8 +90,17 @@ out_dir.mkdir(parents=True, exist_ok=True)
 
 # Single shared LLM clients so total token / cost numbers accumulate
 # across all queries.
+judge_model = os.environ.get("JUDGE_MODEL")
+if not judge_model:
+    print("error: set JUDGE_MODEL in .env", file=sys.stderr)
+    sys.exit(1)
 gen_llm = LLMClient()
-judge_llm = LLMClient(model="openai/bedrock.anthropic.claude-sonnet-4-6")
+judge_llm = LLMClient(model=judge_model)
+seed_gen_model = os.environ.get("LITELLM_MODEL")
+if seed_gen_model and judge_llm.model == seed_gen_model:
+    print(f"error: judge ({judge_llm.model!r}) matches LITELLM_MODEL; "
+          f"set JUDGE_MODEL to a different family.", file=sys.stderr)
+    sys.exit(1)
 pair_rng = random.Random(PAIRWISE_RNG_SEED)
 
 print(f"Loop benchmark — n_queries={len(queries)}, threshold={NOVELTY_THRESHOLD}, "
