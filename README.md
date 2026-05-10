@@ -26,9 +26,9 @@ Edit `.env` to set the required environment variables:
 | `LITELLM_MODEL` | Generator model (e.g., `gpt-5`) |
 | `JUDGE_MODEL` | Judge model in a different family from the generator (e.g., `anthropic/claude-sonnet-4-6`) |
 | `EMBEDDING_MODEL` | Embedding model (e.g., `text-embedding-3-small`) |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Provider keys — set whichever your `LITELLM_MODEL` / `JUDGE_MODEL` / `EMBEDDING_MODEL` route to (litellm picks by model prefix) |
-| `OPENAI_API_BASE` | Optional — override OpenAI-compatible endpoint |
-| `S2_API_KEY` | Optional — Semantic Scholar bulk-search key, used by `scripts/sample_envs.py` (Bootstrap) and the novelty-loop reference check |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Provider keys. Set whichever your `LITELLM_MODEL` / `JUDGE_MODEL` / `EMBEDDING_MODEL` route to (litellm picks by model prefix) |
+| `OPENAI_API_BASE` | Optional. override OpenAI-compatible endpoint |
+| `S2_API_KEY` | Optional. Semantic Scholar bulk-search key, used by `scripts/sample_envs.py` (Bootstrap) and the novelty-loop reference check |
 
 Host requirements: Docker daemon (only for Bootstrap). The Accumulator runs inside Docker (one container per paper); orchestration and synthesis run on the host.
 
