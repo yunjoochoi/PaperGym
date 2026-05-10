@@ -59,6 +59,8 @@ End-to-end paper pipeline (assumes the seed library is already built; see [Boots
 bash scripts/reproduce_paper.sh
 ```
 
+Each stage re-runs LLM synthesis (generation) and then applies the rubric judges over the same outputs. Stage 1 (library construction) is excluded — see the Bootstrap section below or the companion repo.
+
 Each stage writes a timestamped run directory under `data/eval/`.
 
 Both the generator (`LITELLM_MODEL`) and the independent judge (`JUDGE_MODEL`) are read from `.env`. The judge must be in a different model family from the generator for self-bias control; the `.env.examples` defaults pair a GPT-5 generator with a Sonnet 4.6 judge.
