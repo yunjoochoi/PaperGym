@@ -51,6 +51,15 @@ print('INSPIRED_BY:', out.inspired_by)
 
 `LibraryStore.open_merged` auto-detects sharded subdirs. The query is paraphrased into 7 domain reframings, top-k seeds retrieved per paraphrase, and the synthesizer composes a method with per-seed `borrowed_aspect`.
 
+Swap `run_condition_c` for `run_condition_a` (no retrieval, problem-only) on the same query as a baseline:
+
+```python
+from eval.ideation import run_condition_a
+
+base = run_condition_a(query='long-context efficient inference', llm=LLMClient())
+print('METHOD:', base.method)
+```
+
 ## End-to-end reproduction
 
 End-to-end paper pipeline (assumes the seed library is already built; see [Bootstrap](#bootstrap) for the library-building step):
