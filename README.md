@@ -41,9 +41,10 @@ from eval.ideation import run_condition_c
 from papergym.library import LibraryStore
 from papergym.llm import LLMClient
 
+query = "How can we serve long-context LLMs efficiently at inference time?"
+
 library = LibraryStore.open_merged(Path('data/library'))
-out = run_condition_c(query='long-context efficient inference',
-                      library=library, llm=LLMClient(),
+out = run_condition_c(query=query, library=library, llm=LLMClient(),
                       natural_domain='LLM_NLP', k_per_domain=3)
 print('METHOD:', out.method)
 print('INSPIRED_BY:', out.inspired_by)
@@ -51,12 +52,16 @@ print('INSPIRED_BY:', out.inspired_by)
 
 `LibraryStore.open_merged` auto-detects sharded subdirs. The query is paraphrased into 7 domain reframings, top-k seeds retrieved per paraphrase, and the synthesizer composes a method with per-seed `borrowed_aspect`.
 
-Swap `run_condition_c` for `run_condition_a` (no retrieval, problem-only) on the same query as a baseline:
+Baseline comparison (condition A, no retrieval, problem-only) on the same query:
 
 ```python
+from dotenv import load_dotenv; load_dotenv()
 from eval.ideation import run_condition_a
+from papergym.llm import LLMClient
 
-base = run_condition_a(query='long-context efficient inference', llm=LLMClient())
+query = "How can we serve long-context LLMs efficiently at inference time?"
+
+base = run_condition_a(query=query, llm=LLMClient())
 print('METHOD:', base.method)
 ```
 
