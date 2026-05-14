@@ -1,0 +1,623 @@
+## Reward-Weighted Regression Converges to a Global Optimum
+
+Miroslav ˇ Strupl, 1 * Francesco Faccio, 1 ∗ Dylan R. Ashley, 1
+
+2 1,2,3
+
+Rupesh Kumar Srivastava, J¨ urgen Schmidhuber
+
+1 The Swiss AI Lab IDSIA, Universit` a della Svizzera italiana (USI) &amp; SUPSI, Lugano, Switzerland 2
+
+NNAISENSE, Lugano, Switzerland
+
+3 King Abdullah University of Science and Technology (KAUST), Thuwal, Saudi Arabia { struplm, francesco, dylan.ashley } @idsia.ch, rupesh@nnaisense.com, juergen@idsia.ch
+
+## Abstract
+
+Reward-Weighted Regression (RWR) belongs to a family of widely known iterative Reinforcement Learning algorithms based on the Expectation-Maximization framework. In this family, learning at each iteration consists of sampling a batch of trajectories using the current policy and fitting a new policy to maximize a return-weighted log-likelihood of actions. Although RWR is known to yield monotonic improvement of the policy under certain circumstances, whether and under which conditions RWR converges to the optimal policy have remained open questions. In this paper, we provide for the first time a proof that RWR converges to a global optimum when no function approximation is used, in a general compact setting. Furthermore, for the simpler case with finite state and action spaces we prove R-linear convergence of the state-value function to the optimum.
+
+## 1 Introduction
+
+Reinforcement learning (RL) is a branch of artificial intelligence that considers learning agents interacting with an environment (Sutton and Barto 2018). RL has enjoyed several notable successes in recent years. These include both successes of special prominence within the artificial intelligence community-such as achieving the first superhuman performance in the ancient game of Go (Silver et al. 2016)-and successes of immediate real-world value-such as providing autonomous navigation of stratospheric balloons to provide internet access to remote locations (Bellemare et al. 2020).
+
+One prominent family of algorithms that tackle the RL problem is the Reward-Weighted Regression (RWR) family (Peters and Schaal 2007). The RWR family is notable in that it naturally extends to continuous state and action spaces. The lack of this functionality in many methods serves as a strong limitation. This prevents them from tackling some of the more practically relevant RL problemssuch as many robotics tasks (Plappert et al. 2018). Recently, RWR variants were able to learn high-dimensional continuous control tasks (Peng et al. 2019). RWR works by transforming the RL problem into a form solvable by wellstudied expectation-maximization (EM) methods (Dempster, Laird, and Rubin 1977). EM methods are, in general, guaranteed to converge to a point whose gradient is zero with respect to the parameters. However, these points could be both local minima or saddle points (Wu 1983). These benefits and limitations transfer to the RL setting, where it has been shown that an EM-based return maximizer is guaranteed to yield monotonic improvements in the expected return (Dayan and Hinton 1997). However, it has been challenging to assess under which conditions-if any-RWR is guaranteed to converge to the optimal policy. This paper presents a breakthrough in this challenge.
+
+* Equal contribution. Correspondence to struplm@idsia.ch
+
+Copyright © 2022, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved.
+
+The EM probabilistic framework requires that the reward obtained by the RL agent is strictly positive, such that it can be considered as an improper probability distribution. Several reward transformations have been proposed, e.g., Peters and Schaal (2007, 2008); Peng et al. (2019); Abdolmaleki et al. (2018b), frequently involving exponential transformations. In the past, it has been claimed that a positive, strictly increasing transformation u τ ( s ) with ∫ ∞ 0 u τ ( r ) d r = const would not alter the optimal solution for the MDP (Peters and Schaal 2007). Unfortunately, as we demonstrate in Appendix A, this is not the case. The consequence of this is that we cannot rely on those transformations if we want prove convergence. Therefore, we consider only linear transformation of the reward. A possible disadvantage of relying on linear transformations is that it is necessary to know a lower bound on the reward to construct such a transformation.
+
+In this work, we provide the first proof of RWR's global convergence in a setting without function approximation or reward transformations 1 . The paper is structured as follows: Section 2 introduces the MDP setting and other preliminary material; Section 3 presents a closed-form update for RWR based on the state and action-value functions and Section 4 shows that the update induces monotonic improvement related to the variance of the action-value function with respect to the action sampled by the policy; Section 5 proves global convergence of the algorithm in the general compact setting and convergence rates in the finite setting ; Section 6 illustrates experimentally that-for a simple MDP-the presented update scheme converges to the optimal policy; Section 7 discusses related work; and Section 8 concludes.
+
+1 Note that-without loss of generality-we do assume here that a linear reward transformation is already provided, such that the reward is positive
+
+## 2 Background
+
+Here we consider a Markov Decision Process (MDP) (Stratonovich 1960; Puterman 2014) M = ( S , A , p T , R, γ, µ 0 ) . We assume that the state and action spaces S ⊂ R n S , A ⊂ R n A are compact sub-spaces 2 (equipped with subspace topology), with measurable structure given by measure spaces ( S , B ( S ) , µ S ) , ( A , B ( A ) , µ A ) where B ( · ) denotes the Borel σ -algebra after completion, and reference measures µ S , µ A are assumed to be finite and strictly positive on S , A respectively. The distributions of state (action) random variables (except in Section 5 where greedy policies are used) are assumed to be dominated by µ S ( µ A ), thus having a density with respect to µ S ( µ A ). Therefore, we reserve symbols d s, d a in integral expression not to integration with respect to Lebesgue measure, as usual, but to integration with respect to µ S and µ A respectively, e.g. ∫ S ( · )d s := ∫ S ( · )d µ S ( s ) . Let (Ω , F , µ ) be a measure space and f : Ω → R + a F measurable function (density). We denote by f · µ the measure which assigns to every set B ∈ F a measure f · µ ( B ) := ∫ B f d µ .
+
+In the MDP framework, at each step, an agent observes a state s ∈ S , chooses an action a ∈ A , and subsequently transitions into state s ′ with probability density p T ( s ′ | s, a ) to receive a deterministic reward R ( s, a ) . The transition probability kernel is assumed to be continuous in total variation in ( s, a ) ∈ S ×A (the product topology is assumed on S ×A ), and thus the density p T ( s ′ | s, a ) is continuous (in ‖·‖ 1 norm). R ( s, a ) is assumed to be a continuous function on S × A .
+
+The agent starts from an initial state (chosen under a probability density µ 0 ( s ) ) and is represented by a stochastic policy π : a probability kernel which provides the conditional probability distribution of performing action a in state s . 3 The policy is deterministic if, for each state s , there exists an action a such that π ( { a }| s ) = 1 . The return R t is defined as the cumulative discounted reward from time step t: R t = ∑ ∞ k =0 γ k R ( s t + k +1 , a t + k +1 ) where γ ∈ (0 , 1) is a discount factor. We discuss the undiscounted case ( γ = 1 ) in Appendix B, which covers the scenario with absorbing states.
+
+The agent's performance is measured by the cumulative discounted expected reward (i.e., the expected return), defined as J ( π ) = E π [ R 0 ] . The state-value function V π ( s ) = E π [ R t | s t = s ] of a policy π is defined as the expected return for being in a state s while following π . The maximization of the expected cumulative reward can be expressed in terms of the state-value function by integrating it over the state space S : J ( π ) = ∫ S µ 0 ( s ) V π ( s ) d s . The action-value function Q π ( s, a ) -defined as the expected return for performing action a in state s and following a policy π -is Q π ( s, a ) = E π [ R t | s t = s, a t = a ] . State and action value functions are related by V π ( s ) = ∫ A π ( a | s ) Q π ( s, a ) d a . We define as d π ( s ′ ) the discounted weighting of states encountered starting at s 0 ∼ µ 0 ( s ) and following the policy π : d π ( s ′ ) = ∫ S ∑ ∞ t =1 γ t -1 µ 0 ( s ) p s t | s 0 ,π ( s ′ | s ) d s , where p s t | s 0 ,π ( s ′ | s ) is the probability density of transitioning to s ′ after t time steps, starting from s and following policy π . We assume that the reward function R ( s, a ) is strictly positive 4 , so that state and action value functions are also bounded V π ( s ) ≤ 1 1 -γ || R || ∞ = B V &lt; + ∞ . We define the operator 5 W : L ∞ ( S ) → C ( S × A ) as [ W ( V )]( s, a ) := R ( s, a ) + γ ∫ S V ( s ′ ) p T ( s ′ | s, a )d s ′ and the Bellman's optimality operator T : L ∞ ( S × A ) → C ( S × A ) as [ T ( Q )]( s, a ) := R ( s, a ) + γ ∫ S max a ′ Q ( s ′ , a ′ ) p T ( s ′ | s, a )d s ′ . An actionvalue function Q π is optimal if it is the unique fixed point for T . If Q π is optimal, then π is an optimal policy.
+
+2 This allows for state and action vectors that have discrete, continuous, or mixed components.
+
+3 In Sections 3 and 4, a policy is given through its conditional density with respect to µ A . We also refer to this density as a policy.
+
+## 3 Reward-Weighted Regression
+
+Reward-Weighted Regression (RWR, see (Dayan and Hinton 1997),(Peters and Schaal 2007),(Peng et al. 2019)) is an iterative algorithm which consists of two main steps. First, a batch of episodes is generated using the current policy π n (all policies in this section are given as conditional densities with respect to µ A ). Then, a new policy is fitted to (using supervised learning under maximum likelihood criterion) a sample representation of the conditional distribution of an action given a state, weighted by the return. The RWR optimization problem is:
+
+<!-- formula-not-decoded -->
+
+where Π is the set of all conditional probability densities (meant with respect to µ A ) 6 . Notice that π n +1 is defined correctly as its expression does not depend on t . This is equivalent to the following:
+
+<!-- formula-not-decoded -->
+
+We start by deriving a closed form solution to the optimization problem:
+
+Theorem 3.1. Let π 0 be an initial policy and let ∀ s ∈ S , ∀ a ∈ A R ( s, a ) &gt; 0 . At each iteration n &gt; 0 , the solution of the RWR optimization problem is:
+
+<!-- formula-not-decoded -->
+
+Proof.
+
+<!-- formula-not-decoded -->
+
+4 It is enough to assume that the reward is bounded, so it can be linearly mapped to a positive value.
+
+5 W maps to continuous functions since R ( s, a ) is continuous and continuity of the integral follows from continuity of p T in ‖·‖ 1 norm and boundedness of V .
+
+6 We can restrict to talk about probability kernels dominated by µ A instead of all probability kernels thanks to Lebesgue decomposition.
+
+Define ˆ f ( s, a ) := d π n ( s ) π n ( a | s ) Q π n ( s, a ) . ˆ f ( s, a ) can be normalized such that it becomes a density that we fit by π n +1 :
+
+<!-- formula-not-decoded -->
+
+For the function to be maximized we have:
+
+<!-- formula-not-decoded -->
+
+where the last inequality holds for any policy π , since ∀ s ∈ S we have that ∫ A f ( a | s ) log π ( a | s ) d a ≤ ∫ A f ( a | s ) log f ( a | s ) d a , as f ( a | s ) is the maximum likelihood fit. Note that for all states s ∈ S such that d π n ( s ) = 0 , we have that f ( s, a ) = 0 . Therefore, for such states, the policy will not contribute to the objective and can be defined arbitrarily. Now, assume d π n ( s ) &gt; 0 . The objective function achieves a maximum when the two distributions are equal:
+
+<!-- formula-not-decoded -->
+
+We can now set π n +1 ( a | s ) = Q πn ( s,a ) π n ( a | s ) V πn ( s ) also for all s such that d π n ( s ) = 0 , which completes the proof. Note that V π n ( s ) is positive thanks to the assumption of positive rewards. Similarly, the denominator ∫ S ∫ A ˆ f ( s, a ) d a d s = ∫ S d π n ( s ) V π n ( s ) d s &gt; 0 is positive.
+
+When function approximation is used for policy π , the term f ( s ) weighs the mismatch between π ( a | s ) and f ( a | s ) . Indeed, we have f ( s ) ∝ d π ( s ) V π ( s ) , suggesting that the error occurring with function approximation would be weighted more for states visited often and with a bigger value. In our setting, however, the two terms are equal since no function approximation is used.
+
+Theorem 3.1 provides us with an interpretation on how the RWR update rule works: at each iteration, given a state s , the probability over an action a produced by policy π n will be weighted by the expected return obtained from state s , choosing action a and following π n . This result will be then normalized by V π n ( s ) , providing a new policy π n +1 . Alternatively, we can interpret this new policy as the fraction of return obtained by policy π n from state s , after choosing action a with probability π n ( ·| s ) . Intuitively, assigning more weight to actions which lead to better return should improve the policy. We prove this in the next section.
+
+## 4 Monotonic Improvement Theorem
+
+Here we prove that the update defined in Theorem 3.1 leads to monotonic improvement. 7
+
+Theorem 4.1. Fix n &gt; 0 and let π 0 ∈ Π be a policy 8 . Assume ∀ s ∈ S , ∀ a ∈ A , R ( s, a ) &gt; 0 . Define the operator B : Π → Π such that B ( π ) := Q π π V π for π ∈ Π . Thus π n +1 = B ( π n ) , i.e. ∀ s ∈ S , ∀ a ∈ A : π n +1 ( a | s ) = ( Bπ n )( a | s ) = Q πn ( s,a ) π n ( a | s ) V πn ( s ) . Then ∀ s ∈ S , ∀ a ∈ A we have that V π n +1 ( s ) ≥ V π n ( s ) and Q π n +1 ( s, a ) ≥ Q π n ( s, a ) . Moreover, if for some s ∈ S holds Var a ∼ π n ( a | s ) [ Q π n ( s, a )] &gt; 0 then the first inequality above is strict, i.e. V π n +1 ( s ) &gt; V π n ( s ) .
+
+Proof. We start by defining a function V π n +1 ,π n ( s ) as the expected return for using policy π n +1 in state s and then following policy π n : V π n +1 ,π n ( s ) := ∫ A π n +1 ( a | s ) Q π n ( s, a ) d a . By showing that ∀ s ∈ S , V π n +1 ,π n ( s ) ≥ V π n ( s ) , we get that ∀ s ∈ S , V π n +1 ( s ) ≥ V π n ( s ) . 9
+
+Now, let s be fixed:
+
+<!-- formula-not-decoded -->
+
+which always holds. Finally, ∀ s ∈ S , ∀ a ∈ A :
+
+<!-- formula-not-decoded -->
+
+Theorem 4.1 provides a relationship between the improvement in the state-value function and the variance of the action-value function with respect to the actions sampled. Note that if at a certain point the policy becomes deterministic-or it becomes the greedy policy of its actionvalue function (i.e. the optimal policy)-, then the operator B will map the policy to itself and there will be no improvement.
+
+7 The case where the MDP has non-negative rewards and the undiscounted case are more complex and treated in Appendix B.
+
+8 Also in this section all policies are given as conditional densities with respect to µ A .
+
+9 The argument is the same as given in (Puterman 2014), see section on Monotonic Policy Improvement.
+
+## 5 Convergence Results
+
+## Weak convergence in topological factor
+
+It is worth discussing what type of convergence we can achieve by iterating the B -operator π n := B ( π n -1 ) , where π n are probability densities with respect to a fixed reference measure µ A .
+
+Consider first the classic 'continuous' variable case, where µ A is the Lebesgue measure and fix s ∈ S . Optimal policies are known to be greedy on the optimal action-value function Q ∗ ( s, a ) . That is, they concentrate all mass on arg max a Q ∗ ( s, a ) . If arg max a Q ∗ ( s, a ) consists of just a single point { a ∗ } , then the optimal policy (measure), π ∗ ( ·| s ) for s , concentrates all its mass in { a ∗ } . This means that the optimal policy does not have a density with respect to the Lebesgue measure. Furthermore ( π n ( ·| s ) · µ A )( { a ∗ } ) = ∫ { a ∗ } π n ( a | s )d µ A ( a ) = 0 , while π ∗ ( { a ∗ }| s ) = 1 . However, we still want to show that the measures π n ( ·| s ) · µ A get concentrated in the neighbourhood of a ∗ and that this neighbourhood gets tinier as n increases. We will use the concept of weak convergence to prove this.
+
+Another problem arises when considering the above: since arg max a Q ∗ ( s, a ) can consist of multiple points, the set of optimal policies is P (arg max a Q ∗ ( s, a )) , where P ( F ) := { µ : µ is a probability measure on B ( A ) , µ ( F ) = 1 } for a F ∈ B ( A ) . We want to prove convergence even when the sequence of policies π n oscillates near P (arg max a Q ∗ ( s, a )) . A way of coping with this is to make arg max a Q ∗ ( s, a ) a single point through topological factorisation, to obtain the limit by working in a quotient space. The notion of convergence we will be using is described in the following definition.
+
+Definition 1. (Weak convergence of measures in metric space relative to a compact set) Let ( X,d ) be a metric space, F ⊂ X a compact subset, B ( X ) its Borel σ -algebra. Denote ( ˜ X, ˜ d ) a metric space resulting as a topological quotient with respect to F and ν the quotient map ν : X → ˜ X (see Lemma C.2 for details). A sequence of probability measures P n is said to converge weakly relative to F to a measure P denoted
+
+<!-- formula-not-decoded -->
+
+if and only if the image measures of P n under ν converge weakly to the image measure of P under ν :
+
+<!-- formula-not-decoded -->
+
+Note that the limit is meant to be unique just in quotient space, thus if P is a weak limit (relative to F ) of a sequence ( P n ) , then also all measures P ′ for which νP ′ = νP are relatively weak limits, i.e. P ′ | B ( X ) ∩ F c = P | B ( X ) ∩ F c . Thus, they can differ on B ( X ) ∩ F . While the total mass assigned to F must be the same for P and P ′ , the distribution of masses inside F may differ.
+
+## Main results
+
+Consider for all n &gt; 0 the sequence generated by π n := B ( π n -1 ) . For convenience, for all n ≥ 0 , we define Q n := Q π n , V n := V π n . First we note that, since the reward is bounded, the monotonic sequences of value functions converge point-wise to a limit:
+
+<!-- formula-not-decoded -->
+
+where B V = 1 1 -γ || R || ∞ . Further ∀ n Q n is continuous since Q n = W ( V n ) and W maps all bounded functions to continuous functions.
+
+The convergence proof proceeds in four steps:
+
+1. First we show in Lemma 5.1 that Q L can be expressed in terms of V L through W operator. This helps when showing that Q n converges uniformly to Q L .
+2. Then we demonstrate in Lemma 5.2 that ∀ s ∈ S the sequence of policy measures π n ( ·| s ) · µ A converges weakly relative to the set M ( s ) := arg max a Q L ( s, a ) to a measure that assigns all probability mass to greedy actions of Q L ( · , s ) , i.e. π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) ∈ P ( M ( s )) . However we are interested just in those π L which are kernels, i.e. π L ∈ Π L := { π ′ L : π ′ L is a probability kernel from ( S , B ( S )) to ( A , B ( A )) , ∀ s ∈ S , π ′ L ( . | s ) ∈ P ( M ( s )) } -the set of all greedy policies on Q L .
+3. At this point we do not know yet if Q L and V L are the value functions of π L . We prove this in Lemma 5.3 (together with previous Lemmas) by showing that they are fixed points of the Bellman operator.
+4. Finally, we state the main results in Theorem 5.1. Since V L and Q L are value functions for π L and π L is greedy with respect to Q L , then Q L is the unique fixed point of the Bellman's optimality operator:
+
+<!-- formula-not-decoded -->
+
+Therefore Q L and V L are optimal value functions and π L is an optimal policy for the MDP.
+
+Lemma 5.1. The following holds:
+
+1. Q L = W ( V L ) ,
+2. Q L is continuous,
+3. Q n converges to Q L uniformly.
+
+Proof. 1. Fix ( s, a ) ∈ S × A . We aim to show Q L ( s, a ) -[ W ( V L )]( s, a ) = 0 . Since Q n = W ( V n ) , we can write:
+
+<!-- formula-not-decoded -->
+
+The first part can be made arbitrarily small as Q n ( s, a ) → Q L ( s, a ) . Consider the second part and fix glyph[epsilon1] &gt; 0 . Since V n → V L point-wise, from Severini-Egorov's theorem (Severini 1910) there exists S glyph[epsilon1] ⊂ S with ( p T ( ·| s, a ) · µ S )( S c glyph[epsilon1] ) &lt; glyph[epsilon1] such that ‖ V n -V L ‖ ∞ → 0 on S glyph[epsilon1] . Thus there exists n 0 such that ‖ V n -V L ‖ ∞ &lt; glyph[epsilon1] for all n &gt; n 0 . Now let us rewrite the second part for n &gt; n 0 :
+
+<!-- formula-not-decoded -->
+
+which can be made arbitrarily small.
+
+2. Q L is continuous because W maps all bounded measurable functions to continuous functions.
+
+3. Since Q n and Q L are continuous functions in a compact space and Q n is a monotonically increasing sequence that converges point-wise to Q L , we can apply Dini's theorem (see Th. 7.13 on page 150 in (Rudin 1976)) which ensures uniform convergence of Q n to Q L .
+
+glyph[negationslash]
+
+Lemma 5.2. Let π n be a sequence generated by π n := B ( π n -1 ) . Let π 0 be continuous in actions and ∀ s ∈ S , ∀ a ∈ A , π 0 ( a | s ) &gt; 0 . Define M ( s ) := arg max Q L ( ·| s ) . Then ∀ π L ∈ Π L = ∅ , ∀ s ∈ S , we have π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s )( ∈ P ( M ( s ))) .
+
+Proof. First notice that the set Π L is nonempty 10 . Fix π L ∈ Π L and s ∈ S . In order to prove that π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) , we will use a characterization of relative weak convergence that follows from an adaptation of the Portmanteau Lemma (Billingsley 2013) (see Appendix C.3). In particular, it is enough to show that for all open sets U ⊂ A such that U ∩ M ( s ) = ∅ or such that M ( s ) ⊂ U , we have that lim inf n ( π n ( ·| s ) · µ A ) U ≥ π L ( ·| s ) U .
+
+The case U ∩ M ( s ) = ∅ is trivial since π L ( ·| s )( U ) = 0 . For the remaining case M ( s ) ⊂ U it holds π L ( ·| s )( U ) = 1 . Thus we have to prove lim inf n ( π n ( ·| s ) · µ A ) U = 1 . If we are able to construct an open set D ⊂ U such that ( π n ( ·| s ) · µ A )( D ) → 1 for n → ∞ , then we will get that lim inf n ( π n ( ·| s ) · µ A ) U ≥ 1 , satisfying the condition for relative weak convergence of π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) .
+
+The remainder of the proof will focus on constructing such a set. Fix a ∗ ∈ M ( s ) and 0 &lt; glyph[epsilon1] &lt; 1 / 3 . Define a continuous map λ : A → R + and closed sets A glyph[epsilon1] and B glyph[epsilon1] :
+
+10 The argument goes as follows: H := ∪ s ∈ S { s } × M ( s ) is a closed set, then f ( s ) := sup M ( s ) is upper semi-continuous and therefore measurable. Then graph of f is measurable so we can define a probability kernel π L ( B | s ) := 1 B ( f ( s )) for all B measurable.
+
+<!-- formula-not-decoded -->
+
+where continuity of the map stems from Q L ( a ∗ ) &gt; 0 and continuity of Q L (Lemma 5.1). We will prove that the candidate set is D = A c glyph[epsilon1] . In particular, we must prove that A c glyph[epsilon1] ⊂ U and that ( π n ( ·| s ) · µ A )( A glyph[epsilon1] ) → 0 . Using Lemma C.1 (Appendix) on function λ , we can choose glyph[epsilon1] &gt; 0 such that A c glyph[epsilon1] ⊂ U , satisfying the first condition. We are left to prove that ( π n ( ·| s ) · µ A )( A glyph[epsilon1] ) → 0 .
+
+glyph[negationslash]
+
+Assume A glyph[epsilon1] = ∅ (otherwise the condition is proven): for all a ∈ A glyph[epsilon1] and b ∈ B glyph[epsilon1] it holds:
+
+<!-- formula-not-decoded -->
+
+For Lemma 5.1 Q n converges uniformly to Q L . Therefore we can fix n 0 &gt; 0 such that ‖ Q n -Q L ‖ ∞ &lt; glyph[epsilon1] ′ for all n ≥ n 0 , where we define glyph[epsilon1] ′ := 0 . 1 × Q L ( a ∗ )(1 -glyph[epsilon1] )(1 -α 1 ) . Now we can proceed by bounding Q n ratio from above. For all n ≥ n 0 , a ∈ A glyph[epsilon1] and b ∈ B glyph[epsilon1] :
+
+<!-- formula-not-decoded -->
+
+Finally, we can bound the policy ratio. For all n ≥ n 0 , a ∈ A glyph[epsilon1] , b ∈ B glyph[epsilon1] :
+
+<!-- formula-not-decoded -->
+
+where
+
+<!-- formula-not-decoded -->
+
+The function c : A glyph[epsilon1] × B glyph[epsilon1] → R + is continuous as π 0 , Q i are continuous (and denominators are non-zero due to π 0 ( b | s ) &gt; 0 and Q i ( s, b ) &gt; 0 ). Since A glyph[epsilon1] × B glyph[epsilon1] is a compact set, there exists c m such that c ≤ c m . Thus we have that for all n &gt; n 0 :
+
+<!-- formula-not-decoded -->
+
+Integrating with respect to a over A glyph[epsilon1] and then with respect to b over B glyph[epsilon1] (using reference measure µ A in both cases) we obtain:
+
+<!-- formula-not-decoded -->
+
+Rearranging terms, we have:
+
+<!-- formula-not-decoded -->
+
+since the nominator in brackets is composed by finite measures of sets, thus finite numbers, while the denominator µ A B glyph[epsilon1] &gt; 0 . Indeed, define the open set C := { a ∈ A| λ ( a ) &gt; 1 -glyph[epsilon1] } ⊂ B glyph[epsilon1] . Then µ A ( B glyph[epsilon1] ) ≥ µ A ( C ) &gt; 0 ( µ A is strictly positive). To conclude, we have proven that for arbitrarily small glyph[epsilon1] &gt; 0 , the term ( π n ( ·| s ) · µ A )( A glyph[epsilon1] ) tends to 0 , satisfying the condition for relative weak convergence of π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) .
+
+Lemma 5.3. Assume that, for each s ∈ S , for each π L ∈ Π L , we have that π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s )( ∈ P ( M ( s ))) . Then this holds:
+
+<!-- formula-not-decoded -->
+
+Proof. Fix s ∈ S and π L ∈ Π L . We aim to show V L ( s ) -∫ A Q L ( s, a ) d π L ( a | s ) = 0 . Since V n ( s ) -∫ A Q n ( s, a ) π n ( a | s ) d µ A ( a ) = 0 , we have:
+
+<!-- formula-not-decoded -->
+
+The first part can be made arbitrarily small due to V n ( s ) → V L ( s ) . For the second part:
+
+<!-- formula-not-decoded -->
+
+where the first term tends to zero since π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) and Q L is continuous and constant on M ( s ) , satisfying the conditions of the adapted Portmanteau Lemma (Billingsley 2013) (see Appendix C.3). The second term can be arbitrarily small since Lemma 5.1 ensures uniform convergence of Q n to Q L .
+
+Theorem 5.1. Let π n be a sequence generated by π n := B ( π n -1 ) . Let π 0 be such that ∀ s ∈ S , ∀ a ∈ A π 0 ( a | s ) &gt; 0 and continuous in actions. Then ∀ s ∈ S π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) , where π L ∈ Π L is an optimal policy for the MDP. Moreover, lim n →∞ V n = V L , lim n →∞ Q n = Q L are the optimal state and action value functions.
+
+glyph[negationslash]
+
+Proof. Fix π L ∈ Π L (we have already shown that Π L = ∅ ). Due to Lemma 5.2, we know that for all s ∈ S , π L ( ·| s ) is the relative weak limit π n ( ·| s ) · µ A → w ( M ( s )) π L ( ·| s ) and further we know that π L is greedy on Q L ( s, a ) (from definition of Π L ). Moreover, thanks to Lemmas 5.3 and 5.1, V L ( s ) and Q L ( s, a ) are the state and action value functions of π L because they are fixed points of the Bellman operator. Since π L ( ·| s ) ∈ P (arg max a Q L ( s, a )) , V L ( s ) and Q L ( s, a ) are also the unique fixed points of Bellman's optimality operator, hence V L , Q L are optimal value functions and π L is an optimal policy.
+
+This result has several implications. First, it provides a solid theoretical ground for both previous and future works that are based on RWR (Dayan and Hinton 1997; Peters and Schaal 2007; Peng et al. 2019) and lends us some additional understanding regarding the properties of similar algorithms (e.g., (Abdolmaleki et al. 2018b)). It should also be stressed that the results presented herein are for compact state and action spaces: traits of some key domains such as robotic control. In addition to the above, one should also note that the upper bound on ( π n ( ·| s ) · µ A )( A glyph[epsilon1] ) constructed in lemma 5.2 can be used to study convergence orders and convergence rates of RWR. The following corollary, for example, proves R-linear convergence for the special case of finite state and action spaces:
+
+Corollary 5.1. Under the assumptions of lemma 5.2, if S and A are finite, then ‖ V ∗ -V n ‖ ∞ = O ( α n m ) , where 0 ≤ α m &lt; 1 , α m := 2 λ m 0 . 9+1 . 1 λ m , and λ m := max s ∈S max a ∈A\ M ( s ) Q ∗ ( s,a ) V ∗ ( s ) .
+
+A proof of the above is included in the appendix D. We observe that in the finite case, ‖ V ∗ -V n ‖ ∞ converges to 0 R-linearly (i.e., ‖ V ∗ -V n ‖ ∞ is bounded by a Q-linearly converging sequence α n m ). We provide an example of a finite MDP in lemma D.1 which exhibits linear convergence rate, showing that the upper bound from the corollary 5.1 is asymptotically tight in regards to the convergence order. Therefore it is not possible to achieve an order of convergence better than linear. Furthermore, the example in lemma D.2 shows that, in the continuous case, the convergence order could be sub-linear. Appendix E discusses the motivation of our approach.
+
+## 6 Demonstration of RWR Convergence
+
+To illustrate that the update scheme of Theorem 3.1 converges to the optimal policy, we test it on a simple environment that meets the assumptions of the Theorem. In particular, we ensure that rewards are positive and that there is no function approximations for value functions and policies. In order to meet these criteria, we use the modified four-room gridworld domain (Sutton, Precup, and Singh 1999) shown on the left of Figure 1. Here the agent starts in the upper left corner and must navigate to the bottom right corner (i.e., the goal state). In non-goal states actions are restricted to moving one square at each step in any of the four cardinal directions. If the agent tries to move into a square containing a wall, it will remain in place. In the goal state, all actions lead to the agent remaining in place. The agent receives a reward of 1 when transitioning from a non-goal state to the goal state and a reward of 0 . 001 otherwise. The discountrate is 0 . 9 at each step. At each iteration, we use Bellman's updates to obtain a reliable estimate of Q n and V n , before updating π n using the operator in Theorem 3.1.
+
+Figure 1: (Top) the value of states under the optimal policy in the four-room gridworld domain. (Bottom) the rootmean-squared value error of reward-weighted regression in the four-room gridworld domain-compared to the optimal policy-and the return obtained by running the learned policy of reward-weighted regression. All lines are averages of 100 runs under different uniform random initial policies. Shading shows standard deviation.
+
+<!-- image -->
+
+The bottom left of Figure 1 shows the root-mean-squared value error (RMSVE) of the learned policy at each iteration as compared to the optimal policy, while the bottom right shows the return obtained by the learned policy at each iteration. Smooth convergence can be observed under reward-weighted regression. The source code for this experiment is available at https://github.com/dylanashley/rewardweighted-regression.
+
+## 7 Related Work
+
+The principle behind expectation-maximization was first applied to artificial neural networks by Von der Malsburg (1973). The reward-weighted regression (RWR) algorithm, though, originated in the work of Peters and Schaal (2007) which sought to bring earlier work of Dayan and Hinton (1997) to the domain of operational space control and reinforcement learning. However, Peters and Schaal (2007) only considered the immediate-reward reinforcement learning (RL) setting. This was later extended to the episodic setting separately by Wierstra et al. (2008a) and then by Kober and Peters (2011). Wierstra et al. (2008a) went even further and also extended RWR to partially observable Markov decision processes, and Kober and Peters (2011) applied it to motor learning in robotics. Separately, Wierstra et al. (2008b) extended RWR to perform fitness maximization for evolutionary methods. Hachiya, Peters, and Sugiyama (2009, 2011) later found a way of reusing old samples to improve RWR's sample complexity. Much later, Peng et al. (2019) modified RWR to produce an algorithm for off-policy RL, using deep neural networks as function approximators.
+
+Other methods based on principles similar to RWR have been proposed. Neumann and Peters (2008), for example, proposed a more efficient version of the well-known fitted Q-iteration algorithm (Riedmiller 2005; Ernst, Geurts, and Wehenkel 2005; Antos, Munos, and Szepesv´ ari 2007) by using what they refer to as advantaged-weighted regression -which itself is based on the RWR principle. Ueno et al. (2012) later proposed weighted likelihood policy search and showed that their method both has guaranteed monotonic increases in the expected reward. Osa and Sugiyama (2018) subsequently proposed a hierarchical RL method called hierarchical policy search via return-weighted density estimation and showed that it is closely related to the episodic version of RWR by (Kober and Peters 2011).
+
+Notably, all of the aforementioned works, as well as a number of other proposed similar RL methods (e.g., Peters, M¨ ulling, and Altun (2010), Neumann (2011), Abdolmaleki et al. (2018b), Abdolmaleki et al. (2018a)), are based on the expectation-maximization framework of Dempster, Laird, and Rubin (1977) and are thus known to have monotonic improvements of the policy in the RL setting under certain conditions. However, it has remained an open question under which conditions convergence to the optimal is guaranteed.
+
+## 8 Conclusion and Future Work
+
+We provided the first global convergence proof for RewardWeighted Regression (RWR) in absence of reward transformation and function approximation. The convergence achieved is linear when using finite state and action spaces and can be sub-linear in the continuous case. We also highlighted problems that may arise under nonlinear reward transformations, potentially resulting in changes to the optimal policy. In real-world problems, access to true value functions may be unrealistic. Future work will study RWR's convergence under function approximation. In such a case, the best scenario that one can expect is to achieve convergence to a local optimum. One possible approach is to follow a procedure similar to standard policy gradients (Sutton et al. 1999) and derive a class of value function approximators that is compatible with the RWR objective. It might be possible then to prove local convergence under value function approximation using stochastic approximation techniques (Borkar 2008; Sutton, Maei, and Szepesv´ ari 2009; Sutton et al. 2009). This would require casting the value function and policy updates in a system of equations and studying the convergence of the corresponding ODE under specific assumptions. Our RWR is on-policy, using only recent data to update the current policy. Future work will also study convergence in challenging off-policy settings (using all past data), which require corrections of the mismatch between state-distributions, typically through a mechanism like Importance Sampling.
+
+## Acknowledgements
+
+We would like to thank Sjoerd van Steenkiste and Frantiˇ sek ˇ Z´ ak for their insightful comments. This work was supported by the European Research Council (ERC, Advanced Grant Number 742870), the Swiss National Supercomputing Centre (CSCS, Project s1090), and by the Swiss National Science Foundation (Grant Number 200021 192356, Project NEUSYM). We also thank both the NVIDIA Corporation for donating a DGX-1 as part of the Pioneers of AI Research Award and IBM for donating a Minsky machine.
+
+## References
+
+Abdolmaleki, A.; Springenberg, J. T.; Degrave, J.; Bohez, S.; Tassa, Y.; Belov, D.; Heess, N.; and Riedmiller, M. 2018a. Relative Entropy Regularized Policy Iteration. arXiv:1812.02256.
+
+Abdolmaleki, A.; Springenberg, J. T.; Tassa, Y.; Munos, R.; Heess, N.; and Riedmiller, M. A. 2018b. Maximum a Posteriori Policy Optimisation. In 6th International Conference on Learning Representations, ICLR 2018, Vancouver, BC, Canada, April 30 - May 3, 2018, Conference Track Proceedings . OpenReview.net.
+
+Antos, A.; Munos, R.; and Szepesv´ ari, C. 2007. Fitted Qiteration in continuous action-space MDPs. In Platt, J. C.; Koller, D.; Singer, Y.; and Roweis, S. T., eds., Advances in Neural Information Processing Systems 20, Proceedings of the Twenty-First Annual Conference on Neural Information Processing Systems, Vancouver, British Columbia, Canada, December 3-6, 2007 , 9-16. Curran Associates, Inc.
+
+Bellemare, M. G.; Candido, S.; Castro, P. S.; Gong, J.; Machado, M. C.; Moitra, S.; Ponda, S. S.; and Wang, Z. 2020. Autonomous navigation of stratospheric balloons using reinforcement learning. Nature , 588(7836): 77-82.
+
+Billingsley, P. 2013. Convergence of Probability Measures . John Wiley &amp; Sons.
+
+Borkar, V. S. 2008. Stochastic Approximation: A Dynamical Systems Viewpoint , volume 48. Hindustan Book Agency.
+
+Dayan, P.; and Hinton, G. E. 1997. Using ExpectationMaximization for Reinforcement Learning. Neural Comput. , 9(2): 271-278.
+
+Dempster, A. P.; Laird, N. M.; and Rubin, D. B. 1977. Maximumlikelihood from incomplete data via the EM algorithm. Journal of the Royal Statistical Society: Series B (Methodological) , 39(1): 1-22.
+
+Ernst, D.; Geurts, P.; and Wehenkel, L. 2005. Tree-Based Batch Mode Reinforcement Learning. J. Mach. Learn. Res. , 6: 503-556.
+
+Hachiya, H.; Peters, J.; and Sugiyama, M. 2009. Efficient Sample Reuse in EM-Based Policy Search. In Buntine, W. L.; Grobelnik, M.; Mladenic, D.; and ShaweTaylor, J., eds., Machine Learning and Knowledge Discovery in Databases, European Conference, ECML PKDD 2009, Bled, Slovenia, September 7-11, 2009, Proceedings, Part I , volume 5781 of Lecture Notes in Computer Science , 469-484. Springer.
+
+Hachiya, H.; Peters, J.; and Sugiyama, M. 2011. RewardWeighted Regression with Sample Reuse for Direct Policy Search in Reinforcement Learning. Neural Comput. , 23(11): 2798-2832.
+
+Kober, J.; and Peters, J. 2011. Policy search for motor primitives in robotics. Mach. Learn. , 84(1-2): 171-203.
+
+Munkres, J. 2000. Topology . Prentice Hall, Incorporated.
+
+Neumann, G. 2011. Variational Inference for Policy Search in changing situations. In Getoor, L.; and Scheffer, T., eds., Proceedings of the 28th International Conference on Machine Learning, ICML 2011, Bellevue, Washington, USA, June 28 - July 2, 2011 , 817-824. Omnipress.
+
+Neumann, G.; and Peters, J. 2008. Fitted Q-iteration by Advantage Weighted Regression. In Koller, D.; Schuurmans, D.; Bengio, Y.; and Bottou, L., eds., Advances in Neural Information Processing Systems 21, Proceedings of the Twenty-Second Annual Conference on Neural Information Processing Systems, Vancouver, British Columbia, Canada, December 8-11, 2008 , 1177-1184. Curran Associates, Inc. Osa, T.; and Sugiyama, M. 2018. Hierarchical Policy Search via Return-Weighted Density Estimation. In McIlraith, S. A.; and Weinberger, K. Q., eds., Proceedings of the Thirty-Second AAAI Conference on Artificial Intelligence, (AAAI-18), the 30th innovative Applications of Artificial Intelligence (IAAI-18), and the 8th AAAI Symposium on Educational Advances in Artificial Intelligence (EAAI-18), New Orleans, Louisiana, USA, February 2-7, 2018 , 3860-3867. AAAI Press.
+
+Peng, X. B.; Kumar, A.; Zhang, G.; and Levine, S. 2019. Advantage-Weighted Regression: Simple and Scalable OffPolicy Reinforcement Learning. arXiv:1910.00177.
+
+Peters, J.; M¨ ulling, K.; and Altun, Y. 2010. Relative Entropy Policy Search. In Fox, M.; and Poole, D., eds., Proceedings of the Twenty-Fourth AAAI Conference on Artificial Intelligence, AAAI 2010, Atlanta, Georgia, USA, July 11-15, 2010 . AAAI Press.
+
+Peters, J.; and Schaal, S. 2007. Reinforcement Learning by Reward-Weighted Regression for Operational Space Control. In Ghahramani, Z., ed., Machine Learning, Proceedings of the Twenty-Fourth International Conference (ICML 2007), Corvallis, Oregon, USA, June 20-24, 2007 , volume 227 of ACM International Conference Proceeding Series , 745-750. ACM.
+
+Peters, J.; and Schaal, S. 2008. Learning to Control in Operational Space. The International Journal of Robotics Research , 27(2): 197-212.
+
+Plappert, M.; Andrychowicz, M.; Ray, A.; McGrew, B.; Baker, B.; Powell, G.; Schneider, J.; Tobin, J.; Chociej, M.; Welinder, P.; Kumar, V.; and Zaremba, W. 2018. MultiGoal Reinforcement Learning: Challenging Robotics Environments and Request for Research. arXiv:1802.09464.
+
+Pollard, D. 2001. A User's Guide to Measure Theoretic Probability . Cambridge Series in Statistical and Probabilistic Mathematics. Cambridge University Press.
+
+Puterman, M. L. 2014. Markov Decision Processes: Discrete Stochastic Dynamic Programming . John Wiley &amp; Sons.
+
+Riedmiller, M. A. 2005. Neural Fitted Q Iteration - First Experiences with a Data Efficient Neural Reinforcement Learning Method. In Gama, J.; Camacho, R.; Brazdil, P.; Jorge, A.; and Torgo, L., eds., Machine Learning: ECML 2005, 16th European Conference on Machine Learning, Porto, Portugal, October 3-7, 2005, Proceedings , volume 3720 of Lecture Notes in Computer Science , 317-328. Springer.
+
+Rudin, W. 1976. Principles of Mathematical Analysis . McGraw-hill New York, 3d ed. edition.
+
+Severini, C. 1910. Sulle successioni di funzioni ortogonali [On Sequences of Orthogonal Functions]. Atti dell'Accademia Gioenia, serie 5a (in Italian), 3 (5): Memoria XIII, 1-7, JFM 41.0475.04. Published by the Accademia Gioenia in Catania .
+
+Silver, D.; Huang, A.; Maddison, C. J.; Guez, A.; Sifre, L.; van den Driessche, G.; Schrittwieser, J.; Antonoglou, I.; Panneershelvam, V.; Lanctot, M.; Dieleman, S.; Grewe, D.; Nham, J.; Kalchbrenner, N.; Sutskever, I.; Lillicrap, T. P.; Leach, M.; Kavukcuoglu, K.; Graepel, T.; and Hassabis, D. 2016. Mastering the game of Go with deep neural networks and tree search. Nat. , 529(7587): 484-489.
+
+Stratonovich, R. 1960. Conditional Markov processes. Theory of Probability And Its Applications , 5(2): 156-178.
+
+Sutton, R. S.; and Barto, A. G. 2018. Reinforcement Learning: An Introduction . USA: A Bradford Book. ISBN 0262039249, 9780262039246.
+
+Sutton, R. S.; Maei, H. R.; Precup, D.; Bhatnagar, S.; Silver, D.; Szepesv´ ari, C.; and Wiewiora, E. 2009. Fast GradientDescent Methods for Temporal-Difference Learning with Linear Function Approximation. In Proceedings of the 26th Annual International Conference on Machine Learning , ICML '09, 993-1000. New York, NY, USA: Association for Computing Machinery. ISBN 9781605585161.
+
+Sutton, R. S.; Maei, H. R.; and Szepesv´ ari, C. 2009. A convergent o ( n ) temporal-difference algorithm for off-policy learning with linear function approximation. In Advances in neural information processing systems , 1609-1616.
+
+Sutton, R. S.; McAllester, D.; Singh, S.; and Mansour, Y. 1999. Policy Gradient Methods for Reinforcement Learning with Function Approximation. In Proceedings of the 12th International Conference on Neural Information Processing Systems , NIPS'99, 1057-1063. Cambridge, MA, USA: MIT Press.
+
+Sutton, R. S.; Precup, D.; and Singh, S. P. 1999. Between MDPs and Semi-MDPs: A Framework for Temporal Abstraction in Reinforcement Learning. Artif. Intell. , 112(1-2): 181-211.
+
+Ueno, T.; Hayashi, K.; Washio, T.; and Kawahara, Y. 2012. Weighted Likelihood Policy Search with Model Selection. In Bartlett, P. L.; Pereira, F. C. N.; Burges, C. J. C.; Bottou, L.; and Weinberger, K. Q., eds., Advances in Neural Information Processing Systems 25: 26th Annual Conference on Neural Information Processing Systems 2012. Proceedings of a meeting held December 3-6, 2012, Lake Tahoe, Nevada, United States , 2366-2374.
+
+Von der Malsburg, C. 1973. Self-organization of orientation sensitive cells in the striate cortex. Kybernetik , 14(2): 85100.
+
+Wierstra, D.; Schaul, T.; Peters, J.; and Schmidhuber, J. 2008a. Episodic Reinforcement Learning by Logistic Reward-Weighted Regression. In Kurkov´ a, V .; Neruda, R.; and Koutn´ ık, J., eds., Artificial Neural Networks - ICANN 2008 , 18th International Conference, Prague, Czech Republic, September 3-6, 2008, Proceedings, Part I , volume 5163 of Lecture Notes in Computer Science , 407-416. Springer.
+
+Wierstra, D.; Schaul, T.; Peters, J.; and Schmidhuber, J. 2008b. Fitness Expectation Maximization. In Rudolph, G.; Jansen, T.; Lucas, S. M.; Poloni, C.; and Beume, N., eds., Parallel Problem Solving from Nature - PPSN X, 10th International Conference Dortmund, Germany, September 13-17, 2008, Proceedings , volume 5199 of Lecture Notes in Computer Science , 337-346. Springer.
+
+Wu, C. J. 1983. On the Convergence Properties of the EM Algorithm. The Annals of statistics , 11(1): 95-103.
+
+## A Counterexample
+
+Consider the simple two-armed bandit shown in Figure 2 with actions a 0 and a 1 , and with P ( r = 1 | a 0 ) = 1 , P ( r = 0 | a 1 ) = 2 / 3 , and P ( r = 2 | a 1 ) = 1 / 3 . Note that q ( a 0 ) = 1 &gt; q ( a 1 ) = 2 / 3 . Thus the optimal policy always takes action a 0 . Now, after applying the transformation u ( r ) = e log(3) r = 3 r , we get P ( u ( r ) = 3 | a 0 ) = 1 , P ( u ( r ) = 1 | a 1 ) = 2 / 3 , and P ( u ( r ) = 9 | a 1 ) = 1 / 3 . Hence, under transformation u , we have q ( a 0 ) = 3 &lt; q ( a 1 ) = 11 / 3 . So the optimal policy under the transformed rewards always takes action a 1 , which is sub-optimal, given the original problem.
+
+## B Generalization to zero reward and undiscounted setting
+
+In this section, we study the generalization of the main results of the paper to the case of MDPs with absorbing states (when γ = 1 ) and when rewards are not strictly positive. Full treatment of this topic is outside the scope of this paper and we restrict ourselves here to a discussion of the main problems and possible assumptions.
+
+Motivation When rewards are not strictly positive (e.g., are allowed to be zero), the requirement for shifting rewards to a positive range can be very inconvenient. In particular, there can be a convergence slowdown (see proof of lemma 5.2: if we shift Q L by positive constant, the bound α 1 and consequently α gets closer to 1, leading to potentially slower convergence). This was also observed in previous work (Dayan and Hinton 1997).
+
+Moreover, assuming γ &lt; 1 prevents us from studying many useful cases, e.g. the simple undiscounted fixed horizon case. However, it is possible to model this setting using an MDP with absorbing states. We define this new case as follows:
+
+Definition 2. (MDP with absorbing states, uniform boundedness) Let us have a MDP M = ( S , A , p T , R, γ, µ 0 ) with γ = 1 . The state s ∈ S is absorbing if and only if, for all actions a ∈ A it holds: ( p T ( . | s, a ) · µ S )( { s } ) = 1 . Thus after the MDP enters an absorbing state, it stays there with probability 1. Let S A ⊂ S measurable be the set of all absorbing states . All other states are called transient . We denote by S T := S\ S A the set of all transient states (which is also measurable from measurability of S ). We will consider just MDPs here where there is zero reward from absorbing states (i.e. ∀ s ∈ S A , ∀ a ∈ A , R ( s, a ) = 0 ).
+
+Denote by ˆ P π : L ∞ ( S T ) → L ∞ ( S T ) the operator arising from the restriction of M transition kernel to transient states, for a fixed policy π :
+
+<!-- formula-not-decoded -->
+
+where 11
+
+<!-- formula-not-decoded -->
+
+11 It is more flexible to allow here for general policy measures, not just measures dominated by the reference µ A .
+
+<!-- formula-not-decoded -->
+
+The transition kernel of and MDP M with absorbing states is called uniformly bounded if and only if there exists k u ∈ N and α &lt; 1 non-negative such that for every sequence of policies π 0 , . . . π k u of length k u , it holds:
+
+<!-- formula-not-decoded -->
+
+The definition above requires a few comments. One can see that we were strongly motivated by the classical 'discrete' case, which we always want to include as a sub-case. Finite ('discrete') state space case usually comes with the condition that starting from all s ∈ S we eventually end up in an absorbing state. In the MDP setting we also have to specify a policy, or sequence of policies used ( π t ′ ) (i.e. ( p s t | s 0 , ( π t ′ ) ( . | s ) · µ S )( S A ) → 1 ). Unless we are in the finite state and action spaces setting, it is very difficult to establish boundedness of value functions, which we need in the proofs. This motivates the introduction of stronger assumptions like uniform boundedness above. Moreover, the uniform boundedness condition allows us to proceed in a similar way as in discounted case. The only difference is that the Bellman operator and the Bellman optimality operator are generally not contractions anymore: only their restricted versions (to S T ) when composed k u times are contractions. However, the restricted versions of original operators inherit all useful 'limit' and 'fixed point' properties from their k u composition, so the proofs in main paper can be adapted to them.
+
+Regarding monotonicity, when defining the expression of a new policy in theorem 3.1, one has to resort to a piece-wise definition of the B -operator, since we cannot rely anymore on the positivity of V -values. This causes inconvenient discontinuities in resulting policies and V -values. Furthermore, there is a problem with possible changes of the supports, and a new monotonicity proof has to account for that.
+
+Finally, possible support changes are problematic when proving lemma 5.2, where we need to construct policy ratios in order to establish weak convergence. Here, the proof is much more complicated without the the assumption of strict positivity of the reward used in the main text (which now we are no longer assuming).
+
+## C Lemmas
+
+This section contains Lemmas used in the convergence proof.
+
+Lemma C.1. (on level sets of continuous function on compact metric space) Let ( X,d ) be a compact metric space and f : X → R be a continuous function. Furthermore, let m := max x ∈ X f ( x ) and F := { x ∈ X : f ( x ) = m } . Then for every open U ⊂ X , F ⊂ U there exists a δ &gt; 0 such that { x ∈ X : f ( x ) &gt; m -δ } ⊂ U .
+
+glyph[negationslash]
+
+Proof. First notice that m is defined correctly as f is a continuous function on a compact space and therefore always has a maximum. Also, note that F is compact and F = ∅ . Assume that f is not constant (otherwise the conclusion holds trivially). Now consider an open set U and F ⊂ U . If U = X , the Lemma holds trivially, thus assume U = X . From compactness of F we conclude that F
+
+glyph[negationslash]
+
+Figure 2: Counterexample demonstrating how applying a naive transformation to the reward function of an MDP may change the optimal policy.
+
+<!-- image -->
+
+glyph[negationslash]
+
+is 2 glyph[epsilon1] isolated from U C := X \ U for some glyph[epsilon1] &gt; 0 . Let us define V := { x ∈ X : d ( x, F ) &lt; glyph[epsilon1] } ⊂ U an open set. Further, define m ′ := max f ( X \ V ) . Notice that the definition is correct since X \ V is closed and therefore compact and also X \ V = ∅ as X \ V ⊃ U C = ∅ . Further, m ′ &lt; m as X \ V and F are disjoint ( F ⊂ V ). Define δ := m -m ′ 2 . It remains to verify that W := { x ∈ X : f ( x ) &gt; m -δ } = { x ∈ X : f ( x ) &gt; m -m + m ′ 2 } ⊂ U . Notice that f ( W ) &gt; m + m ′ 2 &gt; m ′ ≥ f ( X \ V ) . Thus W and X \ V must be disjoint and therefore W ⊂ V ( ⊂ U ) .
+
+glyph[negationslash]
+
+Lemma C.2. (quotient of a metric space by a compact subset) Let ( X,d ) be a metric space and F ⊂ X compact. Furthermore, let τ denote the topology on X induced by the metric d . Define the equivalence:
+
+<!-- formula-not-decoded -->
+
+Define a (factor) quotient space ˜ X := X/ ∼ and ν : X → ˜ X the canonical projection ν ( x ) := [ x ] ∼ .
+
+1. Denote by ˜ τ the quotient topology on ˜ X (induced by τ and ν ). Then it holds:
+
+<!-- formula-not-decoded -->
+
+2. Further, the function ˜ d : ˜ X × ˜ X → R +
+
+<!-- formula-not-decoded -->
+
+defines a metric on ˜ X and the topology induced by metric ˜ d agrees with ˜ τ .
+
+3. (continuous functions) Let ˜ f : ˜ X → R be a function on ˜ X . Than it holds:
+
+<!-- formula-not-decoded -->
+
+so there is a one to one correspondence between continuous functions on ˜ X ( C ( ˜ X )) and continuous functions on X , which are constant on F (which allow factorisation through ν ):
+
+<!-- formula-not-decoded -->
+
+Although this result is quite standard and any general topology textbook (e.g. Munkres (2000)) can serve as a reference here, we decided to include also the proof for convenience and completeness. The fact that ˜ X is a metric space (point (2) of the Lemma) is necessary for the application of Portmanteau theorem in the Lemma below. Since the explicit form of the metric ˜ d (given in point (2)) will not be used anywhere, one can also proceed by utilizing metrization theorems. Since the Lemma is intended just for the case X = A ( ⊂ R n A ) (the action space), which is separable, both Uryshon and Nagata-Smirnov metrization theorems (Munkres 2000) can be used.
+
+glyph[negationslash]
+
+Proof. During the proof, we will assume F = ∅ . For the case F = ∅ , the Lemma holds trivially.
+
+1. The quotient topology ˜ τ is the finest topology in which is ν continuous. Suppose ˜ U ∈ ˜ τ (is open in ˜ τ ) then U := ν -1 ( ˜ U ) must be open (otherwise ν would not be continuous). Further, due to the equivalence defined, the pre-images under ν cannot contain F only partially. They either contain the whole F , or are disjoint with F (in the first case we get F ⊂ U and in the second one we get F ∩ U = ∅ ). This gives us the inclusion ˜ τ ⊂ { ν ( U ) : U ∈ τ, ( U ∩ F = ∅∨ F ⊂ U ) } . For the reverse inclusion, assume we have U ∈ τ . Assume F ⊂ U . Then the pre-image ν -1 ( ν ( U )) = U (the result would be different from U just when U includes F only partially), which is an open set. Thus, from the fact that ˜ τ is the finest topology in which ν is continuous, it follows that ν ( U ) ∈ ˜ τ . Similarly for U ∩ F = ∅ .
+
+2. Now we aim to show that ˜ d is a metric on ˜ X . Notice that the definition is correct in the sense that it does not depend on the choice of representants. When we assume that both x, y are not in F , then the choice of representants is unique. So assume that, for example, x / ∈ F , y ∈ F . Then we can choose another representant for [ y ] ∼ , but then ˜ d ([ x ] ∼ , [ y ] ∼ ) = d ( x, F ) is independent of y . Similarly, if x, y are both in F then ˜ d ([ x ] ∼ , [ y ] ∼ ) = 0 which again does not depend on choice of the representants. Non-negativity and symmetry trivially holds. First, we consider the property:
+
+<!-- formula-not-decoded -->
+
+Assume x ∼ y , then either x = y or x, y ∈ F . In both cases ˜ d ([ x ] ∼ , [ y ] ∼ ) becomes zero. Assume ˜ d ([ x ] ∼ , [ y ] ∼ ) = 0 , then d ( x, y ) = 0 or d ( x, F ) + d ( y, F ) = 0 , where in the first case we get x = y and in the second case (here we use that F is closed) x, y ∈ F . Thus x ∼ y . The Triangle inequality holds too. The proof follows easily, but is omitted for brevity (it consists of checking multiple cases).
+
+Finally, we have to show that the topology induced by ˜ d agrees with ˜ τ (here we will need compactness of F ). First we show that every open set in ˜ τ is also open in the topology induced by ˜ d . Let us consider an open set ˜ U ∈ ˜ τ . Now let us fix an arbitrary point ˜ x ∈ ˜ U . It suffices to show that there exits r &gt; 0 such that open ball U r (˜ x ) := { ˜ y ∈ ˜ X : ˜ d (˜ x, ˜ y ) &lt; r } ⊂ ˜ U . From ˜ U ∈ ˜ τ there exists U ∈ τ such that ν ( U ) = ˜ U and moreover F ⊂ U or F ∩ U = ∅ .
+
+Fix x ∈ X such that [ x ] ∼ = ˜ x . We start by considering the case F ⊂ U and x ∈ F . Notice that the metric reduces to ˜ d ([ x ] ∼ , [ y ] ∼ ) = d ( y, F ) . Compactness of F guarantees that there exists glyph[epsilon1] &gt; 0 such that F is glyph[epsilon1] isolated from U c := X \ U . So it suffices to choose r := glyph[epsilon1] .
+
+For the second case we consider F ⊂ U and x / ∈ F . As U \ F is open, there exists a δ &gt; 0 such that U δ ( x ) := { y ∈ X : d ( x, y ) &lt; δ } ⊂ U \ F . Note that ν ( U δ ( x )) is an open set in ˜ τ (has open pre-image and does not contain F ) on which the metric simplifies to ˜ d ([ x ] ∼ , [ y ] ∼ ) = d ( x, y ) ( &lt; δ ) . We conclude that it is an open ball in ˜ d , whole lying in ˜ U . So it suffices to put r := δ .
+
+As final case, assume F ∩ U = ∅ . This actually reduces to the second case we already considered.
+
+Finally, for the opposite inclusion it suffices to show that every open ball in ˜ d is an open set in ˜ τ . Thus let us fix an x ∈ X and positive r &gt; 0 and set ˜ U := U r (˜ x ) . In order for ˜ U to be open in ˜ τ , it must have open pre-image
+
+<!-- formula-not-decoded -->
+
+where we end up with a union of two sets, both open in τ , which is again open. Thus ν -1 ( ˜ U ) is open, so ˜ U is open (from ˜ τ is the finest topology in which ν is continuous).
+
+3. (Continuous functions) Assume ˜ f ∈ C ( ˜ X ) . Since ν is continuous, then ˜ f ◦ ν is continuous (composition of continuous maps). For the opposite implication, assume f := ˜ f ◦ ν is continuous. We have to show that ˜ f is continuous. Thus fix an arbitrary open set V ⊂ R . We have to show that the preimage ˜ U := ˜ f -1 ( V ) is open. We know that U := f -1 ( V ) is open from the continuity of f and that U = f -1 ( V ) = ν -1 ( ˜ U ) , that means that the pre-image of ˜ U under ν is open, but ˜ τ is the finest topology in which ν is continuous, therefore ˜ U has to be open.
+
+Lemma C.3. (Adaptation of Portmanteau theorem conditions to relative weak convergence) Let ( X,d ) , ( ˜ X, ˜ d ) , F , ν
+
+be like above. Let P, P n , n ∈ N be probability measures on B ( X ) . Then following conditions are equivalent:
+
+1. P n → w ( F ) P.
+2. For all continuous f : X → R that are constant on F it holds that P n f → Pf.
+3. For all U ⊂ X open satisfying U ∩ F = ∅ or F ⊂ U it holds that lim inf P n U ≥ PU.
+
+Proof. First we show equivalence of 1. and 2. Point 1. is equivalent to νP n → w νP, (definition 1) which is equivalent to (using Portmanteau theorem):
+
+<!-- formula-not-decoded -->
+
+what can be rewritten using definition of image measure:
+
+<!-- formula-not-decoded -->
+
+But from Lemma C.2 we already know that there is a one to one correspondence between functions in C ( ˜ X ) and functions in C ( X ) , which factors through ν (are constant on F ). Thus it is equivalent to:
+
+<!-- formula-not-decoded -->
+
+Finally, we show equivalence of 1. and 3. Again, point 1. is equivalent (using Portmanteau theorem) to:
+
+<!-- formula-not-decoded -->
+
+Using the definition of image measure and the one to one correspondence (see Lemma C.2) between all open sets in ˜ X and open sets in X we have that at least one of the two conditions U ∩ F = ∅ , F ⊂ U is satisfied. This concludes the result.
+
+## D Convergence order - finite case
+
+Corollary 5.1. Under the assumptions of lemma 5.2, if S and A are finite, then ‖ V ∗ -V n ‖ ∞ = O ( α n m ) , where 0 ≤ α m &lt; 1 , α m := 2 λ m 0 . 9+1 . 1 λ m , and λ m := max s ∈S max a ∈A\ M ( s ) Q ∗ ( s,a ) V ∗ ( s ) .
+
+Proof. We will use the upper bound on ( π n ( ·| s ) · µ A )( A glyph[epsilon1] ) constructed in lemma 5.2 for the choice of glyph[epsilon1] below. In the following, A glyph[epsilon1] , B glyph[epsilon1] , α , c m and n 0 are defined as in lemma 5.2. Fix an arbitrary s ∈ S . Like in the lemma 5.2, for the first part of this proof the dependence on s will not be made explicit. Let λ 0 := max a ∈A\ M ( s ) λ ( a ) , where the function λ ≤ 1 is defined as in lemma 5.2. Notice that λ 0 &lt; 1 . Indeed, if λ 0 = 1 then there exists a 0 ∈ A \ M ( s ) such that λ 0 ( a 0 ) = 1 meaning that a 0 ∈ M ( s ) , which is a contradiction. Now define glyph[epsilon1] such that 2 glyph[epsilon1] = 1 -λ 0 . Then A glyph[epsilon1] = A\ M ( s ) , B glyph[epsilon1] = M ( s ) , and α = 2 λ 0 0 . 9+1 . 1 λ 0 &lt; 1 .
+
+Furthermore, using the upper bound from lemma 5.2 we have:
+
+<!-- formula-not-decoded -->
+
+where C := c m µ A A glyph[epsilon1] µ A B glyph[epsilon1] . Notice that ( π n ( ·| s ) · µ A )( B glyph[epsilon1] ) ≤ 1 .
+
+Now we drop the assumption of fixed s ∈ S and we denote the dependence on s explicitly. Starting from Eq. (5) we have that ∀ s ∈ S :
+
+<!-- formula-not-decoded -->
+
+for n &gt; n m , where α m := max s ∈S α ( s ) &lt; 1 , C m := max s ∈S C ( s ) and n m := max s ∈S n ( s ) .
+
+Now we have that ∀ s ∈ S :
+
+<!-- formula-not-decoded -->
+
+Using Eq. (6) and the following facts:
+
+<!-- formula-not-decoded -->
+
+the first expression in Eq. (7) can be bounded ∀ s ∈ S :
+
+<!-- formula-not-decoded -->
+
+for all n &gt; n m , where V m = max s ∈S V ∗ ( s ) .
+
+The second expression in Eq. (7) can be bounded ∀ s ∈ S :
+
+<!-- formula-not-decoded -->
+
+Combining everything together:
+
+<!-- formula-not-decoded -->
+
+which is equivalent to:
+
+<!-- formula-not-decoded -->
+
+Thus ‖ V ∗ -V n ‖ ∞ = O ( α n m ) . Finally, the formulas for α m and λ m can be obtained from pure substitution.
+
+The result in the corollary can be developed in a slightly more general case than finite state and action spaces. It suffices to assume that M ( s ) is open (i.e. clopen) for all s ∈ S and then to show continuity of e.g. s ↦→ C ( s ) , s ↦→ α ( s ) etc. This makes the proof more technical. The development for not open M ( s ) (general case) is more complex and it is out of scope of this paper.
+
+We can observe that for the finite case ‖ V ∗ -V n ‖ ∞ converges to 0 R-linearly, i.e. ‖ V ∗ -V n ‖ ∞ is bounded by a Qlinearly converging sequence α n m . We finish this section with two examples. The example for a finite MDP introduced in lemma D.1 below which exhibits linear convergence rate demonstrates that the upper bound from the corollary 5.1 is asymptotically tight (i.e. could not be improved) in sense of order of convergence. Therefore a linear order is the best we can achieve. The second example in lemma D.2 further shows that convergence orders encountered in the 'continuous case' could be much slower (i.e. sub-linear).
+
+Lemma D.1. (finite example with Q-linear rate) Consider a two states MDP with one initial state and one goal state. When the goal state is entered the agent stays there forever, independently of action taken. In the initial state there is a possibility to chose form two actions A = { 0 , 1 } which both transit to the goal state. The action value function in the initial state is given by q 0 := Q ( a = 0) := 2 , q 1 := Q ( a = 1) := 1 .
+
+The space of all policies can be parametrized by the probability of the first action p ∈ [0 , 1] in the initial state. B then can be interpreted as a map B : [0 , 1] → [0 , 1] given by
+
+<!-- formula-not-decoded -->
+
+The following holds:
+
+1. The optimal policy is given by the value p ∗ = 1 of the parameter p . B ( p ) ≥ p on p ∈ [0 , 1] and for p ∈ (0 , 1) the inequality is strict.
+2. For 0 ≤ c ≤ 1 the map B is 1 1+ c -Lipschitz (it is a contraction for c &gt; 0 ) on [ c, 1] with respect to the | · | -norm (the norm given by the absolute value), i.e.
+
+<!-- formula-not-decoded -->
+
+Further:
+
+<!-- formula-not-decoded -->
+
+where p n := B ◦ n p 0 (n-th application of B on some initial condition 0 &lt; p 0 &lt; 1 ), i.e. p n = B ◦ n p 0 converges to → p ∗ = 1 as n → ∞ Q-linearly (the order of convergence is 1) with convergence rate 1 2 . The value function V n (for the policy parametrized by p n ) converges to the optimal V ∗ exactly the same way, i.e. Q-linearly with convergence rate 1 2 .
+
+3. Define a strictly decreasing function f : (0 , 1] → (0 , 1] , f ( x ) := 1 -x x . and a metric d : (0 , 1] 2 → R + , d ( x, y ) := | f ( x ) -f ( y ) | . Then B is a 1 2 -contraction on (0 , 1] .
+
+Proof. 1. The optimal policy is derived directly from definition of action value function Q and the parameter p . Further, Bp -p = p (1 -p ) 1+ p ≥ 0 on [0 , 1] and the strict inequality holds by inspection for p ∈ (0 , 1) . 2. We have that:
+
+<!-- formula-not-decoded -->
+
+A similar approach is used to prove Q-linear convergence:
+
+<!-- formula-not-decoded -->
+
+Regarding the convergence of value functions, we have that:
+
+<!-- formula-not-decoded -->
+
+Therefore the convergence must be exactly the same as for the policies.
+
+3. It is easy to verify that d is a metric, e.g. for the triangle inequality one can easily see that | f ( x ) -f ( y ) | &lt; | f ( x ) -f ( z ) | + | f ( z ) -f ( y ) | for all x, y, z ∈ (0 , 1] 3 . In order to prove the contraction property, note that p = 1 is a fixed point for p ∈ (0 , 1) :
+
+<!-- formula-not-decoded -->
+
+Lemma D.2. (example in 'continuous' action space) Let us have a two state MDP with one initial state and one goal state. When the goal state is entered the agent stays there forever independent of action taken. In the initial state there is a possibility to chose from A = [0 , 1] actions which all transit to the goal state. The action value function in the initial state is given by Q ∗ ( a ) = a +1 . Assume the reference measure µ A is the Lebesgue measure. Assume the initial policy density in the initial state to be π 0 = 1 , i.e. the initial policy in the initial state is uniform.
+
+Then the optimal policy measure in the initial state is given by π ∗ ( B ) = 1 B (1) for all B ∈ B ( A ) , the optimal statevalue function in the initial state is V ∗ = 2 , the policy density in the initial state is π n = ( n +1)( a +1) n 2 n +1 -1 and the state-value function in the initial state is V n = n +1 n +2 2 n +2 -1 2 n +1 -1 . Further, | V ∗ -V n | = 2 n +2 -n -3 ( n +2)(2 n +1 -1) = Θ( n -1 ) and glyph[negationslash]
+
+d ( π ∗ , π n · µ A ) = 2 n +2 -n -3 ( n +2)(2 n +1 -1) = Θ( n -1 ) , where d ( P, Q ) := sup {| Pl -Ql | : l ∈ BL ( A ) , ‖ l ‖ BL ( A ) ≤ 1 } for P, Q measures on A , where BL ( A ) stands for the space of all Bounded Lipschitz functions on A with norm ‖ l ‖ BL ( A ) := max { K 1 , 2 K 2 } , K 1 := sup x = y | l ( x ) -l ( y ) | | x -y | , K 2 := sup x | l ( x ) | . The d is a metric inducing the same topology on the space of all policy measures (in the initial state) as relative (to M := arg max Q ∗ = { 1 } ) weak convergence does.
+
+Proof. The formula for π ∗ is obtained from the fact that the optimal policy measure must concentrate all the mass on arg max Q ∗ . V ∗ := π ∗ ( Q ∗ ) = ∫ A Q ∗ ( a )d π ∗ ( a ) = 2 . Further, we know that π n ∝ ( Q ∗ ) n π 0 = ( a + 1) n , where the normalization factor is ∫ A ( a +1) n d a = 2 n +1 -1 n +1 , which gives the formula for π n ( a ) = ( a +1) n ∫ A ( a +1) n d a = ( n +1)( a +1) n 2 n +1 -1 . For the state-value function we obtain: V n = ∫ A Q ∗ ( a ) π n ( a )d a = ( n +1) 2 n +1 -1 ∫ A ( a + 1) n +1 d a = n +1 n +2 2 n +2 -1 2 n +1 -1 . From
+
+<!-- formula-not-decoded -->
+
+we see that | V ∗ -V n | = Θ( n -1 ) as
+
+<!-- formula-not-decoded -->
+
+Now we prove the statement about convergence of policy measures π n · µ A . Notice that in the goal state any policy measure is optimal, therefore we can resort to discuss convergence just in the initial state. Further, the factorisation induced by M := arg max Q ∗ = { 1 } in the definition of relative weak convergence has no effect here as M consists of a single point. Thus effectively we are left with just ordinary weak convergence of measures on a compact separable metric space A . This convergence can be described by the metric d introduced in the lemma, see (Pollard 2001). Both the metric d and weak convergence induce the same topology. During the proof we will use the following fact, see (Pollard 2001) ( ∀ l ∈ BL ( A ) , x ∈ A , y ∈ A )
+
+<!-- formula-not-decoded -->
+
+Let us first upper bound d ( π ∗ , π n · µ A ) :
+
+<!-- formula-not-decoded -->
+
+For any l ∈ BL ( A ) , ‖ l ‖ BL ( A ) ≤ 1 it holds:
+
+<!-- formula-not-decoded -->
+
+Thus d ( π ∗ , π n · µ A ) ≤ 2 n +2 -n -3 ( n +2)(2 n +1 -1) . Now we show that the given bound is tight, it suffices to consider l = a :
+
+<!-- formula-not-decoded -->
+
+Thus we are left with d ( π ∗ , π n · µ A ) = 2 n +2 -n -3 ( n +2)(2 n +1 -1) = Θ( n -1 ) .
+
+## E Motivation of approach
+
+Here we provide a justification on why we cover the general case of compact state and action spaces and not just the particular case of finite states and actions. Moreover, we comment on the difficulties of using Banach fixed point theorem in our setting.
+
+Why studying just finite case is not enough The main reason why we study our problem for compact state and action spaces is that we want to cover also the robotic control scenario, which is of great importance today and involves multidimensional 'continuous' state and action spaces. One could wonder if our results could be easily studied in the finite setting and then extended to the compact case. However, the example in lemma D.1 (finite case) proved O ( α n m ) convergence of state-value function to the optimum, while the example in lemma D.2 ('continuous' case) showed much slower O ( n -1 ) convergence. Therefore the intuition coming from the finite case does not apply to the 'continuous' one. In general, one can always approach the continuous case by discretization. However there is always a discretization error involved which is difficult to study.
+
+Considering directly the general compact setting avoids this problem, although it necessarily involves measure and topology arguments.
+
+Why we do not employ Banach fixed point argument Using a Banach contraction argument could simplify the proof a lot. However, it is hard to make the B operator a contraction on a complete metric space (these are the assumptions of Banach fixed point theorem) in our compact setting. Some insights are provided in our examples in Lemmas D.1 and D.2. Lemma D.1 demonstrates that the B operator is not a contraction on A . One has to remove nonoptimal deterministic policies with some open neighbourhoods so the resulting space becomes complete again (see point 2 of the example). This removing has to be performed carefully because the resulting space must be closed under the B operator. In general, it is not trivial to close it under B again since the union of closed sets is not generally closed. This could work for the finite case but the 'continuous case' from the example in Lemma D.2 exhibits asymptotic behaviour Θ( n -1 ) which is not sufficient in order for B to be a contraction. Therefore, removing non-optimal deterministic policies is not enough. One could try to distort the metric purposefully (like in the example in Lemma D.1 in point 3. ), although it is not clear how much this would complicate the proof. The approach we used in the paper appears to be more straightforward.
+
+## F Computational Requirements of Demonstration
+
+The source code for the demonstration in Section 6 is available at https://github.com/dylanashley/reward-weightedregression/releases/tag/v1.0.0. The plot shown in Figure 1 was generated using the source code as executed by Python 3.8.11 . The computational requirements of this were are minimal, and generating the plot again from scratch should take under an hour on most modern personal computers.

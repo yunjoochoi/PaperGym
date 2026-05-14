@@ -1,0 +1,323 @@
+## Fast Offline Policy Optimization for Large Scale Recommendation
+
+Otmane Sakhi 1, 2 , David Rohde 1 , Alexandre Gilotte 1
+
+1
+
+Criteo AI Lab, Paris, France 2 CREST-ENSAE, IPP, Palaiseau, France { o.sakhi, d.rohde, a.gilotte } @criteo.com
+
+## Abstract
+
+Personalised interactive systems such as recommender systems require selecting relevant items from massive catalogs dependent on context. Reward-driven offline optimisation of these systems can be achieved by a relaxation of the discrete problem resulting in policy learning or REINFORCE style learning algorithms. Unfortunately, this relaxation step requires computing a sum over the entire catalogue making the complexity of the evaluation of the gradient (and hence each stochastic gradient descent iterations) linear in the catalogue size. This calculation is untenable in many real world examples such as large catalogue recommender systems, severely limiting the usefulness of this method in practice. In this paper, we derive an approximation of these policy learning algorithms that scale logarithmically with the catalogue size. Our contribution is based upon combining three novel ideas: a new Monte Carlo estimate of the gradient of a policy, the self normalised importance sampling estimator and the use of fast maximum inner product search at training time. Extensive experiments show that our algorithm is an order of magnitude faster than naive approaches yet produces equally good policies.
+
+## Introduction
+
+Large Scale Recommender systems are helping users navigate the enormous amount of content present on the internet, allowing them to identify relevant items. From movie recommendation, basket completion to ad placement, all of these systems need to make decisions in an accurate and fast manner. In this work, we cast the problem of recommendation in the offline contextual bandit framework (Swaminathan and Joachims 2015a; Dud´ ık et al. 2014). Given a context x , the decision system performs an action a , the context then interacts with the action recommended and we receive a reward r ( a, x ) . We represent the recommender system as a stochastic parametric policy π θ : X → P ( A ) , which given a context x ∈ X , defines a probability distribution over the discrete action space A of size P . We suppose that the contexts x are stochastic and coming from an unknown distribution ν on X . Our objective is to maximize w.r.t to our parameter θ the average reward over contexts and actions performed by π θ . It can be written as:
+
+Copyright © 2023, Association for the Advancement of Artificial Intelligence (www.aaai.org). All rights reserved.
+
+<!-- formula-not-decoded -->
+
+<!-- formula-not-decoded -->
+
+In real world applications, we usually have access to a finite number of context observations { x i } N i =1 and a reward estimator ˆ r ( a, x ) built depending on the application and the task our system is trying to solve. We define an empirical estimator aligned with Equation (1) by:
+
+<!-- formula-not-decoded -->
+
+<!-- formula-not-decoded -->
+
+This simple equation actually encompasses the majority of the objectives used in the offline bandit literature depending on the reward estimator chosen. For example, if we have access to a bandit dataset with the actions done, their propensities and the reward obtained { a i , p i , r i } N i =1 , the IPS/Horwitz-Thompson estimator and its clipped variant (Swaminathan and Joachims 2015a; Bottou et al. 2013) can be obtained by choosing a reward estimator of the following form :
+
+<!-- formula-not-decoded -->
+
+with τ the clipping factor between 0 and 1, with the original IPS retreived when τ = 0 . With the additional assumption that we have access to a reward model r M , we can similarly define the Doubly Robust estimator (Dud´ ık et al. 2014) and its clipped variant (Su et al. 2020) by choosing a reward estimator of the form :
+
+<!-- formula-not-decoded -->
+
+One can also cast other methods (Wang, Agarwal, and Dudık 2017) into this framework or just optimize any offline metric by designing an adequate reward estimator ˆ r and plugging it in the simple objective defined in Equation (3).
+
+Our method is versatile and can deal with different applications as long as we provide the right reward estimator. In the rest of the paper, we will not make any assumptions on the reward estimator used unless stated explicitly.
+
+## Parametrizing the Policy
+
+In the problem of recommendation, our objective is to find the best product that matches the current interest of the user. As we deal with distinct enumerable products, we consider our action space discrete and we opt naturally for a policy, that is, conditioned on the context x , of the softmax form (Swaminathan and Joachims 2015a):
+
+<!-- formula-not-decoded -->
+
+with f θ a parametric transformation of the context and the action that encodes the relevance of the action a for the context x . After training the policy and given a context x , the best recommendation online is retrieved by computing the action that maximizes the scores:
+
+<!-- formula-not-decoded -->
+
+This recommendation needs to be done in milliseconds over large catalog sizes making the form of f θ crucial to performing Equation (5) rapidly. By restricting the policy to the following form:
+
+<!-- formula-not-decoded -->
+
+with θ = [Ξ , β ] , h Ξ a transform that creates a user embedding and β a the item embeddings. Equation (5) becomes:
+
+<!-- formula-not-decoded -->
+
+which is precisely the problem that approximate MIPS: Maximum Inner Product Search algorithms (Malkov and Yashunin 2020; Johnson, Douze, and J´ egou 2019) solves quickly (if approximately). This is achieved by first building a fixed index with a particular structure (Malkov and Yashunin 2020) allowing fast identification of the item with the largest inner product with the query h Ξ ( x ) . With this index, solving Equation (5) is done in a time complexity logarithmic in the the size of the action space P making it possible to deliver recommendations quickly from a large catalog.
+
+## Optimizing the Objective
+
+In large scale recommendation problems, we usually deal with a considerable amount of observations making stochastic gradient descent and its variants (Ruder 2016) suitable for such application. As our objective is decomposable, we are interested in the gradient of ˆ R i ( π θ ) = E a ∼ π θ ( . | x i ) [ˆ r ( a, x i )] for a single observation x i . A gradient can be derived using the log trick (Williams 1992):
+
+<!-- formula-not-decoded -->
+
+When the action space is of small size (Swaminathan and Joachims 2015a; Dud´ ık et al. 2014; Su et al. 2020), this gradient can be computed exactly as an expectation over the discrete distribution π θ . Once the size of the catalog P is in the order of millions, an exact gradient update becomes a bottleneck for the optimization process because of the complexity of the following computations:
+
+1 - Computing ∇ θ log π θ ( . | x i ) : We need to deal with the normalizing constant Z θ ( x i ) present in the computation of ∇ θ log π θ ( . | x i ) . Indeed, Z θ ( x i ) is a sum over all the action space and its computation needs to be avoided if we hope to reduce the complexity of the gradient update.
+
+2 - Computing the expectation : The expectation is a sum over all the action space and is obviously computed in O ( P ) . To avoid this expensive sum, we can resort to sampling from π θ to approximate the gradient. This allows us to obtain the REINFORCE estimator (Williams 1992), an unbiased estimator of the expectation but does not change the complexity of the method which stays linear in the catalog size. Indeed, sampling needs the computation of Z θ ( x i ) or can be done with the gumbel trick (Huijben et al. 2021) which both scale in O ( P ) . To lower the time complexity, we need to avoid sampling directly from π θ and use Monte Carlo techniques instead such as importance sampling (Chopin and Papaspiliopoulos 2020) with carefully chosen proposals to achieve fast sampling and accurate gradient approximation.
+
+The proposed approach will try to reduce the complexity of the gradient computation by separately dealing with the issues mentioned above in a principled manner. This will achieve a faster offline training, and will hopefully not suffer a loss in the quality of the policy learned.
+
+Remark. The problem we are interested in should not be confused with the maximum log-likelihood problem which is to maximize:
+
+<!-- formula-not-decoded -->
+
+In the context of policy learning, we are seeking a decision rule that maps x to the highest reward action according to r ( a, x ) . This is different from maximising Equation (7) which enables us to find the model P ( a | x, Ξ) that fits the data the most and totally ignores r ( a, x ) . While both approaches slow down when the catalog size P is very large due to the sum, they are not the same problem. Many existing methods in the literature have been proposed to optimize Equation (7) when dealing with large action spaces. These include (Bengio and Senecal 2003; Blanc and Rendle 2018; Rawat et al. 2019; Mikolov et al. 2013). There are some overlaps between the two problems above as both require calculating expectations under a large categorical distribution, but the difference in the loss functions makes the solutions of these problems different as well. For instance, the solution of the policy learning problem is a deterministic policy, putting, conditionally on x , all the mass on the action that maximizes r ( a, x ) . If any of the methods suggested to solve the maximum likelihood problem can be adapted to the policy learning case is beyond the scope of this paper.
+
+## The Proposed Method
+
+As pointed out in the previous section, we need a workaround to deal with the presence of the normalizing constant in the gradient. For a fixed observations x i and similar to the derivations found in (Masrani, Le, and Wood 2019), we can push further the computation of ∇ θ log π θ ( a | x i ) to obtain a quantity that does not involve Z θ ( x i ) . Indeed, we have for a fixed action a :
+
+<!-- formula-not-decoded -->
+
+Injecting the above expression of ∇ θ log π θ ( a | x i ) in Equation (6) leads us to the following covariance gradient (Masrani, Le, and Wood 2019):
+
+<!-- formula-not-decoded -->
+
+with Cov [ A, B ] = E [( A -E [ A ]) . ( B -E [ B ])] , which is a covariance between A a scalar function, and B a vector. To estimate this, we first estimate the two inner expectations which are then used in estimating the outer expectation. Note that the covariance in Equation (8) is between two deterministic functions of one single random variable a that follows the distribution of π θ . The gradient expression in Equation (8) has an intuitive interpretation, as the covariance quantifies how two quantities evolve together, gradient descent using (8) will move in directions where the reward and the gradient of the relevance function have the same evolution w.r.t to the action drawn from the policy π θ enabling our algorithm to favor reward maximization.
+
+The new gradient formula helps us get rid of the normalizing constant present in ∇ θ log π θ ( a | x i ) but transforms the expectation we had in Equation (6) into a double expectation; a covariance between the reward estimator and the gradient of our relevance function f θ . By exploiting this identity, we remove the requirement to compute Z θ ( x i ) which scales linearly with the catalogue size if we have available to us two (or more) samples from the policy π θ ( . | x i ) (computing covariances requires multiple samples). Unfortunately, sampling from π θ ( . | x i ) also scales in O ( P ) so it seems that no progress has been made.
+
+Wanting to avoid sampling from the current policy π θ , we use self normalized importance sampling (Chopin and Papaspiliopoulos 2020) to approximate the expectations without relying on the computation of the normalizing constant Z θ . Indeed, for a fixed x i , if we have access to a discrete proposal q over the action space, one can build an estimator of the expectation of a general function g under π θ ( . | x i ) by:
+
+<!-- formula-not-decoded -->
+
+<!-- formula-not-decoded -->
+
+This algorithm removes the dependency on the catalogue size by avoiding the computation of Z θ ( x i ) . The cost for this is that the estimator is now biased with a bias decreasing with how close the proposal q is to the policy π θ (Agapiou et al. 2017). This means that if we want to exploit self normalized importance sampling efficiently, we need to have access to a proposal q that is fast to sample from, easy to evaluate as its needed to compute the weights ¯ ω s and close to the actual policy π θ to reduce the bias and the variance of the method. To build such proposal q that respects the three conditions, we need an additional assumption on the parameters learned of our policy π θ .
+
+Assumption 1: The item embedding matrix β is fixed and we are only interested in learning the user embedding transform h Ξ , which means Ξ = θ .
+
+Making this assumption in the context of recommendation is reasonable (Koch et al. 2021). We can learn different representations of the items from collaborative filtering data, text data or even images making learning meaningful embeddings possible without relying on the downstream task we are trying to solve.
+
+This assumption allows us to fully exploit approximate MIPS algorithms in the training phase by building an index over the item embeddings β and fixing it before beginning the optimization of our policy. Indeed, while we can modify existing embeddings in the index for a logarithmic complexity (Malkov and Yashunin 2020) in the training phase, this procedure will further slow down the method as we need to update the items in the index for each training iteration.
+
+Making Assumption 1 simplifies drastically the procedure as β are considered fixed and we only need to compute the index once before the start of the training of our policy. With the help of the approximate MIPS index, and for any x i , we define the proposal q as a mixture between a distribution over the K most probable actions under π θ ( . | x i ) retrieved by the approximate MIPS algorithm i.e α K ( x i ) = argsort( h θ ( x i ) T β ) 1: K and a uniform distribution over actions. It can be expressed as:
+
+<!-- formula-not-decoded -->
+
+Where ϵ is a parameter that controls the mixture and
+
+<!-- formula-not-decoded -->
+
+This proposal answers the necessary conditions to make self normalised importance sampling works efficiently:
+
+- It is fast to sample from as a mixture of a uniform distribution and a distribution constructed with approximate MIPS making the time complexity O (log P ) (Malkov and Yashunin 2020). Indeed, solving the argsort, thus constructing α K can be done logarithmically in the catalog size with the help of approximate MIPS.
+- Easy to evaluate as once we have the set α K , the computation will require at maximum a sum over the top K retrieved actions with K ≪ P .
+- Close to π θ as it exploits information about the top actions under π θ and covers well the early stage (when π θ close to uniform) and late stage (when π θ is degenerate on the top actions) of the optimization process.
+
+## Algorithm 1: Fast Offline Policy Learning
+
+```
+Inputs: D = { x i } N i =1 , reward estimator ˆ r , the item embeddings β Parameters: T ≥ 1 , α, K, S ≥ 2 , ϵ ∈ [0 , 1] Initialise: θ = θ 0 , approximate MIPS index for q ϵ,K for t = 0 to T do x ∼ D query h θ ( x ) to get the approx. top K actions set α K build the proposal q ϵ,K ( . | x ) sample a 1 , ..., a S ∼ q ϵ,K ( . | x ) Estimate the covariance gradient: ˆ r s = ˆ r ( a s , x ) , ∇ f s = ∇ θ f θ ( a s , x ) ∀ s ω s ← exp { f ( a s ,x ) } q ϵ,K ( a s | x ) , ¯ ω s ← ω s ∑ s ω s ∀ s ¯ r ← ∑ S s =1 ¯ ω s ˆ r s , ¯ ∇ f ← ∑ S s =1 ¯ ω s ∇ f s grad θ ← ∑ S s =1 ¯ ω s [ˆ r s -¯ r ][ ∇ f s -¯ ∇ f ] Update the policy parameter θ : θ ← θ -αgrad θ end return θ
+```
+
+The performance of the self normalized importance sampling algorithm using our proposal is controlled by the number of Monte Carlo samples S , the mixture parameter ϵ and the number of items returned by the maximum inner product search K . This performance can also be impacted by the parameters of the approximate MIPS algorithms that tradeoff speed of retrieval for the accuracy of the argsort, changing the parameters seemed to have little to no impact on the study so we decided to fix them for the whole experiments.
+
+By combining the self normalized importance sampling algorithm with our mixture proposal, a stochastic gradient descent (Ruder 2016) version of the algorithm we suggest can be described in Algorithm 1.
+
+This procedure is compatible with any stochastic first order optimization algorithm (Ruder 2016; Kingma and Ba 2014). In the next section, we will validate the approach on real world datasets and study the impact of our method on the training speed and the quality of the learned policy.
+
+## Experimental Results
+
+We test our approach on a session completion task using a collaborative filtering dataset. In the training phase, we split randomly the user-item interaction session into two parts, X and Y . X is used as observed and we will condition on it to predict items that are found in Y , or in other words, predict items that complements the vector X . Our goal is to build an algorithm that given a user-item interaction vector X new , predict or recommend items that may interest the user. This can be cast into an offline bandit framework where our policy π θ takes the observed part X as a context, recommends an item a and receives the binary reward ˆ r ( a, X ) = 1 [ a ∈ Y ] . The goal then is to learn a policy π θ that will maximize the reward ˆ r allowing it to solve the session completion task. Note that our method is very versatile and can deal with different problems as long as they can be cast into an offline policy learning problem as described in the introduction. We chose a session completion task for simplicity as user-item interaction datasets are public making the experiments easily reproducible.
+
+Table 1: The statistics of the datasets after processing
+
+|           | Catalog size   | Number of users   |
+|-----------|----------------|-------------------|
+| Twitch    | 790K           | 500K              |
+| GoodReads | 2.33M          | 300K              |
+
+To prepare our experiment, we begin by splitting the useritem sessions into two independent sessions with the same number of interactions: the observed items X and the complementary items Y . Once this split performed, we also split the whole dataset into a train D train = [ X train , Y train ] and test split D test = [ X test , Y test ] . Given the train split D train , we use the observed contexts X train to first compute the item embeddings β using SVD matrix decomposition (Klema and Laub 1980) of dimension [ P, L ] with L ≪ P that will be fixed to create the approximate MIPS index. This index is then used by our proposal q in the learning phase, but also used to get the best recommendation rapidly in the testing phase as described in Equation (5).
+
+Once we have the item embedding matrix β , we compute the user contexts x as the mean embeddings (Koch et al. 2021) of the items that the user interacted with. For X i the observed item interactions of user i and n i the number of items the same user interacted with, we define x emb i = 1 n i ∑ a ∈ X i β a . The obtained vector x emb i is of dimension L and will be the user context in our experiment, meaning that we will use D emb train = [ x emb train , Y train ] and D emb test = [ x emb test , Y test ] instead of D train and D test .
+
+The next step is to parametrize the policy π θ that we will train using our algorithm. With the item embeddings β fi xed, we only need to define the user transform h θ . We take h θ to be a linear function of the user context x emb defined above ie. h θ ( x emb ) = θ T x emb making the dimension of the parameter learned θ equals to [ L, L ] . After training the policy π θ , we validate its performance on the test split D emb test by computing the average reward collected after querying the argmax of our policy using approximate MIPS ie.
+
+<!-- formula-not-decoded -->
+
+We choose two collaborative filtering datasets with large catalog sizes to validate our approach. the Twitch dataset (Rappaz, McAuley, and Aberer 2021) and the GoodReads user-books interaction dataset (Wan and McAuley 2018; Wan et al. 2019) with both representing a good test bed for the scalability of the proposed methods. We transform the datasets into a user-item interaction matrix with statistics represented in Table 1. To build the approximate MIPS index, we use the HNSW algorithm (Malkov and Yashunin 2020) bundled in the FAISS library (Johnson, Douze, and J´ egou 2019). The optimization routine is implemented using Pytorch (Paszke et al. 2019), and we opt for the Adam optimizer (Kingma and Ba 2014) with a batch size of 32 and a learning rate of 10 -4 for all the experiments with the twitch dataset and 5 . 10 -5 for the goodreads dataset. The source code 1 to reproduce the results has all implementation details.
+
+Figure 1: The speedups of the proposed algorithms on the Twitch and GoodReads datasets, with and without GPU acceleration.
+
+<!-- image -->
+
+Table 2: Impact of fixing the product embeddings.
+
+| Dataset   | L      | rP        | rS        |
+|-----------|--------|-----------|-----------|
+| Twitch    | 10 100 | 0.54 0.40 | 1.01 1.01 |
+| GoodReads | 10 100 | 0.83 0.71 | 1.00 1.01 |
+
+With the experimental protocol described above, we want to study the speed improvement brought by our method, and the effect of the parameters controlling our proposal q ϵ,K , namely the mixture parameter ϵ and the number of top K retrieved items on the speed and the quality of the policy learned. The rest of the experiments section will be decomposed into different research questions that we would like to answer for a better understanding of the approach proposed.
+
+## RQ0 - What is the cost of fixing the embeddings?
+
+To verify the impact of making Assumption 1 , we compare the performance and speed of REINFORCE with the item embeddings β fi xed to REINFORCE with β initialised with the SVD decomposition and trained. We report on Table 2, for both datasets and two different values of the embedding dimension L ∈ { 10 , 100 } , the relative speedup rS = T trained /Tfi xed and the relative performance rP = R trained /Rfi xed with T method and R method are respectively the run time and reward of a method after training.
+
+We observe that training β have no to little impact on the training time, but hurts the performance of REINFORCE mainly due to the variance introduced by having more parameters to optimize. Indeed, we observe that increasing the dimension L worsens the relative performance rP in Table 2. We conclude that in our experiments, Assumption 1 can be made as it does not negatively affect the training.
+
+## RQ1 - What is the speed gain over REINFORCE?
+
+This work addresses the computational inefficiency of vanilla REINFORCE as we previously described. To show that our proposed method is a good solution to the problem presented, we conduct extensive experiments to study the acceleration brought by our methods relatively to our baseline. In this section, we quantify the gains in form of a relative speedup of the proposed methods compared to REINFORCE; for the same experimental setup, if T method is the wall time of a method, we define the relative speedup to our baseline as RS method = T REINFORCE /T method.
+
+1 https://github.com/criteo-research/fopo
+
+̸
+
+Before we dive into the experiments, we first identify the different parameters that can have a big impact on the running time of the learning algorithm. As Matrix-vector multiplication is naively done in O ( L 2 ) with L being the embedding dimension, we conduct multiple experiments on the datasets we have at our disposal, on CPU and GPU devices while changing the embedding dimension L to have a good understanding of the speed gains in different settings. In Figure 1, we compare REINFORCE, the algorithm that approximates the gradient expression in Equation (6) by samples from the true policy, with the proposed approach for ϵ = 1 for which our proposal becomes uniform, and the mixture algorithm with ϵ = 1 , represented in these experiments by a run with ϵ = 0 . 8 . Note that the value of ϵ does not affect the running time as long as it is different from 1. In these experiments, we fix K = 256 and S = 1000 .
+
+We can see from Figure 1 that we gain significant speedups in the different settings considered ranging from 5 to 25 faster offline policy training compared to REINFORCE, with the largest speedups observed on CPU machines (no massive parallelization contrary to GPUs) and with small embedding dimension L as the complexity of matrix-vector multiplication O ( L 2 ) does not dominate the gradient update complexity. We can see that even if we have access to a GPU, and we make L big enough to learn better user embeddings, the speedup is still interesting as we still obtain 5-10 times speedup compared to our baseline. Note that all the run times were averaged over 5 epochs, and that these time comparisons can differ depending on the computational resources at ones disposal, but we argue that the differences should be more important when training on CPU machines, especially when the user embeddings are easy to compute, making offline policy training on less powerful machines possible. We also expect bigger gains when dealing with larger action spaces given that our method scales better with growing catalogs.
+
+## RQ2 - What is the impact of changing ϵ ?
+
+We have seen that changing ϵ , especially setting it to 1 can have a significant impact on the iteration cost of the optimization procedure. To get a better understanding of our method, we need to study the effect of the mixture parame- ter on the the quality and thus the performance of the trained policies. In this section, we investigate the impact of changing ϵ on the average reward, on the same problem with an embedding dimension set to L = 1000 to make the learning problem difficult, while also fixing the other parameters to K = 256 and S = 1000 . The algorithms were run on the datasets considered for 50 epochs, and GPU training was used to be fair to the baseline as the speedup gains in this particular setting are the lowest. We plot the results of these runs on Figure 2. We observe that, even if REINFORCE has a much bigger time complexity per iteration (scales linearly on the catalog size), it does not outperform the optimization routines suggested by our approach. Indeed, we can achieve the same level of performance, sometimes performances beyond what REINFORCE can reach with much faster training, so not only our method is faster than REINFORCE, it can also lead to a better optima as we suspect that using the index on the training phase helps the policies be better aligned with how the recommendation is done after deployment, as the same index is used online.
+
+Figure 2: The performance of the algorithms while changing the mixture parameter ϵ on both Twitch and GoodReads datasets.
+
+<!-- image -->
+
+̸
+
+From the same plots, we can also conclude that fixing ϵ = 1 , even if it provides the fastest approximation as it boils down to using a uniform proposal, is far from being optimal if our main goal is to obtain the policy with the best average reward. Indeed, the optimal policy is obtained with values of ϵ = 1 ( ϵ = 0 . 8 for the Twitch Dataset and ϵ = 0 . 5 for the Goodreads dataset). Even if this means that we need to try out different values of ϵ to get the best out of our approach, it confirms that our first intuition of building a mixture proposal between the uniform distribution and a TOPK distribution brings value, in terms of iteration speed and quality of the policy learned as our proposal is expected to behave well in all training phases; ϵ ≈ 1 is expected to work well in the beginning of the optimization while ϵ close to 0 is expected to work when the policy is close to convergence.
+
+Figure 2 plot the evolution per epoch of the performance of the policies trained with the different algorithms. As the cost of iteration significantly changes depending on the algorithm used, we might be interested in a comparison given a fixed time budget, allowing us to train the policy with different methods for the same amount of time.
+
+We provide Figure 3 to shed more light on how the different algorithms perform on the training phase with a fixed time budget. As the uniform proposal provides the fastest training, we consider its running time after 50 epochs the al- lowed time budget and compare the performance of all the other methods to it given that fixed running time. We can observe that REINFORCE is the worst behaving algorithm as its iteration cost scales linearly with P and that a well chosen mixture have always a slight edge over the uniform proposal on both training datasets.
+
+Figure 3: Training performance given a fixed time budget.
+
+<!-- image -->
+
+## RQ3 - What is the impact of changing the number of the top retrieved items K ?
+
+As our approach have different hyperparameters, we want to understand how changing them affect the behavior of the algorithms proposed. To quantify the impact of K , we focus on the Twitch dataset and fix ϵ to 0.8, L = 1000 and S = 1000 . We then try different values for K ∈ { 32 , 64 , 128 , 256 , 512 } , the number of top items returned by approximate MIPS. We run the optimization for 50 epochs and plot the reward of the policies on the training phase in Figure 4. We observe that the performance is robust to the choice of K as long as its selected big enough to cover most of the top candidates. Even if it is not apparent on the plot, wecan also confirm that the iteration cost is not greatly influenced by the choice of K as long as it is orders of magnitude smaller than the catalog size.
+
+## RQ4 - What is the impact of changing the number of Monte Carlo samples S ?
+
+The number of Monte Carlo samples S controls the approximation accuracy of the gradient as increasing it will reduce the bias (when using the covariance gradient with our proposal q ϵ,K ) and the variance of our gradient estimate for an additional computation cost. To understand the impact of S on the training, we restrict ourselves to the Twitch dataset and use q ϵ =0 . 8 ,K as a proposal. We fix L = 1000 , K = 256 and plot the results of changing S ∈ { 50 , 200 , 500 , 1000 } in Figure 4. We run the optimization for 50 epochs. We ob- serve that our policies converge to a better optima when we increase S , and that is expected as less noise is present in the gradient approximation (Chopin and Papaspiliopoulos 2020). We also observed from our experiments that the average run time only increased slightly from S = 50 to S = 1000 , suggesting that increasing S to a higher value ( S ≪ P ) is beneficial for training policies offline as the additional computational cost on GPU is minimal compared to the convergence speed gains achieved.
+
+Figure 4: The effect of changing K and S on the training.
+
+<!-- image -->
+
+## Related Work
+
+There has been a surge of interest in off-policy learning in the last decade. Most of these contributions have focused upon improving the estimate of the reward function including the development of estimators for the reward representing sophisticated modifications of the estimators ˆ r IPS and ˆ r DR introduced in the first section. Correctly estimating the reward is an extremely difficult problem and naive estimators suffer from very high variance especially when the new policies we want to evaluate are far from the logging policy (Agapiou et al. 2017). Many new methods improved the bias-variance trade-off of the reward estimators (Bottou et al. 2013; Dud´ ık et al. 2014; Su et al. 2020; Wang, Agarwal, and Dudık 2017; Swaminathan and Joachims 2015b) and tackled the learning problem by using these estimators within the framework of Empirical Risk Minimization (Bottou et al. 2013; Dud´ ık et al. 2014; Su et al. 2020), or by leveraging refined statistical learning techniques, giving birth to Sample Variance Penalization (Swaminathan and Joachims 2015a), Distributionally Robust Counterfactual Risk Minimization (Faury et al. 2020; Sakhi, Faury, and Vasile 2020), PAC-Bayesian Counterfactual Risk Minimization (London and Sandler 2019) and Imitation Offline Learning (Ma, Wang, and Narayanaswamy 2019). Alternatively, instead of using an estimator, an explicit reward model can be used (Sakhi et al. 2020; Jeunen and Goethals 2021). Our contribution is orthogonal to these developments as we consider the problem of how to efficiently find a good policy given a reward function. Most past work assumes the action space is small and hence the optimization problem is tractable. Our algorithm reduces the optimization cost associated with large action spaces but the estimation challenges of the reward function remain.
+
+Policy learning emerges as the optimisation problem of a reward driven recommender system. Recommender system training is also sometimes formulated as a maximum like- lihood approach when training a model (Liang et al. 2018; Steck 2020) to predict missing entries (e.g. predicting missing elements of the MovieLens dataset (Harper and Konstan 2015)). Maximum likelihood estimation also suffers from a computational cost that scales in O ( P ) but the problem has a different mathematical form to policy learning and methods developed in the maximum likelihood context (Tanielian and Vasile 2019; Gutmann and Hyv¨ arinen 2010; Rendle et al. 2009) cannot be applied to policy learning.
+
+There has been limited attention in the literature with regards to scaling offline policy learning methods to the problems of recommendations with large discrete action spaces. For example (Dulac-Arnold et al. 2015) considered the acceleration of reinforcement learning (Sutton and Barto 2018) which is an online learning framework by definition. Their proposed approaches uses Fast K-NN (Malkov and Yashunin 2020) algorithms to generate action candidates for the critic to choose from, in contrast to our approach which deals with offline learning and uses approximate MIPS algorithms to define a proposal to better estimate the gradient.
+
+Recently (Chen et al. 2019) showed that offline policy learning methods can perform well on large scale production systems, introducing a correction to the REINFORCE gradient with little focus on the scalability of the method. Our work addresses the computational issues linked to offline policy learning making it fast to achieve without deteriorating the performance of the obtained policy.
+
+## Conclusion and Future Work
+
+Offline Policy learning is a powerful paradigm for recommender system training as it seeks to align the offline optimization problem with the real world reward measured at A/B test time. Unfortunately, the O ( P ) cost of training traditional policy learning algorithms has limited the widespread application of these methods in large scale decision systems when P is often very large. To deal with this issue, we introduced an efficient offline optimization routine for softmax policies, tailored for the problem of large scale recommendation. Our algorithm makes the training orders of magnitude faster (up to 30x faster in our experiments). The quality of our policies were at least as good as those found with slower baselines. This work can enable practitioners to explore policy learning methods when dealing with large action spaces without relying on huge computational resources. We hope that the solution provided in this paper is a first step towards the adoption of offline policy methods for large scale recommender systems.
+
+There are a number of avenues of open research. Self normalized importance sampling produces biased gradients that can affect the convergence of stochastic gradient descent, convergence in this setting is not well studied apart from some special cases (Robbins and Monro 1951; Hsieh, Mertikopoulos, and Cevher 2021). We showed that fixing ϵ works well in our experiments, but maybe an adaptive ϵ may work better still. We would expect ϵ = 0 to work well in the early stages of training and ϵ → 1 in the late stages, but robustly determining how to evolve ϵ is unclear. Finally, we would also want to explore ways to enable fast training without fixing the item embeddings β .
+
+## Acknowledgments
+
+The authors are grateful for all the fruitful discussions engaged with Cl´ ement Calauz` enes and Nicolas Chopin which helped improve this work. We would also want to thank the reviewers for their valuable feedback.
+
+## References
+
+Agapiou, S.; Papaspiliopoulos, O.; Sanz-Alonso, D.; and Stuart, A. M. 2017. Importance sampling: Intrinsic dimension and computational cost. Statistical Science , 405-431.
+
+Bengio, Y.; and Senecal, J.-S. 2003. Quick Training of Probabilistic Neural Nets by Importance Sampling. In Bishop, C. M.; and Frey, B. J., eds., Proceedings of the Ninth International Workshop on Artificial Intelligence and Statistics , volume R4 of Proceedings of Machine Learning Research , 17-24. PMLR. Reissued by PMLR on 01 April 2021.
+
+Blanc, G.; and Rendle, S. 2018. Adaptive sampled softmax with kernel based sampling. In International Conference on Machine Learning , 590-599. PMLR.
+
+Bottou, L.; Peters, J.; Qui˜ nonero-Candela, J.; Charles, D. X.; Chickering, D. M.; Portugaly, E.; Ray, D.; Simard, P.; and Snelson, E. 2013. Counterfactual Reasoning and Learning Systems: The Example of Computational Advertising. Journal of Machine Learning Research , 14(65): 3207-3260.
+
+Chen, M.; Beutel, A.; Covington, P.; Jain, S.; Belletti, F.; and Chi, E. H. 2019. Top-K Off-Policy Correction for a REINFORCE Recommender System. In Proceedings of the Twelfth ACM International Conference on Web Search and Data Mining , WSDM '19, 456-464. New York, NY, USA: Association for Computing Machinery. ISBN 9781450359405.
+
+Chopin, N.; and Papaspiliopoulos, O. 2020. Importance Sampling , 81-103. Cham: Springer International Publishing. ISBN 978-3-030-47845-2.
+
+Dud´ ık, M.; Erhan, D.; Langford, J.; and Li, L. 2014. Doubly robust policy evaluation and optimization. Statistical Science , 29(4): 485-511.
+
+Dulac-Arnold, G.; Evans, R.; van Hasselt, H.; Sunehag, P.; Lillicrap, T.; Hunt, J.; Mann, T.; Weber, T.; Degris, T.; and Coppin, B. 2015. Deep reinforcement learning in large discrete action spaces. arXiv preprint arXiv:1512.07679 .
+
+Faury, L.; Tanielian, U.; Vasile, F.; Smirnova, E.; and Dohmatob, E. 2020. Distributionally Robust Counterfactual Risk Minimization. In AAAI .
+
+Gutmann, M.; and Hyv¨ arinen, A. 2010. Noise-contrastive estimation: A new estimation principle for unnormalized statistical models. In Teh, Y.; and Titterington, M., eds., Proc. Int. Conf. on Artificial Intelligence and Statistics (AISTATS) , volume 9 of JMLR W&amp;CP , 297-304.
+
+Harper, F. M.; and Konstan, J. A. 2015. The MovieLens Datasets: History and Context. ACM Trans. Interact. Intell. Syst. , 5(4).
+
+Hsieh, Y.-P.; Mertikopoulos, P.; and Cevher, V. 2021. The Limits of Min-Max Optimization Algorithms: Convergence to Spurious Non-Critical Sets. In Meila, M.; and Zhang, T., eds., Proceedings of the 38th International Conference on Machine Learning , volume 139 of Proceedings of Machine Learning Research , 4337-4348. PMLR.
+
+Huijben, I. A.; Kool, W.; Paulus, M. B.; and van Sloun, R. J. 2021. A Review of the Gumbel-max Trick and its Extensions for Discrete Stochasticity in Machine Learning. arXiv preprint arXiv:2110.01515 .
+
+Jeunen, O.; and Goethals, B. 2021. Pessimistic Reward Models for Off-Policy Learning in Recommendation , 63-74. New York, NY, USA: Association for Computing Machinery. ISBN 9781450384582.
+
+Johnson, J.; Douze, M.; and J´ egou, H. 2019. Billion-scale similarity search with GPUs. IEEE Transactions on Big Data , 7(3): 535-547.
+
+Kingma, D. P.; and Ba, J. 2014. Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980 .
+
+Klema, V.; and Laub, A. 1980. The singular value decomposition: Its computation and some applications. IEEE Transactions on Automatic Control , 25(2): 164-176.
+
+Koch, O.; Benhalloum, A.; Genthial, G.; Kuzin, D.; and Parfenchik, D. 2021. Scalable representation learning and retrieval for display advertising. arXiv preprint arXiv:2101.00870 .
+
+Liang, D.; Krishnan, R. G.; Hoffman, M. D.; and Jebara, T. 2018. Variational Autoencoders for Collaborative Filtering. In Proceedings of the 2018 World Wide Web Conference , WWW'18, 689-698. Republic and Canton of Geneva, CHE: International World Wide Web Conferences Steering Committee. ISBN 9781450356398.
+
+London, B.; and Sandler, T. 2019. Bayesian Counterfactual Risk Minimization. In Chaudhuri, K.; and Salakhutdinov, R., eds., Proceedings of the 36th International Conference on Machine Learning , volume 97 of Proceedings of Machine Learning Research , 4125-4133. PMLR.
+
+Ma, Y.; Wang, Y.-X.; and Narayanaswamy, B. 2019. Imitation-Regularized Offline Learning. In Chaudhuri, K.; and Sugiyama, M., eds., Proceedings of the TwentySecond International Conference on Artificial Intelligence and Statistics , volume 89 of Proceedings of Machine Learning Research , 2956-2965. PMLR.
+
+Malkov, Y. A.; and Yashunin, D. A. 2020. Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs. IEEE Trans. Pattern Anal. Mach. Intell. , 42(4): 824-836.
+
+Masrani, V.; Le, T. A.; and Wood, F. 2019. The Thermodynamic Variational Objective. In Wallach, H.; Larochelle, H.; Beygelzimer, A.; d'Alch´ e-Buc, F.; Fox, E.; and Garnett, R., eds., Advances in Neural Information Processing Systems , volume 32. Curran Associates, Inc.
+
+Mikolov, T.; Chen, K.; Corrado, G.; and Dean, J. 2013. Efficient estimation of word representations in vector space. arXiv preprint arXiv:1301.3781 .
+
+Paszke, A.; Gross, S.; Massa, F.; Lerer, A.; Bradbury, J.; Chanan, G.; Killeen, T.; Lin, Z.; Gimelshein, N.; Antiga, L.; Desmaison, A.; Kopf, A.; Yang, E.; DeVito, Z.; Raison, M.; Tejani, A.; Chilamkurthy, S.; Steiner, B.; Fang, L.; Bai, J.; and Chintala, S. 2019. PyTorch: An Imperative Style, High-Performance Deep Learning Library. In Wallach, H.; Larochelle, H.; Beygelzimer, A.; d'Alch´ e-Buc, F.; Fox, E.; and Garnett, R., eds., Advances in Neural Information Processing Systems 32 , 8024-8035. Curran Associates, Inc.
+
+Rappaz, J.; McAuley, J.; and Aberer, K. 2021. Recommendation on Live-Streaming Platforms: Dynamic Availability and Repeat Consumption , 390-399. New York, NY, USA: Association for Computing Machinery. ISBN 9781450384582.
+
+Rawat, A. S.; Chen, J.; Yu, F. X. X.; Suresh, A. T.; and Kumar, S. 2019. Sampled softmax with random fourier features. Advances in Neural Information Processing Systems , 32.
+
+Rendle, S.; Freudenthaler, C.; Gantner, Z.; and SchmidtThieme, L. 2009. BPR: Bayesian Personalized Ranking from Implicit Feedback. In Proceedings of the Twenty-Fifth Conference on Uncertainty in Artificial Intelligence , UAI '09, 452-461. Arlington, Virginia, USA: AUAI Press. ISBN 9780974903958.
+
+Robbins, H.; and Monro, S. 1951. A Stochastic Approximation Method. The Annals of Mathematical Statistics , 22(3): 400 - 407.
+
+Ruder, S. 2016. An overview of gradient descent optimization algorithms. arXiv preprint arXiv:1609.04747 .
+
+Sakhi, O.; Bonner, S.; Rohde, D.; and Vasile, F. 2020. BLOB: A Probabilistic Model for Recommendation That Combines Organic and Bandit Signals. In Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery &amp;; Data Mining , KDD '20, 783-793. New York, NY, USA: Association for Computing Machinery. ISBN 9781450379984.
+
+Sakhi, O.; Faury, L.; and Vasile, F. 2020. Improving Offline Contextual Bandits with Distributional Robustness. arXiv:2011.06835.
+
+Steck, H. 2020. Autoencoders that don't overfit towards the Identity. In Larochelle, H.; Ranzato, M.; Hadsell, R.; Balcan, M.; and Lin, H., eds., Advances in Neural Information Processing Systems 33: Annual Conference on Neural Information Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual .
+
+Su, Y.; Dimakopoulou, M.; Krishnamurthy, A.; and Dud´ ık, M. 2020. Doubly robust off-policy evaluation with shrinkage. In International Conference on Machine Learning , 9167-9176. PMLR.
+
+Sutton, R. S.; and Barto, A. G. 2018. Reinforcement learning: An introduction . MIT press.
+
+Swaminathan, A.; and Joachims, T. 2015a. Counterfactual Risk Minimization: Learning from Logged Bandit Feedback. In Bach, F.; and Blei, D., eds., Proceedings of the 32nd International Conference on Machine Learning , volume 37 of Proceedings of Machine Learning Research , 814823. Lille, France: PMLR.
+
+Swaminathan, A.; and Joachims, T. 2015b. The SelfNormalized Estimator for Counterfactual Learning. In NIPS .
+
+Tanielian, U.; and Vasile, F. 2019. Relaxed Softmax for PU Learning. In Proceedings of the 13th ACM Conference on Recommender Systems , RecSys '19, 119-127. New York, NY, USA: Association for Computing Machinery. ISBN 9781450362436.
+
+Wan, M.; and McAuley, J. J. 2018. Item recommendation on monotonic behavior chains. In Pera, S.; Ekstrand, M. D.; Amatriain, X.; and O'Donovan, J., eds., Proceedings of the 12th ACM Conference on Recommender Systems, RecSys 2018, Vancouver, BC, Canada, October 2-7, 2018 , 86-94. ACM.
+
+Wan, M.; Misra, R.; Nakashole, N.; and McAuley, J. J. 2019. Fine-Grained Spoiler Detection from Large-Scale Review Corpora. In Korhonen, A.; Traum, D. R.; and M` arquez, L., eds., Proceedings of the 57th Conference of the Association for Computational Linguistics, ACL 2019, Florence, Italy, July 28- August 2, 2019, Volume 1: Long Papers , 26052610. Association for Computational Linguistics.
+
+Wang, Y.-X.; Agarwal, A.; and Dudık, M. 2017. Optimal and adaptive off-policy evaluation in contextual bandits. In International Conference on Machine Learning , 35893597. PMLR.
+
+Williams, R. J. 1992. Simple statistical gradient-following algorithms for connectionist reinforcement learning. Machine Learning , 8(3): 229-256.

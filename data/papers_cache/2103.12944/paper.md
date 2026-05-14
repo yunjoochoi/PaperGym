@@ -1,0 +1,538 @@
+## Scene-Intuitive Agent for Remote Embodied Visual Grounding
+
+Xiangru Lin 1
+
+1 The University of Hong Kong Guanbin Li 2 *
+
+Yizhou Yu 1 , 3
+
+2 Sun Yat-sen University
+
+3 Deepwise AI Lab
+
+xrlin2@cs.hku.hk , liguanbin@mail.sysu.edu.cn , yizhouy@acm.org
+
+## Abstract
+
+Humans learn from life events to form intuitions towards the understanding of visual environments and languages. Envision that you are instructed by a high-level instruction, 'Go to the bathroom in the master bedroom and replace the blue towel on the left wall' , what would you possibly do to carry out the task? Intuitively, we comprehend the semantics of the instruction to form an overview of where a bathroom is and what a blue towel is in mind; then, we navigate to the target location by consistently matching the bathroom appearance in mind with the current scene. In this paper, we present an agent that mimics such human behaviors. Specifically, we focus on the Remote Embodied Visual Referring Expression in Real Indoor Environments task, called REVERIE, where an agent is asked to correctly localize a remote target object specified by a concise high-level natural language instruction, and propose a two-stage training pipeline. In the first stage, we pretrain the agent with two cross-modal alignment sub-tasks, namely the Scene Grounding task and the Object Grounding task. The agent learns where to stop in the Scene Grounding task and what to attend to in the Object Grounding task respectively. Then, to generate action sequences, we propose a memory-augmented attentive action decoder to smoothly fuse the pre-trained vision and language representations with the agent's past memory experiences. Without bells and whistles, experimental results show that our method outperforms previous state-of-the-art(SOTA) significantly, demonstrating the effectiveness of our method.
+
+## 1. Introduction
+
+Vision and Language tasks, such as Vision-and-Language Navigation (VLN) [2], Visual Question Answering
+
+* Corresponding author is Guanbin Li. This work was partially supported by National Key Research and Development Program of China (No.2020YFC2003902). This work was supported in part by the Guangdong Basic and Applied Basic Research Foundation under Grant No.2020B1515020048, in part by the National Natural Science Foundation of China under Grant No.61976250 and No.U1811463. This work was also sponsored by CCF-Tencent Open Research Fund.
+
+(VQA) [3, 4] and Referring Expression Comprehension (REF) [21, 49, 50] etc., have been extensively studied in the wave of deep neural networks. In particular, VLN [2, 5] is a challenging task that combines both natural language understanding and visual navigation. Recent works have shown promising performance and progress. They mainly focus on designing agents capable of grounding fine-grained natural language instructions, where detailed information is provided, to find where to stop, for example 'Leave the bedroom and take a left. Take a left down the hallway and walk straight into the bathroom at the end of the hall. Stop in front of the sink' [12, 28, 44, 43, 40, 22]. However, a practical issue is that fine-grained natural language instructions are not always available in real life and human-machine interactions are mostly based on high-level instructions such as 'Go to the bathroom at the end of the hallway' . In other words, designing an agent that could perform highlevel natural language interpretation and infer the probable target location using knowledge of the environments is of more practical use.
+
+In this paper, we focus on the REVERIE task [36] which is an example of the above mentioned high-level instruction task. Here, we briefly introduce the settings. Given a high-level instruction that refers to a remote target object at a target location within a building, a robot agent spawns at a starting location in the same building and tries to navigate closer to the object. The output of the task is a bounding box encompassing the target object. The success of the task is evaluated based on explicit object grounding at the correct target location. A straightforward solution is to integrate SOTA navigation model with SOTA object grounding model. This strategy has proven to be inefficient in [36] and instead, they proposed an interactive module to enable the navigation model to work together with the object grounding model. Although the performance is improved, we observe that such method has a key weakness: it is unreasonable to discern high-level instruction by directly borrowing the fine-grained instruction navigation model that consists of simple trainable language attention mechanism based on the fact that the perception of high-level instruction primarily depends on commonsense knowledge prior as well as past experiences in memory. Therefore, the overall design is not in line with human intuitions in high-level instruction navigation.
+
+Figure 1. The overview of two pre-training tasks, the Scene Grounding task and the Object Grounding task. The Scene Grounding task empowers the agent the ability to reason where the target location is and the Object Grounding task learns what to attend to.
+
+<!-- image -->
+
+Designing an agent to solve the problem like the REVERIE task is still under explored and there are still no systematic ways to design such an agent. Then, how does human wisdom solve this task? Human beings have instincts to understand surrounding visual environments and languages. Intuitively, given a high-level instruction, we would first extract high-level what and where information and then form an overview of the appearance of the target location in mind based on common sense knowledge. During navigation, we would consistently match current scene and objects in the scene to the instruction semantics and decide where to navigate next. According to such intuitions, we approach this problem from a new perspective and present an agent that imitates such human behaviors. Concretely, we define our problem as designing an agent that is able to solve where and what problem in the REVERIE task. We propose a two-stage training pipeline. In the first stage, we design two pre-training tasks, mimicking the aforementioned two human intuitions. The second stage is training the agent with a memory-augmented attentive action decoder, further increasing the agent's navigation capability under high-level instructions.
+
+Pre-training Stage. As is shown in Fig. 1, we introduce a new subtask called the Scene Grounding task that is trained to recognize which viewpoint in a set of viewpoints is best aligned with the high-level instruction and another subtask called the Object Grounding task that helps the agent identify the best object that matches to the instruction among a set of candidate objects located at a target viewpoint. Experimental results show that the Scene Grounding model recognizes the target viewpoint with a high accuracy and the Object Grounding model outperforms the previous best model used in [51, 36] by more than 10% .
+
+Action Decoding Stage. In this stage, with the pretrained models serving as scene and language encoders, we propose a memory-augmented attentive action decoder that leverages a scene memory structure as the agent's internal past state memory. This design is based on the fact that the computation of action at a specific time step could depend on any provided information in the past. Experimental results indicate that the proposed structure is effective and achieves new state-of-the-art performance.
+
+To sum up, this paper has the following contributions:
+
+- We propose a new framework that borrows human intuitions for designing agent capable of understanding high-level instructions, which closely integrate navigation and visual grounding in both training and inference. Specifically, the visual grounding models are pre-trained and serve as vision and language encoders for training navigation action decoder in the training phase. In inference, the action is predicted by considering logits from both the visual grounding models and the navigation decoder.
+- We introduce two novel pre-training tasks, called Scene Grounding task and Object Grounding task, and a new Memory-augmented attentive action decoder in our framework. The pre-training tasks attempt to help the agent learn where to stop and what to attend to, and the action decoder effectively exploits past observations to fuse visual and textual modalities.
+- Without bells and whistles, our method outperforms all previous methods, achieving new state-of-the-art performance on both seen and unseen environments on the REVERIE task.
+
+## 2. Related Work
+
+Vision-and-Language Navigation and REVERIE. In VLN, an agent is required to navigate to a goal location in a 3 D simulator based on fine-grained instructions. [2] proposed the Matterport3D Simulator and designed the Roomto-Room task. Then, a lot of methods have been proposed to solve this task [12, 44, 43, 40, 22]. On the other hand, the recently proposed REVERIE task [36] is different from traditional VLN in that it requires an agent to navigate and localize target object simultaneously under the guidance of high-level instruction. The model they proposed trains the navigation model with the interactive module that works together with the object grounding model [51], in the hope that the model could learn to understand high-level instruction in a data-driven manner. However, our motivation is essentially different in that we inject commonsense knowledge prior and past memory experiences into the action policy taking into consideration the human perception in dealing with such high-level instruction navigation problems. Specifically, we introduce two pre-training tasks and a memory based action policy to make the agent become scene-intuitive. Moreover, our pre-training tasks differ from the ones proposed in [12, 52, 29] in that their motivation is based on the fact that the ground truth navigation path is actually hidden in the fine-grained instruction, which is not the case in high-level instruction navigation.
+
+Memory-based policy for navigation tasks. Various memory models have been extensively studied for navigation agents, including unstructured memory [17, 31, 46, 18, 30, 9], addressable memory [32, 33], topological memory [37], and metric grid-based maps [14, 1], etc. Unstructured memory representations, such as LSTM memory, have been used extensively in both 2D and 3D environments. However, the issue of RNN based memory is that it does not contain context-dependent state feature storage or retrieval and does not have long time memory [1, 20, 11]. To address these limitations, more advaneced memory structures, such as addressable, topological, and metric based memory are proposed. In this paper, we adopt a simple adressable memory structure. The aim of using such a simple design is 1) to intentionally make it lightweight, thus reducing computational overhead, since the computational cost is important in REVERIE and our pipeline already contains heavy models; 2) to improve the performance of the overall pipeline rather than designing a more advanced memory superior to others. Besides, in VLN, the metric map memory construction requires finegrained language instruction as guidance, which is not available in our task, and building the topological memory requires pre-exploration of the environment, a technique that is certainly helpful to our agent but is beyond the discussion of this paper.
+
+Vision-and-Language BERT based referring expression comprehension. Recent years have witnessed a resurgence of active research in transferrable image-text representation learning. BERT-based models [10, 39, 38, 27, 6, 26] have achieved superior performance over multiple visionand-language tasks by transferring the pre-trained model on large aligned image-text pairs to other downstream tasks. In BERT-based VLN, the most related agents to ours are [15] and [29]. [15] treats VLN as a vision-and-language alignment task and utilizes a pre-trained vision-and-language BERT model to predict action sequence while [29] formulates VLN as an instruction and path alignment task and adopts a pre-trained vision-and-language BERT model to find the best candidate path that matches to the instruction given. However, our work differs from others in that we propose a generalized pipeline that mimics human intuitions to solve the high-level instruction navigation task where vision-and-language BERT model is a building block which can be customized to other vision-language alignment block. Experimental results show that the main performance gain comes from our proposed pipeline.
+
+## 3. Method
+
+In the REVERIE task, an agent placed at a starting location navigates to the target location to localize an ob- ject specified by a high-level instruction. To carry out this difficult task, we propose a novel pipeline that contains a scene grounding model, an object grounding model, and a memory-based action decoder. We make two claims of our design choice: first, to better grasp the semantics of highlevel instructions, we choose ViLBERT model as our basic building block to serve as vision-and-language encoder; second, since scene grounding task and object grounding task are two essentially different tasks, we do not share the basic building blocks for these two tasks. In general, we decompose our method into two stages, as shown in Fig. 2, namely the pre-training stage and the action decoding stage. In the following sections, we first introduce the pre-training tasks; then we illustrate the memory-based attentive action decoder and finally, the loss function used to train the agent.
+
+## 3.1. ViLBERT introduction
+
+In this section, we briefly introduce the input and output arguments of a ViLBERT model [26] as shown in Fig. 3. A ViLBERT model is a BERT-based model that consists of two input streams, vision encoding stream and language encoding stream, followed by a cross-modal alignment Transformer block. The inputs to ViLBERT model are sequence of words and visual features respectively and the outputs are corresponding encoded word sequence features as well as visual sequence features. We use ViLBERT as our base model (basic building block) for the Scene Grounding task and the Object Grounding task. In Scene Grounding task, a panorama viewpoint image is discretized into 36 view images and the inputs are sequence of words in the instruction and 36 mean-pooled features extracted from 36 view images by a ResNet152 CNN pre-trained on ImageNet [24]. In Object Grounding task, the inputs are sequence of words in the instruction and all annotated bounding boxes features extracted by Mask R-CNN [16] in a target viewpoint.
+
+## 3.2. Overview of the proposed method
+
+Settings. To formalize the task, we denote a given highlevel instruction as L = { l k } N l k =1 where N l is the number of words in the instruction L and a set of viewpoints as ν = { V k } N v k =1 where N v is the number of viewpoints in the environment. At each time step t , the agent observes a panoramic view V t , a few navigable views O t and a set of annotated bounding boxes B t . The panoramic view is discretized into 36 single views by perspective projections, each of which is a 640 × 480 size image with field of view set to 60 degrees, and is denoted by V t = { v t,i } 36 i =1 . O t = { v t,i } N o i =1 ⊆ V t where N o is the maximum navigable directions at a viewpoint V t . Each v t,i is represented as v t,i = ResNet ( v t,i ) . Thus, V t = { v t,i } 36 i =1 . Besides, the set of annotated bounding boxes at viewpoint V t is denoted by B t = { b t,i } N b i =1 where N b is the number of bounding boxes. Mask R-CNN [16] is used to extract bounding boxes
+
+Figure 2. The overall pipeline of our method. The green part of the figure denotes the memory module where current viewpoint feature V t and previous action feature a t -1 are embedded and stored in the Memory. Transformer blocks are used to generate s a t . The red rectangles represent two pre-trained models, namely Scene Grounding model and Object Grounding model. V iLEncoder consists of V iLBERT and BiLSTM and V iLPointer is V iLBERT trained on viewpoint-based object grounding task. At each time step t , the agent perceives the instruction with viewpoint features and object features simultaneously. Action prediction is made by the Action Select part where an attentive structure is applied. The final action is generated by considering scene grounding score g sg , object grounding score g og and action logit l t . The dashed dot lines are used only for illustration purposes.
+
+<!-- image -->
+
+<!-- formula-not-decoded -->
+
+Stage 1(a): Scene Grounding Task. We formulate the task as finding a viewpoint that best matches to a highlevel instruction L in a set of candidate viewpoints ν s . ν s = { V k | V k ∈ ν } ⊆ ν . Concretely, we define a mapping function g sg ( , ) that maps ( L, V k ) to a matching score. The formula is defined as follows,
+
+<!-- formula-not-decoded -->
+
+Stage 1(b): Object Grounding Task. The goal of this task is to identify the best matching object among a set of candidate objects located at a target viewpoint. We denote V T as a target viewpoint and its corresponding annotated bounding boxes set is B T . We define another compatibility matching function g og ( , ) that produce matching scores for all objects with a high-level instruction L . Thus, the problem is defined as follows,
+
+<!-- formula-not-decoded -->
+
+Stage 2: Memory-augmented action decoder. To mitigate the memory problem presented in previous section, a scene memory structure M t is implemented to store the embedded observation and previous action at each time step t . The memory is updated by,
+
+<!-- formula-not-decoded -->
+
+where s t is current state representation; ˜ v t is attentive visual feature; h t -1 and a t -1 are last time step hidden state and action embedding respectively; W 1 ∈ R 2048 × D h is a trainable parameter. FC stands for fully connected layer. The Update operation appends s t to M t . V t ∈ R 36 × 2048 , ˜ v t ∈ R 1 × 2048 , a t -1 ∈ R 1 × 3200 , s t ∈ R 1 × D h , h t ∈ R D h × 1 , M t ∈ R t × D h .
+
+## 3.3. Scene Grounding Task
+
+The goal of this task it to help the agent infer where the target location is. Given a high-level instruction, 'Bring me the jeans that are hanging up in the closet to the right' , humans first locate the where information, the key word closet , by capturing the semantics of the instruction according to the language context and commonsense knowledge and then form an overview of the appearance of the closet in mind; then, humans navigate to the target location by consistently matching the closet appearance in mind with current scene. In fact, humans have gradually formed intuitions towards the understanding of scenes, instructions and tasks in life. For language instructions in relatively simple life scenes that do not involve complex reasoning, they usually directly merge the above two processes for direct perception and understanding. We call this process as contextdriven scene perception. In this section, we propose Scene Grounding task to imitate such human behavior.
+
+Figure 3. The pipeline of the Scene Grounding Task. We formulate this task as a 5 -way multiple choice problem. Each ( L, ResNet ( V k )) pair is sent to the V iLBERT model separately to generate alignment score sc k . The panorama viewpoint image here denotes the discretized 36 view images in a viewpoint. We mark the beginning of the image sequence with a special token IMG and the language with CLS .
+
+<!-- image -->
+
+Based on the observation, we believe that a model that could evaluate the alignment between an instruction and a viewpoint is able to localize the target viewpoint. Therefore, to implement this idea, we create a dataset from the REVERIE training set and fine-tune a ViLBERT model on the dataset. Specifically, we adopt a 5 -way multiple choice setting. We eliminate subscript for simplicity concern. Given an instruction L , we sample 5 viewpoints { V + 1 , V -2 , V -3 , V -4 , V -5 } , out of which only one is aligned to the instruction (or in other words, positive). In detail, we choose the ending viewpoint in the ground-truth training path as V + 1 , the second last viewpoint along the groundtruth path as V -2 which is a hard negative sample and random sample V -3 , V -4 from the rest of the viewpoints along the path, and V -5 from other path . Then, we run the ViLBERT model on each of the ( L, V k ) pair. As is shown in Fig. 3, the output tokens CLS and IMG encode instruction representation h CLS as well as viewpoint representa- tion h IMG respectively. We define the matching scores as Sc and train the model with cross entropy loss L sr .
+
+<!-- formula-not-decoded -->
+
+where W 2 ∈ R 1 × 1024 is a trainable parameter and I ( . ) is indicator function. h k CLS ∈ R 1024 × 1 , h k IMG ∈ R 1024 × 1 are the encoded language and visual representations of the language and vision encoding streams from our pre-trained ViLBERT model for k th ( L, V k ) pair respectively.
+
+## 3.4. Object Grounding Task
+
+The aim of this task is to help the agent learn what to attend to. For each ground-truth target viewpoint V T , we formulate this task as finding the best bounding box b glyph[star] T,i in bounding boxes set B T given ( L, B T ) pair. A straightforward method to implement this idea is to construct a single image based grounding task, where each training sample consists of instruction L and a subset of bounding boxes in B T that belong to view v T,i . However, according to our experiment, this strategy produces moderate performance since objects in 3 D space could span multiple views in corresponding projected 2 Dimage space. The cross-image objects relationships in each viewpoint are not well captured by the model. Therefore, we propose a two-stage training strategy, namely a single image based grounding and a viewpoint based object grounding. In single image grounding, we fine-tune the ViLBERT model from [27, 26] on the aforementioned single image grounding dataset where each training sample is ( L, B v T,i ) (all annotated bounding boxes in v T,i are collected) and B v T,i ⊂ B T ; then, we further fine-tune trained model on a new viewpoint based object grounding dataset. Concretely, each training sample in the viewpoint based dataset is a ( L, B T ) pair (all annotated bounding boxes in v T are collected) and the corresponding label is a vector containing 0 s and 1 s where 1 indicates the IoU of a bounding box with the target bounding box is higher than 0 . 5 . In inference, we represent an object score as the averaged scores from all bounding boxes that share the same object id at a viewpoint that the agent stops.
+
+## 3.5. Action Decoder
+
+With the pre-trained grounding models, the action decoder generally adopts Encoder-Decoder structure to produce action prediction. Specifically, the Scene Grounding model is accompanied by a BiLSTM network to construct a vision and language grounding encoder V iLEncoder and the Object Grounding model is formulated as an object level grounding encoder V iLPointer . The inputs to action decoder are L , B t and V t and it outputs predicted action distribution l t .
+
+First . At each time step t , to perceive current scene and instruction, we obtain ˜ x t by grounding L with V t through V iLEncoder and then selecting the fused language sequence as output. The formula is defined as follows,
+
+<!-- formula-not-decoded -->
+
+where W 3 ∈ R 1024 × D h is a trainable parameter and X t is encoded language feature taking current scene V t into consideration. X t ∈ R N l × 1024 , ˜ x t ∈ R 1 × 1024 , h t -1 ∈ R D h × 1 .
+
+Second . To decide which navigable direction to go next, we perform object level referring expression comprehension. The object level referring comprehension helps the agent infer whether a navigable view v t,i contains possible target object. In particular, the set of bounding boxes in view v t,i is denoted by ˆ B t,i = { b t,k | b t,k ∈ B t , Inside ( b t,k , v t,i ) = 1 } where Inside ( , ) function decides whether b t,k is inside view v t,i . V iLPointer is V iLBERT pre-trained on the Object Grounding task and we select the fused bounding boxes features as the output. Then,
+
+<!-- formula-not-decoded -->
+
+where F t,i is the set of aligned bounding boxes features at view v t,i and g top -k ( , ) selects topk aligned bounding boxes and averages the corresponding aligned bounding boxes features from F t,i to produce view comprehension ˜ v t,i ∈ R 1 × 1024 .
+
+Third . We define the representation of each navigable view as v ′ t,i :
+
+<!-- formula-not-decoded -->
+
+where the agent's current orientation ( θ t,i , φ t,i ) represents the angles of heading and elevation and is tiled 32 times according to [12]. (cos θ t,i , sin θ t,i , cos φ t,i , sin φ t,i ) ∈ R 1 × 128 and v ′ t,i ∈ R 1 × 3200 . The set of navigable view representation is denoted as O ′ t = { v ′ t,i } N o i =1 . The grounded navigable visual representation ˜ o ′ t is represented as follows:
+
+<!-- formula-not-decoded -->
+
+where W 4 ∈ R 1024 × D h is a trainable parameter and g ( , ) is a number of Fully Connected layers accompanied by ReLU nonlinearities. ˜ o ′ t ∈ R 1 × 1024 , O ′ t ∈ R N o × 3200 .
+
+Fourth . The new context hidden state h t is updated by a LSTM layer taking as input the grounded text ˜ x t and navigable view features ˜ o ′ t as well as the current state representation feature s a t .
+
+<!-- formula-not-decoded -->
+
+where s a t is memory augmented current state representation and is defined as,
+
+<!-- formula-not-decoded -->
+
+where N mem and N state are number of memory transformer blocks used and number of state transformer blocks used respectively. s a t ∈ R 1 × D h , M a t ∈ R t × D h . Transformer is the standard version Transformer block from [42].
+
+Finally . The action logit l t is computed in an attentive manner.
+
+<!-- formula-not-decoded -->
+
+where W 5 ∈ R 1024 × (1024+ D h ) is a trainable parameter and l t ∈ R N o × 1 . In training stage, a t = Categorical ( l t ) is selected based on categorical policy and in inference stage, it is selected by a t = arg max ( l t ) . Action embedding is selected based on a t = O ′ t [ a t ] .
+
+## 3.6. Inference
+
+We propose to use a combined logit ∑ t τ =0 l τ + g τ og + g τ sg that sums action logits, object grounding logits and scene grounding logits to perform navigation, where g τ og and g τ sg denote object grounding score and scene grounding score at time step τ respectively. Experimental results indicate that our strategy shortens the search trajectories while maintaining a good success rate. The final output bounding box is obtained by running V iLPointer at the stop viewpoint that the agent predicts.
+
+## 3.7. Loss Functions
+
+To train the agent, we use a mixture of Imitation Learning (IL) and Reinforcement Learning (RL) to supervise the training. Specifically, In IL, at each time step, we allow the agent to learn to imitate the teacher action by using a cross entropy loss L ce and a mean squared error loss L pm for progress monitor [28]. In RL, we follow the idea of [40] and allow the agent to learn from rewards. If the agent stops within 3 meters near the target viewpoint, a positive reward +3 is assigned at the final step; otherwise a negative reward -3 is given.
+
+<!-- formula-not-decoded -->
+
+where y glyph[star] t is the teacher action at step t ; y pm t ∈ [0 , 1] is the shortest normalized distance from current viewpoint to the target viewpoint; p pm t is the predicted progress; α , β and γ are all set to 1 .
+
+## 4. Experiments
+
+In the REVERIE dataset, the training set contains 59 scenes and 10466 instructions over 2353 objects; the val seen split consists of 53 scenes and 1371 instructions over 428 objects and the val unseen split include 10 scenes and 3573 instructions over 525 objects. The test set contains 16 scenes and 6292 instructions over 834 objects. In this section, we conduct extensive evaluation and analysis of the effectiveness of our proposed components.
+
+## 4.1. Evaluation Metrics
+
+Following [36], we evaluate the performance of the model based on REVERIE Success Rate (RGS) and REVERIE Success Rate weighted by Path Length (RG SPL). We also report the performance of Navigation Success Rate, Navigation Oracle Success Rate, Navigation Success Rate weighted by Path Length (SPL), and Navigation Length. Please refer to the supplementary document for more details.
+
+## 4.2. Ablation Study
+
+In this section, we aim to answer the following questions: ( a ) Does the performance gain mainly come from BERTbased structure? ( b ) How effective is each of the proposed component? ( c ) Does the memory blocks number matter? ( d ) Why do we need logit fusion? For simplicity concern, we define the following experiment settings: (1) our proposed V iLEncoder is V iL enc ; (2) the V iLRaw enc is V iLEncoder not pre-trained on the Scene Grounding task but pre-trained on the Conceptual Captions dataset [35] as well as the 12 tasks specified in [27]; (3) the BERT enc is a BERT language encoder pre-trained on the BookCorpus [53] and English Wikipedia datasets; (4) our proposed V iLPointer is V iL ptr ; (5) previous SOTA MattNet pointer is MN ptr ; (6) our action policy is MA pol ; (7) previous action policy is C pol ; (8) previous simple language encoder is L enc composed of a trainable embedding layer with a Bi-directional LSTM layer.
+
+Performance Gain. To answer question ( a ) , we perform experiments 1 , 2 , 3 and 6 as is shown in Table 1. All agents are trained under L ce and L pm with α and β both set to 0 . 5 . It is clear that the agent's overall performance is incrementally improved by changing the language encoder from the simple L enc to our proposed V iL enc , which proves our analysis that previous language encoder does not well capture the semantics of high-level instructions. The experimental results of 3 and 6 clearly suggests that the BERTbased structure is not the root cause of our performance gain and our proposed Scene Grounding task significantly increase the RG SPL metric to 33 . 9% on Val Seen and 7 . 31% on Val Unseen, even higher than the strong baseline in experiment 2 .
+
+Component Effectiveness. To answer question ( b ) , based on the statistics from Table 1, we train six models in experiments from 3 to 8 and ablate the proposed component one by one to demonstrate the effectiveness. For fair comparison, we follow the settings of [36]. All agents are trained under L ce and L pm with α and β both set to 0 . 5 . We start from the baseline experiment 3 and replace each component by our proposed ones. Specifically, in experiments 3 and 6 , the proposed V iLEncoder improves the RG SPL (and SPL) by a large margin, 11 . 98% (and 21 . 52% ) higher in Val Seen and 2 . 47% (and 3 . 77% ) higher in Val Unseen than the baseline respectively, which proves that the Scene Grounding task is effective; in experiments 3 and 4 , our pointer V iLPointer outperforms the MattNet counterpart by shortening the length of the search trajectory while maintaining a high RG SPL (and SPL), which demonstrates the effectiveness of the Object Grounding task; in experiments 3 and 5 , the results show that the overall search trajectory of our action policy is longer than that of the baseline while our action policy achieves higher RGS and Navigation Success Rate, which demonstrates that the memory structure in our policy guides the agent to the correct target location at the cost of long trajectory; in experiments 7 and 8 , we demonstrate that by integrating all our proposed methods, our agent improves previous SOTA in terms of RG SPL by 10 . 76% on Val Seen and 5 . 6% on Val Unseen.
+
+Memory Blocks. To answer question ( c ) , we train five models with different N mem and N state values. In these experiments, we train the agents with L ce , L pm and L RL and α , β and γ set to 1 . 0 . In general, according to the experiments from 9 to 13 in Table 1, all pairs of ( N mem , N state ) exhibit superior performance compared to previous SOTA method in experiment 1 and the strong BERT baseline model in experiment 2 . Moreover, the best performance model is achieved by setting ( N mem , N state ) to (3 , 3) in these five models, which suggests that using small values of ( N mem , N state ) limits the agent's memorization ability and using large values of ( N mem , N state ) enables the agent to achieve good performance on Val Unseen while maintains good performance on Val Seen.
+
+Logit Fusion. To answer question ( d ) , we report two accuracies to verify the effectiveness of g og and g sg . In the Encoder Task of Table 3, given ground-truth path, our proposed V iLBERT model achieves competitive performance on both Val Seen and Val Unseen, demonstrating the strong ability of g sg to identify a target viewpoint. In the Pointer Task of Table 3, the performance of V iLPointer -vp-based is significantly higher than previous image-based pointers because it is able to capture cross-image objects relationships, suggesting that g og has the ability to find the target location if the target object exists. According to experiments from 14 to 17 , where the agents are trained with L ce , L pm and L RL and α , β and γ set to 1 . 0 , summing l τ , g τ og , and g τ sg shortens the search trajectory and maintains a high RGS(Navigation Success Rate) and RG SPL(SPL). The motivation behind the summing strategy is to use model ensemble to reduce bias when searching for target locations considering the fact that the agent has no prior knowledge of the surrounding environments and the guidance of the high-level instructions is weak.
+
+Table 1. Ablation Study experiments performed to verify the effectiveness of the proposed method. In different ablation study block, the best performing result is marked in bold .
+
+|         | Methods     | Methods             | Methods    | Methods   | Val Seen                      | Val Seen                      | Val Seen                      | Val Seen                            | Val Seen                      | Val Seen    | Val Seen                | Val Unseen              | Val Unseen        | Val Unseen                    | Val Unseen           | Val Unseen               |
+|---------|-------------|---------------------|------------|-----------|-------------------------------|-------------------------------|-------------------------------|-------------------------------------|-------------------------------|-------------|-------------------------|-------------------------|-------------------|-------------------------------|----------------------|--------------------------|
+| ID      | Encoder     | Pointer             | Policy     |           | Nav. Acc.                     | Nav. Acc.                     | Nav. Acc.                     |                                     | RGS ↑                         | RG SPL ↑    | Nav. Acc.               | Nav. Acc.               | Nav. Acc.         |                               | RGS ↑                | RG                       |
+| ID      | V iLRaw enc | iL enc MN √         | C pol MA √ | pol       | Succ. ↑                       | OSucc. ↑                      | SPL ↑                         | Length ↓                            | RGS ↑                         | RG SPL ↑    | Succ. ↑                 | OSucc. ↑                | SPL ↑             | Length ↓                      |                      | SPL ↑                    |
+| 1 2 3 4 | √ √ √       | √ √                 | √ √ √ √ √  | √         | 50.53 54.18 33.73 39.00 37.32 | 55.17 58.68 39.14 43.85 43.08 | 45.50 48.99 30.72 35.00 31.71 | 16.35 12.46 14.56 13.71 18.29 13.21 | 31.97 33.87 23.82 28.95 24.88 | 29.66 25.98 | 14.40 18.66 15.22 13.80 | 28.20 29.51 31.64 31.33 | 7.19 8.21         | 45.28 32.95 42.62 37.31 79.88 | 7.84 11.13 8.89 9.17 | 4.67 6.32 4.84 5.54 4.17 |
+| 5 6 7 8 |             |                     |            |           |                               |                               | 52.24                         |                                     |                               | 21.23 21.94 |                         | 44.39                   | 10.44 8.44 7.10   | 36.05                         |                      | 7.31                     |
+|         |             |                     |            | √         | 56.36 54.25                   | 60.93 56.08                   | 50.49 55.30                   | 13.56                               | 36.33                         | 21.70 33.92 | 19.06 21.61             | 31.98 37.86 40.41       | 12.21 13.70 14.77 | 42.50                         | 11.08 13.21          | 8.71 10.27               |
+| 9       |             | √                   |            |           | 59.52 55.24                   | 64.23                         | 52.29                         | 14.00                               | 39.56 43.57                   | 37.16 40.42 | 26.98 28.17             | 39.56                   | 13.28             | 43.12 44.10                   | 17.32 19.60          |                          |
+| 10      |             | (1, 1) (3, 3)       |            |           |                               | 58.61                         |                               |                                     | 40.90                         | 38.76       | 28.97                   |                         |                   |                               | 20.51                | 9.19                     |
+| 11      |             | (5, 5) l t          |            | 61.91     |                               | 65.85                         | 57.08                         | 12.42 13.61                         | 45.96                         | 42.65       | 31.53                   | 44.67                   | 16.28 13.09       | 41.53                         | 22.41                | 11.56                    |
+| 12      |             | (9, 9)              |            |           |                               | 63.38                         | 54.99                         | 17.44                               | 44.69                         | 41.10       |                         |                         | 11.67             |                               | 18.23                | 9.19                     |
+|         |             |                     |            | 60.01     | 57.27                         | 62.26                         |                               |                                     |                               |             | 25.84                   | 38.20                   |                   | 44.00                         |                      |                          |
+|         |             | (7, 7)              |            |           |                               |                               | 52.78                         | 13.96                               | 42.66                         | 39.38       | 23.66                   | 35.61                   |                   | 45.73                         | 16.79                | 8.43                     |
+| 13      |             |                     |            |           | 57.06                         | 60.15                         | 53.35                         | 14.16                               | 42.38                         | 39.67       |                         |                         | 14.92             |                               | 19.54                | 10.13                    |
+| 14      |             |                     |            |           |                               |                               |                               | 15.28                               | 45.61                         |             | 28.15                   | 39.45                   |                   | 41.53 60.89                   | 22.35                |                          |
+| 15      | l           |                     |            |           | 60.92                         | 65.78                         | 56.14                         |                                     |                               | 42.19       | 32.35                   | 49.08                   | 14.74             |                               |                      | 10.54                    |
+|         |             | t + g sg            |            |           | 61.49                         | 65.78                         | 56.72                         | 13.67                               | 45.47                         | 42.31       | 31.20                   | 47.80                   | 15.90             | 45.82                         | 21.68                | 11.08                    |
+| 16 17   | l t +       | l t + g og g sg + g |            | 61.14     | 61.91                         | 65.77 65.85                   | 55.21 57.08                   | 16.82 13.61                         | 44.48 45.96                   | 40.04 42.65 | 32.12 31.53             | 46.54 44.67             | 15.73 16.28       | 52.14 41.53                   | 21.98 22.41          | 11.02 11.56              |
+
+Table 2. Comparison with state-of-the-art methods on the REVERIE task. The best performing result is marked in bold .
+
+|                            | Val Seen   | Val Seen   | Val Seen   | Val Seen   | Val Seen   | Val Seen   | Val Unseen   | Val Unseen   | Val Unseen   | Val Unseen   | Val Unseen   | Val Unseen   | Test (Unseen)   | Test (Unseen)   | Test (Unseen)   | Test (Unseen)   | Test (Unseen)   | Test (Unseen)   |
+|----------------------------|------------|------------|------------|------------|------------|------------|--------------|--------------|--------------|--------------|--------------|--------------|-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|
+| Methods                    | Nav. Succ. | Nav. Succ. | Nav. Succ. |            | RGS ↑      | RG         | Nav. Succ.   | Nav. Succ.   | Nav. Succ.   | Nav. Succ.   | RGS ↑        | RG ↑         | Nav. Succ.      | Nav. Succ.      | Nav. Succ.      | Length ↓        | RGS ↑           | RG SPL ↑        |
+|                            | Succ. ↑    | OSucc. ↑   | SPL ↑      | Length ↓   |            | SPL ↑      | Succ. ↑      | OSucc. ↑     | SPL ↑        | Length ↓     | RGS ↑        | SPL          | Succ. ↑         | OSucc. ↑        | SPL ↑           | Length ↓        | RGS ↑           | RG SPL ↑        |
+| RCM [43] + MattNet         | 23.33      | 29.44      | 21.82      | 10.70      | 16.23      | 15.36      | 9.29         | 14.23        | 6.97         | 11.98        | 4.89         | 3.89         | 7.84            | 11.68           | 6.67            | 10.60           | 3.67            | 3.14            |
+| SelfMonitor [28] + MattNet | 41.25      | 43.29      | 39.61      | 7.54       | 30.07      | 28.98      | 8.15         | 11.28        | 6.44         | 9.07         | 4.54         | 3.61         | 5.80            | 8.39            | 4.53            | 9.23            | 3.10            | 2.39            |
+| FAST-short [22] + MattNet  | 45.12      | 49.68      | 40.18      | 13.22      | 31.41      | 28.11      | 10.08        | 20.48        | 6.17         | 29.70        | 6.24         | 3.97         | 14.18           | 23.36           | 8.74            | 30.69           | 7.07            | 4.52            |
+| REVERIE [36]               | 50.53      | 55.17      | 45.50      | 16.35      | 31.97      | 29.66      | 14.40        | 28.20        | 7.19         | 45.28        | 7.84         | 4.67         | 19.88           | 30.63           | 11.61           | 39.05           | 11.28           | 6.08            |
+| Human                      | -          | -          | -          | -          | -          | -          | -            | -            | -            | -            | -            | -            | 81.51           | 86.83           | 53.66           | 21.18           | 77.84           | 51.44           |
+| Ours                       | 61.91      | 65.85      | 57.08      | 13.61      | 45.96      | 42.65      | 31.53        | 44.67        | 16.28        | 41.53        | 22.41        | 11.56        | 30.8            | 44.56           | 14.85           | 48.61           | 19.02           | 9.20            |
+
+Table 3. Pointer Task: REVERIE Success Rate at the ground truth target viewpoint; Encoder Task: given ground truth path, the success rate of identifying the target viewpoint among a set of candidate viewpoints along the path.
+
+| Tasks   | Methods                |   Val Seen |   Val Unseen |
+|---------|------------------------|------------|--------------|
+| Pointer | MattNet [51]           |      68.45 |        56.63 |
+| Pointer | CM-Erase [25]          |      65.21 |        54.02 |
+| Pointer | ViLPointer-image-based |      65.72 |        55.53 |
+| Pointer | ViLPointer-vp-based    |      73.26 |        67.45 |
+| Encoder | ViLEncoder             |      85.67 |        66.43 |
+
+## 4.3. Compared to previous state-of-the-art results
+
+Wefirst show what kind of cases our method improves compared to previous SOTA and our BERT-based strong baseline in experiment 2 . Specifically, we divide the shortest distance lengths of all ground-truth paths into three groups, namely short path( 5 meters to 9 meters with 462 sample paths on Val Seen and 1400 sample paths on Val Unseen), middle path( 9 meters to 14 meters with 703 sample paths on Val Seen and 1869 sample paths on Val Unseen), and long path( 14 meters to 18 meters with 247 sample paths on Val Seen and 250 sample paths on Val Unseen). Then, we count the cases that the agent successfully navigates to the target locations and the cases that the agent successfully nav-
+
+<!-- image -->
+
+(d) Val Unseen
+
+(c) Val Unseen
+
+Figure 4. Percentage of successful Navigation and RGS cases under different length of ground-truth paths on Val Seen and Val Unseen datasets for previous state-of-the-art method, BERT baseline in experiment 2 , and our method.
+
+igates and localizes the target objects for the three groups. In Fig. 4, we report the corresponding successful cases percentage. It is obvious that our proposed method improves all kinds of sample paths by a clear margin.
+
+Then, we compare our final model with previous SOTA models in Table 2. As is clearly shown in Table 2, our model outperforms all previous models by a large margin. Specifically, in terms of SPL, our agent increases previous SOTA by 11 . 58% on Val Seen, 9 . 09% on Val Unseen and 3 . 24% on Test respectively; for RG SPL, our agent increase previous SOTA by 12 . 99% on Val Seen, 6 . 89% on Val Unseen and 3 . 12% on Test. The overall improvements indicate that our proposed scene-intuitive agent not only navigates better but also localizes target objects more accurately.
+
+## 5. Conclusion
+
+In this paper, we present a scene-intuitive agent capable of understanding high-level instructions for the REVERIE task. Different from previous works, we propose two pretraining tasks, Scene Grounding task and Object Grounding task respectively, to help the agent learn where to navigate and what object to localize simultaneously. Moreover, the agent is trained with a Memory-augmented action decoder that fuses grounded textual representation and visual representation with memory augmented current state representation to generate action sequence. We extensively verify the effectiveness of our proposed components and experimental results demonstrate that our result outperforms previous methods significantly. Nevertheless, how to bridge the performance gap between seen and unseen environments and how to shorten the navigation length efficiently remains an open problem for further investigation.
+
+## References
+
+- [1] Peter Anderson, Ayush Shrivastava, Devi Parikh, Dhruv Batra, and Stefan Lee. Chasing ghosts: Instruction following as bayesian state tracking. In Advances in Neural Information Processing Systems (NeurIPS) , 2019. 3
+- [2] Peter Anderson, Qi Wu, Damien Teney, Jake Bruce, Mark Johnson, Niko S¨ underhauf, Ian Reid, Stephen Gould, and Anton van den Hengel. Vision-and-language navigation: Interpreting visually-grounded navigation instructions in real environments. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 2018. 1, 2
+- [3] Stanislaw Antol, Aishwarya Agrawal, Jiasen Lu, Margaret Mitchell, Dhruv Batra, C. Lawrence Zitnick, and Devi Parikh. Vqa: Visual question answering. In International Conference on Computer Vision (ICCV) , 2015. 1
+- [4] Qingxing Cao, Xiaodan Liang, Bailing Li, Guanbin Li, and Liang Lin. Visual question reasoning on general dependency tree. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 7249-7257, 2018. 1
+- [5] Howard Chen, Alane Suhr, Dipendra Misra, Noah Snavely, and Yoav Artzi. Touchdown: Natural language navigation and spatial reasoning in visual street environments. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2019. 1
+- [6] Yen-Chun Chen, Linjie Li, Licheng Yu, Ahmed El Kholy, Faisal Ahmed, Zhe Gan, Yu Cheng, and Jingjing Liu. Uniter: Universal image-text representation learning. In The European Conference on Computer Vision (ECCV) , 2020. 3
+- [7] Elizabeth R. Chrastil. Neural evidence supports a novel framework for spatial navigation. Psychonomic Bulletin &amp; Review , 20:208-227, 2013. 12
+- [8] A. Coutrot, R. Silva, E. Manley, Will de Cothi, and H. Spiers. Global determinants of navigation ability. Current Biology , 28:2861-2866.e4, 2018. 12
+- [9] Abhishek Das, Samyak Datta, Georgia Gkioxari, Stefan Lee, D. Parikh, and Dhruv Batra. Embodied question answering. 2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW) , 2018. 3
+- [10] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805 , 2018. 3, 12
+- [11] Kuan Fang, Alexander Toshev, Li Fei-Fei, and Silvio Savarese. Scene memory transformer for embodied agents in long-horizon tasks. 2019. 3
+- [12] Daniel Fried, Ronghang Hu, Volkan Cirik, Anna Rohrbach, Jacob Andreas, Louis-Philippe Morency, Taylor BergKirkpatrick, Kate Saenko, Dan Klein, and Trevor Darrell. Speaker-follower models for vision-and-language navigation. In Neural Information Processing Systems (NeurIPS) , 2018. 1, 2, 6
+- [13] S. Gopal, R. Klatzky, and T. Smith. Navigator: A psychologically based model of environmental learning through navigation. Journal of Environmental Psychology , 9:309-331, 1989. 12
+- [14] Saurabh Gupta, Varun Tolani, J. Davidson, S. Levine, R. Sukthankar, and J. Malik. Cognitive mapping and planning for visual navigation. International Journal of Computer Vision , 128:1311-1330, 2019. 3, 12
+- [15] Weituo Hao, Chunyuan Li, Xiujun Li, Lawrence Carin, and Jianfeng Gao. Towards learning a generic agent for visionand-language navigation via pre-training. Conference on Computer Vision and Pattern Recognition (CVPR) , 2020. 3
+- [16] Kaiming He, Georgia Gkioxari, Piotr Doll´ ar, and Ross Girshick. Mask r-cnn. In Computer Vision (ICCV), 2017 IEEE International Conference on , pages 2980-2988. IEEE, 2017. 3
+- [17] Sepp Hochreiter and J¨ urgen Schmidhuber. Long short-term memory. Neural computation , 9(8):1735-1780, 1997. 3
+- [18] Max Jaderberg, V. Mnih, W. Czarnecki, T. Schaul, Joel Z. Leibo, D. Silver, and K. Kavukcuoglu. Reinforcement learning with unsupervised auxiliary tasks. In ICLR , 2017. 3
+- [19] Simon Jetzschke, M. Ernst, J. Fr¨ ohlich, and N. Boeddeker. Finding home: Landmark ambiguity in human navigation. Frontiers in Behavioral Neuroscience , 11, 2017. 12
+- [20] Jia Lv Yanjie Duan Zhen Qin Guodong Li Jingyu Zhao, Feiqing Huang and Guangjian Tian. Do rnn and lstm have long memory? In International Conference on Machine Learning , 2020. 3
+- [21] Sahar Kazemzadeh, Vicente Ordonez, Mark Matten, and Tamara L. Berg. Referit game: Referring to objects in photographs of natural scenes. In EMNLP , 2014. 1
+- [22] Liyiming Ke, Xiujun Li, Yonatan Bisk, Ari Holtzman, Zhe Gan, Jingjing Liu, Jianfeng Gao, Yejin Choi, and Siddhartha Srinivasa. Tactical rewind: Self-correction via backtracking in vision-and-language navigation. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 2019. 1, 2, 8
+
+- [23] Diederik P. Kingma and Jimmy Ba. Adam: A method for stochastic optimization. In Proceedings of the International Conference on Learning Representations (ICLR) , 2015. 12
+- [24] Alex Krizhevsky, Ilya Sutskever, and Geoffrey E Hinton. Imagenet classification with deep convolutional neural networks. In Advances in neural information processing systems , pages 1097-1105, 2012. 3
+- [25] Xihui Liu, Zihao Wang, Jing Shao, Xiaogang Wang, and Hongsheng Li. Improving referring expression grounding with cross-modal attention-guided erasing. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 1950-1959, 2019. 8
+- [26] Jiasen Lu, Dhruv Batra, Devi Parikh, and Stefan Lee. Vilbert: Pretraining task-agnostic visiolinguistic representations for vision-and-language tasks. In Advances in Neural Information Processing Systems , pages 13-23, 2019. 3, 5, 12
+- [27] Jiasen Lu, Vedanuj Goswami, Marcus Rohrbach, Devi Parikh, and Stefan Lee. 12-in-1: Multi-task vision and language representation learning. In The IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2020. 3, 5, 7, 12
+- [28] Chih-Yao Ma, Jiasen Lu, Zuxuan Wu, Ghassan AlRegib, Zsolt Kira, Richard Socher, and Caiming Xiong. Selfmonitoring navigation agent via auxiliary progress estimation. In Proceedings of the International Conference on Learning Representations (ICLR) , 2019. 1, 6, 8
+- [29] Arjun Majumdar, Ayush Shrivastava, Stefan Lee, Peter Anderson, Devi Parikh, and Dhruv Batra. Improving visionand-language navigation with image-text pairs from the web. 2020. 2, 3
+- [30] P. Mirowski, Razvan Pascanu, F. Viola, Hubert Soyer, Andy Ballard, Andrea Banino, Misha Denil, R. Goroshin, L. Sifre, K. Kavukcuoglu, D. Kumaran, and Raia Hadsell. Learning to navigate in complex environments. In ICLR , 2017. 3
+- [31] Piotr Mirowski, Razvan Pascanu, Fabio Viola, Hubert Soyer, Andrew J. Ballard, Andrea Banino, Misha Denil, Ross Goroshin, Laurent Sifre, Koray Kavukcuoglu, Dharshan Kumaran, and Raia Hadsell. Learning to navigate in complex environments. In Proceedings of the International Conference on Learning Representations (ICLR) , 2017. 3
+- [32] Junhyuk Oh, Valliappa Chockalingam, Satinder Singh, and H. Lee. Control of memory, active perception, and action in minecraft. In ICML , 2016. 3
+- [33] Emilio Parisotto and R. Salakhutdinov. Neural map: Structured memory for deep reinforcement learning. In ICLR , 2018. 3
+- [34] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In Advances in Neural Information Processing Systems 32 , pages 8024-8035. 2019. 12
+- [35] Sharma Piyush, Ding Nan, Goodman Sebastian, and Soricut Radu. Conceptual captions: A cleaned, hypernymed, image
+14. alt-text dataset for automatic image captioning. In Proceedings of the 56th Annual Meeting of the Association for Computational Linguistics , 2018. 7, 12
+- [36] Yuankai Qi, Qi Wu, Peter Anderson, Xin Wang, William Yang Wang, Chunhua Shen, and Anton van den Hengel. Reverie: Remote embodied visual referring expression in real indoor environments. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , 2020. 1, 2, 7, 8, 12
+- [37] Nikolay Savinov, A. Dosovitskiy, and V. Koltun. Semiparametric topological memory for navigation. In ICLR , 2018. 3
+- [38] Weijie Su, Xizhou Zhu, Yue Cao, Bin Li, Lewei Lu, Furu Wei, and Jifeng Dai. Vl-bert: Pre-training of generic visuallinguistic representations. In International Conference on Learning Representations , 2020. 3
+- [39] Hao Tan and Mohit Bansal. Lxmert: Learning crossmodality encoder representations from transformers. In Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing , 2019. 3
+- [40] Hao Tan, Licheng Yu, and Mohit Bansal. Learning to navigate unseen environments:back translation with environmental dropout. In Proceedings of The North American Chapter of the Association for Computational Linguistics (NAACL) , 2019. 1, 2, 6, 12
+- [41] I. V. D. van der Ham, M. H. G. Claessen, A. Evers, and Milan N. A. van der Kuil. Large-scale assessment of human navigation ability across the lifespan. Scientific Reports , 10, 2020. 12
+- [42] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Ł ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30 , pages 5998-6008, 2017. 6
+- [43] Xin Wang, Qiuyuan Huang, Asli Celikyilmaz, Jianfeng Gao, Dinghan Shen, Yuan-Fang Wang, William Yang Wang, and Lei Zhang. Reinforced cross-modal matching and selfsupervised imitation learning for vision-language navigation. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition , pages 6629-6638, 2019. 1, 2, 8
+- [44] Xin Wang, Wenhan Xiong, Hongmin Wang, and William Yang Wang. Look before you leap: Bridging model-free and model-based reinforcement learning for planned-ahead vision-and-language navigation. In The European Conference on Computer Vision (ECCV) , September 2018. 1, 2
+- [45] J. Wiener, Simon J. B¨ uchner, and C. H¨ olscher. Taxonomy of human wayfinding tasks: A knowledge-based approach. Spatial Cognition &amp; Computation , 9:152 - 165, 2009. 12
+- [46] Daan Wierstra, A. F¨ orster, Jan Peters, and J. Schmidhuber. Solving deep memory pomdps with recurrent policy gradients. In ICANN , 2007. 3
+- [47] T. Wolbers and M. Hegarty. What determines our navigational abilities? Trends in Cognitive Sciences , 14:138-146, 2010. 12
+
+- [48] Yi Wu, Yuxin Wu, Georgia Gkioxari, and Yuandong Tian. Building generalizable agents with a realistic and rich 3d environment. arXiv preprint arXiv:1801.02209 , 2018. 12
+- [49] Sibei Yang, Guanbin Li, and Yizhou Yu. Graph-structured referring expression reasoning in the wild. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition , pages 9952-9961, 2020. 1
+- [50] Sibei Yang, Guanbin Li, and Yizhou Yu. Relationshipembedded representation learning for grounding referring expressions. IEEE Transactions on Pattern Analysis and Machine Intelligence , 2020. 1
+- [51] Licheng Yu, Zhe Lin, Xiaohui Shen, Jimei Yang, Xin Lu, Mohit Bansal, and Tamara L Berg. Mattnet: Modular attention network for referring expression comprehension. In The IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , 2018. 2, 8
+- [52] Fengda Zhu, Yi Zhu, Xiaojun Chang, and Xiaodan Liang. Vision-language navigation with self-supervised auxiliary reasoning tasks. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , June 2020. 2
+- [53] Yukun Zhu, Ryan Kiros, Rich Zemel, Ruslan Salakhutdinov, Raquel Urtasun, Antonio Torralba, and Sanja Fidler. Aligning books and movies: Towards story-like visual explanations by watching movies and reading books. In Proceedings of the IEEE International Conference on Computer Vision (ICCV) , December 2015. 7, 12
+
+## 6. More Related Work
+
+Behavioral Research on Human Navigation. The behavioural research of navigation of human beings has a long history and is still under active research [41, 19, 47, 45, 7, 8, 13]. Yet, it is not well understood how we human carry out the learning process of navigation in our brain to allow us to navigate in a familiar or unfamiliar environment. However, according to [41, 47, 45, 7], we humans use a range of different cognitive processes when we navigate. For example, we identify representative landmark cues, memorize our goal location, and identify the shortest route to that goal location. A significant number of research have supported such dissociable cognitive aspects. The human intuitions for remote embodied navigation we referred to in this paper is a set of commonsense rules and heuristics that come from observations of humans¡ ¯ life experiences, which shares a similar motivation mentioned in [14]. Our work has also proved that drawing on such observations in high-level VLN is a promising direction.
+
+## 7. Implementation Details
+
+In this section, we introduce the implementation details of the pre-training stage and the action decoding stage. In pre-training stage, we first present the sampled datasets information of the Scene Grounding task and the Object Grounding task. Second, we introduce the ViLBERT model used in the pre-training stage. Third, we illustrate the action decoder architecture and the training parameters in detail.
+
+## 7.1. Pre-training Stage Details
+
+Scene Grounding Task. The Scene Grounding training dataset consists of 10312 samples, each containing an instruction and four viewpoints out of which one is positive. The sampling strategy is illustrated in the main paper. We evaluate the effectiveness of this task by asking the model trained to identify the true target viewpoint given the ground-truth path. We report the accuracy on the Val Seen ( 1423 paths) and Val UnSeen ( 3521 paths) REVERIE.
+
+Object Grounding Task. The image based grounding dataset contains 67432 training samples and the viewpoint based object grounding dataset contains 4356 training samples. The sampling strategy is presented in the main paper. Similar to [36], we evaluate the performance of this model on the ground-truth target viewpoint and report the object grounding accuracy.
+
+Model Details. The ViLBERT model used in Scene Grounding task and Object Grounding task consists of a language stream, a vision stream and a cross modal alignment layers block. The language stream utilizes a BERT BASE architecture [10], which has 12 -layer of transformer blocks and each block having a hidden state size of 768 and 12 attention heads. The vision stream and the cross modal align- ment block use 6 -layer transformer blocks and each having a hidden state size of 1024 and 8 attention heads respectively. Following [26, 27], the language stream is initialized with BERT weights pre-trained on the BookCorpus [53] and English Wikipedia datasets. Then, the ViLBERT model is pre-trained on the Conceptual Captions dataset [35] as well as the 12 tasks specified in [27]. Finally, it is fine-tuned on our Scene Grounding task and Object Grounding task respectively. In the Scene Grounding task, the Scene Grounding model is trained with the Adam optimizer with a learning rate of 4 e -5 and a batch size of 32 for 10 epochs. In the Object Grounding task, the Object Grounding model is first trained on the image based Object Grounding dataset with the Adam optimizer with a learning rate of 4 e -5 and a batch size of 128 for 20 epochs. Then, it is further fine-tuned on the viewpoint based Object Grounding dataset with the Adam optimizer with a learning rate of 1 e -5 and a batch size of 128 for 10 epochs. We use a linear decay learning rate schedule with warm up to train the aforementioned models. All models are trained on NVIDIA Geforce 2080 Ti GPUs with 11 GB memory using Pytorch [34].
+
+## 7.2. Action Decoding Stage Details
+
+The V iLEncoder is composed of a ViLBERT model pretrained on the Scene Grounding task and a Bi-directional LSTM layer. The D h in the BiLSTM is set to 512 . The V iLPointer is ViLBERT model pre-trained on the Object Grounding task. The N mem and N state used in the memory blocks are set to 3 according to our ablation study in the ablation study. We follow the same RL setting as [40] that sets the discounted factor to 0 . 9 and adopts reward shaping [48]. We train the agent with the Adam Optimizer [23] with a learning rate of 1 e -4 , weight decay of 5 e -4 , batch size of 64 and the maximum decoding action length of 40 . We clip the global gradient norm at 40 . We train the agent for 13000 iterations and report the final performance. All experiments have been conducted on NVIDIA Geforce 2080 Ti GPUs with 11 GB memory using Pytorch [34].
+
+## 8. Evaluation Metrics Details
+
+In this section, we illustrate the details of the evaluation metrics. Following [36], we evaluate the performance of the model based on REVERIE Success Rate (RGS) and REVERIE Success Rate weighted by Path Length (RG SPL). Besides, we report the performance of our method on the following metrics in the REVERIE dataset. It is worth noting that the target object is only observable within 3 meters of the target viewpoint.
+
+- Navigation Success Rate is the percentage of the target object observable at the agent's final location.
+- Navigation Oracle Success Rate measures the percentage of the target object that can be observed at one
+
+of the agent's passed viewpoints.
+
+- Navigation Success Rate weighted by Path Length (SPL) is the navigation success rate weighted by the trajectory length.
+- Navigation Length is the trajectory length in meters.
+- REVERIE Success Rate (RGS) is calculated as the percentage of the output bounding box that has an IoU ≥ 0 . 5 with the ground truth box.
+- REVERIE Success Rate weighted by Path Length (RG SPL) is REVERIE success rate weighted by the trajectory length.
+
+## 9. Qualitative Examples
+
+In this section, we show a number of qualitative examples of how our proposed agent performs in both Val Seen environment (from Fig. 5 to Fig. 8) and Val Unseen environment (from Fig. 9 to Fig. 12). Besides, we also visualize five representative failed cases illustrating the typical mistakes our agent make to better understand how our agent works.
+
+## Instruction
+
+Go to the closet and give me the pair of blue shoes that are on the third shelf from the bottom
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+<!-- image -->
+
+Figure 5. The successful navigation and localization qualitative example result on Val Seen dataset.
+
+<!-- image -->
+
+## Instruction
+
+Go to your right when entering the front door and enter the office on your left with a big desk in it and no doors to the room and stand at the black desk in the middle of the office
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+<!-- image -->
+
+Figure 6. The successful navigation and localization qualitative example result on Val Seen dataset.
+
+<!-- image -->
+
+## Instruction
+
+Go to the bathroom with the white ruffle shower curtain and Elliana monogrammed on the towel off the bedroom with the big metal E behind the bed and check if there is any toilet paper on the holder next to the toilet
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+<!-- image -->
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+Figure 7. The successful navigation and localization qualitative example result on Val Seen dataset.
+
+<!-- image -->
+
+## Instruction
+
+Leave the kitchen into the hall to your right and cross the hall to other end of house and to your right there is a bedroom with grey walls and a orange stripe going around the room and look at the black control on the wall to your left soon as you enter the bedroom
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+Figure 8. The successful navigation and localization qualitative example result on Val Seen dataset.
+
+<!-- image -->
+
+Go to the mudroom and clean the counter
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+<!-- image -->
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+Figure 9. The successful navigation and localization qualitative example result on Val Unseen dataset.
+
+<!-- image -->
+
+## Instruction
+
+## Instruction
+
+Go to the dining room on level 2 and smash the table vase
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+<!-- image -->
+
+Figure 10. The successful navigation and localization qualitative example result on Val Unseen dataset.
+
+<!-- image -->
+
+## Instruction
+
+Go to the hallway on level 2 with the cross hanging on the wall and bring me the photo across from the light switch
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+<!-- image -->
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+Figure 11. The successful navigation and localization qualitative example result on Val Unseen dataset.
+
+<!-- image -->
+
+## Instruction
+
+Go to the bedroom on level 1 that has a lot of red designs on top of the bed a painting depicting flowers above the bed and a ceiling-mounted chandelier in the center of the room and tell me if the chandelier is turned on
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+<!-- image -->
+
+The red bounding box denotes the localized output object and the green bounding boxes are candidate objects.
+
+Figure 12. The successful navigation and localization qualitative example result on Val Unseen dataset.
+
+<!-- image -->
+
+## Instruction
+
+Go to second level balcony attached to the master bedroom and pick up the black and white stripped pillow closest to the tv
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+The left column denotes the agent's navigation steps and the right column shows the ground truth navigation steps.
+
+<!-- image -->
+
+Figure 13. The failed navigation qualitative example result. In this example, the agent first successfully navigates to second level but failed to enter the correct bedroom and stopped at a wrong viewpoint.
+
+Push in the chair nearest the door in the office
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+The red bounding box denotes the localized output object, the green bounding boxes are candidate objects and the blue bounding box is the ground truth bounding box.
+
+<!-- image -->
+
+Figure 14. The failed localization qualitative example result. In this example, the agent first successfully navigates to the target viewpoint but failed to localize the target object because the V iLPointer module thinks the white chair is closer to the office door than the black chair, which is reasonable as it is hard to decide which one is closer. 23
+
+<!-- image -->
+
+## Instruction
+
+## Instruction
+
+Go to the dining room on level 2 and bring me the plate
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+Figure 15. The failed localization qualitative example result. In this example, the agent first successfully navigates to the target viewpoint but failed to localize the target object because of the ambiguous meaning of 'the plate' in the high-level instruction.
+
+<!-- image -->
+
+<!-- image -->
+
+## Instruction
+
+Go to the office that is next to a piano on level 1 and bring the bottle from the shelf
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+Figure 16. The failed localization qualitative example result. In this example, the agent first successfully navigates to the target viewpoint but failed to localize the target object because of the ambiguous meaning of 'the bottle on the shelf' in the high-level instruction.
+
+<!-- image -->
+
+<!-- image -->
+
+## Instruction
+
+Go to second level balcony attached to the master bedroom and pick up the black and white stripped pillow closest to the tv
+
+Navigation steps of the scene-intuitive agent. The red arrow shows the action chosen by the agent. The Stop sign means the agent stops at corresponding viewpoint.
+
+The red bounding box denotes the localized output object, the green bounding boxes are candidate objects and the blue bounding box is the ground truth bounding box.
+
+<!-- image -->
+
+Figure 17. The failed localization qualitative example result. In this example, the agent first successfully navigates to the target viewpoint but failed to localize the target object because it failed to capture the relative position of similar objects ('the black and white stripped pillow') in the scene.
+
+<!-- image -->
