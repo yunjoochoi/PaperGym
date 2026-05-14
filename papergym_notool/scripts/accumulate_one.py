@@ -1,4 +1,4 @@
-"""In-container: fetch one paper, run Accumulator, persist seeds + events to mounts."""
+"""Fetch one paper, run the no-tool Accumulator, and persist seeds + events."""
 import argparse
 import json
 import shutil

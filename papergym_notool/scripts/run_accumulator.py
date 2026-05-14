@@ -1,4 +1,4 @@
-"""Host: iterate arxiv_ids.jsonl and spawn --rm containers in parallel.
+"""Host: iterate arxiv_ids.jsonl and run the no-tool accumulator locally.
 
 Resumes by skipping arxiv_ids whose latest entry in
 <library_root>/accumulator_log.jsonl is `ok` or `skipped`. Errors are
@@ -8,7 +8,6 @@ import argparse
 import hashlib
 import json
 import os
-import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -16,11 +15,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+import accumulate_one
 
-DEFAULT_IMAGE = "papergym-accumulator:latest"
-FORWARDED_ENV = ("OPENAI_API_KEY", "OPENAI_API_BASE",
-                 "LITELLM_MODEL", "EMBEDDING_MODEL")
+load_dotenv(override=True)
 
 # Fixed shard count. Changing this after the library is populated would
 # re-route arxiv_ids to different shards and produce duplicates.
@@ -64,45 +61,24 @@ def _already_done(library_root: Path) -> set[str]:
     return {aid for aid, s in latest.items() if s in ("ok", "skipped")}
 
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_CONTAINER_CACHE = "/papers_cache"
-
-
-def _spawn_one(arxiv_id: str, *, image: str, library_root: Path,
-               events_dir: Path,
-               papers_cache: Path | None) -> tuple[str, int]:
+def _run_one(arxiv_id: str, *, work_root: Path, library_root: Path,
+             events_dir: Path, papers_cache: Path | None) -> tuple[str, int]:
     shard_id = _shard_for(arxiv_id)
-    cmd = [
-        "docker", "run", "--rm",
-        # No-tool variant reuses the C image and bind-mounts this repo's
-        # src/scripts on top so the same image runs the simplified Accumulator.
-        "-v", f"{_REPO_ROOT / 'src'}:/papergym/src:ro",
-        "-v", f"{_REPO_ROOT / 'scripts'}:/papergym/scripts:ro",
-        "-v", f"{library_root.resolve()}:/library:rw",
-        "-v", f"{events_dir.resolve()}:/events:rw",
+    argv = [
+        "--arxiv-id", arxiv_id,
+        "--work-root", str(work_root),
+        "--library-root", str(library_root),
+        "--events-dir", str(events_dir),
+        "--shard-id", str(shard_id),
     ]
     if papers_cache is not None and papers_cache.exists():
-        cmd.extend([
-            "-v", f"{papers_cache.resolve()}:{_CONTAINER_CACHE}:ro",
-        ])
-    hf_cache = Path.home() / ".cache" / "huggingface"
-    if hf_cache.exists():
-        cmd.extend([
-            "-v", f"{hf_cache}:/root/.cache/huggingface:ro",
-            "-e", "HF_HUB_OFFLINE=1",
-        ])
-    for var in FORWARDED_ENV:
-        if var in os.environ:
-            cmd.extend(["-e", f"{var}={os.environ[var]}"])
-    cmd.extend([
-        image,
-        "--arxiv-id", arxiv_id,
-        "--shard-id", str(shard_id),
-    ])
-    if papers_cache is not None and papers_cache.exists():
-        cmd.extend(["--papers-cache", _CONTAINER_CACHE])
-    rc = subprocess.run(cmd).returncode
-    return (arxiv_id, rc)
+        argv.extend(["--papers-cache", str(papers_cache)])
+    try:
+        accumulate_one.main(argv=argv)
+    except SystemExit as exc:
+        code = exc.code if isinstance(exc.code, int) else 1
+        return (arxiv_id, code)
+    return (arxiv_id, 0)
 
 
 def main(argv=None):
@@ -111,20 +87,20 @@ def main(argv=None):
                     help="jsonl produced by sample_envs.py")
     p.add_argument("--library-root", required=True, type=Path)
     p.add_argument("--events-dir", required=True, type=Path)
-    p.add_argument("--image", default=DEFAULT_IMAGE)
+    p.add_argument("--work-root", type=Path, default=Path("data/work"),
+                    help="Host directory for paper.md and per-paper traces.")
     p.add_argument("--max-papers", type=int, default=None,
                     help="Process at most N NEW papers (after resume filter).")
     p.add_argument("--max-workers", type=int, default=4,
-                    help="Parallel container slots. Shard count is fixed at "
+                    help="Parallel local worker slots. Shard count is fixed at "
                          f"{N_SHARDS}.")
     p.add_argument("--spawn-delay-s", type=float, default=10.0,
-                    help="Sleep between container starts to avoid bursting "
+                    help="Sleep between paper starts to avoid bursting "
                          "arXiv fetch requests. Set 0 to disable.")
     p.add_argument("--papers-cache", type=Path, default=None,
                     help="Host path to a pre-converted paper.md cache "
-                         "(e.g., /home/shaush/__research/papers_cache). "
-                         "When supplied, mounted into the container at "
-                         "/papers_cache:ro and the Accumulator skips docling "
+                         "(e.g., data/papers_cache). "
+                         "When supplied, the Accumulator skips docling "
                          "for any arxiv_id present there.")
     args = p.parse_args(argv)
 
@@ -134,6 +110,7 @@ def main(argv=None):
 
     args.library_root.mkdir(parents=True, exist_ok=True)
     args.events_dir.mkdir(parents=True, exist_ok=True)
+    args.work_root.mkdir(parents=True, exist_ok=True)
 
     all_ids = _read_arxiv_ids(args.arxiv_ids)
     done = _already_done(args.library_root)
@@ -152,8 +129,8 @@ def main(argv=None):
             if n > 0 and args.spawn_delay_s > 0:
                 time.sleep(args.spawn_delay_s)
             futures.append(
-                pool.submit(_spawn_one, aid,
-                            image=args.image,
+                pool.submit(_run_one, aid,
+                            work_root=args.work_root,
                             library_root=args.library_root,
                             events_dir=args.events_dir,
                             papers_cache=args.papers_cache)

@@ -3,7 +3,7 @@
 Usage:
     uv run python scripts/retrieval_eval.py \\
         --queries data/queries.yaml \\
-        --library /home/shaush/__research/PaperGym/data/library \\
+        --library data/library \\
         --output-dir data/eval \\
         --judge-model openai/bedrock.anthropic.claude-sonnet-4-6 \\
         --k 3

@@ -5,9 +5,9 @@ the same paper sample is evaluated for whichever libraries are supplied.
 
 Usage:
     uv run python scripts/seed_quality_eval.py \\
-        --library A=/home/shaush/__research/PaperGym_notool/data/library \\
-        --library C=/home/shaush/__research/PaperGym/data/library \\
-        --papers-cache /home/shaush/__research/papers_cache \\
+        --library A=papergym_notool/data/library \\
+        --library C=data/library \\
+        --papers-cache data/papers_cache \\
         --output-dir data/eval \\
         --n-papers 50 \\
         --judge-model openai/bedrock.anthropic.claude-sonnet-4-6

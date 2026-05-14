@@ -9,9 +9,9 @@ on prior knowledge and the original eval is unreliable.
 Usage:
     uv run python scripts/seed_shuffled.py \\
         --judgements data/eval/20260502T184507/judgements.jsonl \\
-        --library A=/home/shaush/__research/PaperGym_notool/data/library \\
-        --library C=/home/shaush/__research/PaperGym/data/library \\
-        --papers-cache /home/shaush/__research/papers_cache \\
+        --library A=papergym_notool/data/library \\
+        --library C=data/library \\
+        --papers-cache data/papers_cache \\
         --judge-model openai/bedrock.anthropic.claude-sonnet-4-6
 """
 from __future__ import annotations

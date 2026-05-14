@@ -1,4 +1,8 @@
-"""Sample arxiv_ids per domain (no PDF fetch — that happens inside the Accumulator container)."""
+"""Sample arxiv_ids per domain.
+
+No PDF fetch happens here; `accumulate_one.py` fetches or reuses cached
+paper.md when the no-tool accumulator is run.
+"""
 import argparse
 import json
 import os

@@ -25,7 +25,8 @@ def test_reset_calls_fetch_and_creates_paper_dir(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(base_mod, "fetch_paper_to_disk", fetch)
     env = _make_env(tmp_path)
     env.reset()
-    fetch.assert_called_once_with(arxiv_id="2401.0001", root=tmp_path)
+    fetch.assert_called_once_with(arxiv_id="2401.0001", root=tmp_path,
+                                  cache_root=None)
     assert env.paper_dir.exists()
 
 
@@ -33,7 +34,8 @@ def test_reset_is_idempotent_when_paper_md_exists(tmp_path: Path, monkeypatch):
     """`fetch_paper_to_disk` itself short-circuits when paper.md exists; reset
     should be safely callable multiple times without surprises."""
     calls = []
-    def fake_fetch(*, arxiv_id, root):
+    def fake_fetch(*, arxiv_id, root, cache_root=None):
+        assert cache_root is None
         calls.append((arxiv_id, root))
         (Path(root) / arxiv_id).mkdir(parents=True, exist_ok=True)
         (Path(root) / arxiv_id / "paper.md").write_text("# x")

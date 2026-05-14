@@ -14,7 +14,7 @@ def _import(scripts_dir: Path):
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 
 
-def test_spawns_one_container_per_arxiv_id(tmp_path: Path, monkeypatch):
+def test_runs_one_host_job_per_arxiv_id(tmp_path: Path, monkeypatch):
     ra = _import(SCRIPTS)
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
@@ -24,8 +24,8 @@ def test_spawns_one_container_per_arxiv_id(tmp_path: Path, monkeypatch):
         + json.dumps({"arxiv_id": "2401.0002"}) + "\n"
     )
 
-    fake_run = MagicMock(return_value=MagicMock(returncode=0))
-    with patch.object(ra, "subprocess", MagicMock(run=fake_run)), \
+    fake_main = MagicMock()
+    with patch.object(ra.accumulate_one, "main", fake_main), \
          patch.object(ra, "ThreadPoolExecutor", _InlineExecutor):
         ra.main(argv=[
             "--arxiv-ids", str(arxiv_ids_path),
@@ -35,13 +35,13 @@ def test_spawns_one_container_per_arxiv_id(tmp_path: Path, monkeypatch):
             "--spawn-delay-s", "0",
         ])
 
-    assert fake_run.call_count == 2
-    cmds = [call.args[0] for call in fake_run.call_args_list]
-    aids = [c[c.index("--arxiv-id") + 1] for c in cmds]
+    assert fake_main.call_count == 2
+    argvs = [call.kwargs["argv"] for call in fake_main.call_args_list]
+    aids = [a[a.index("--arxiv-id") + 1] for a in argvs]
     assert set(aids) == {"2401.0001", "2401.0002"}
-    # each spawn must include --shard-id
-    for c in cmds:
-        assert "--shard-id" in c
+    for argv in argvs:
+        assert "--shard-id" in argv
+        assert "--work-root" in argv
 
 
 def test_max_papers_limits_iterations(tmp_path: Path, monkeypatch):
@@ -53,8 +53,8 @@ def test_max_papers_limits_iterations(tmp_path: Path, monkeypatch):
         "\n".join(json.dumps({"arxiv_id": f"2401.000{i}"}) for i in range(5))
     )
 
-    fake_run = MagicMock(return_value=MagicMock(returncode=0))
-    with patch.object(ra, "subprocess", MagicMock(run=fake_run)), \
+    fake_main = MagicMock()
+    with patch.object(ra.accumulate_one, "main", fake_main), \
          patch.object(ra, "ThreadPoolExecutor", _InlineExecutor):
         ra.main(argv=[
             "--arxiv-ids", str(arxiv_ids_path),
@@ -64,7 +64,7 @@ def test_max_papers_limits_iterations(tmp_path: Path, monkeypatch):
             "--spawn-delay-s", "0",
         ])
 
-    assert fake_run.call_count == 2
+    assert fake_main.call_count == 2
 
 
 def test_resume_skips_already_done(tmp_path: Path, monkeypatch):
@@ -84,8 +84,8 @@ def test_resume_skips_already_done(tmp_path: Path, monkeypatch):
         + json.dumps({"arxiv_id": "2401.0002", "status": "error"}) + "\n"
     )
 
-    fake_run = MagicMock(return_value=MagicMock(returncode=0))
-    with patch.object(ra, "subprocess", MagicMock(run=fake_run)), \
+    fake_main = MagicMock()
+    with patch.object(ra.accumulate_one, "main", fake_main), \
          patch.object(ra, "ThreadPoolExecutor", _InlineExecutor):
         ra.main(argv=[
             "--arxiv-ids", str(arxiv_ids_path),
@@ -95,8 +95,8 @@ def test_resume_skips_already_done(tmp_path: Path, monkeypatch):
             "--spawn-delay-s", "0",
         ])
 
-    cmds = [c.args[0] for c in fake_run.call_args_list]
-    aids = [c[c.index("--arxiv-id") + 1] for c in cmds]
+    argvs = [c.kwargs["argv"] for c in fake_main.call_args_list]
+    aids = [a[a.index("--arxiv-id") + 1] for a in argvs]
     # 0000 (ok) + 0001 (skipped) → skipped. 0002 (error) → retry. 0003 → new.
     assert set(aids) == {"2401.0002", "2401.0003"}
 
@@ -116,8 +116,8 @@ def test_resume_takes_latest_status_per_arxiv_id(tmp_path: Path, monkeypatch):
         + json.dumps({"arxiv_id": "2401.X", "status": "ok"}) + "\n"
     )
 
-    fake_run = MagicMock(return_value=MagicMock(returncode=0))
-    with patch.object(ra, "subprocess", MagicMock(run=fake_run)), \
+    fake_main = MagicMock()
+    with patch.object(ra.accumulate_one, "main", fake_main), \
          patch.object(ra, "ThreadPoolExecutor", _InlineExecutor):
         ra.main(argv=[
             "--arxiv-ids", str(arxiv_ids_path),
@@ -126,7 +126,7 @@ def test_resume_takes_latest_status_per_arxiv_id(tmp_path: Path, monkeypatch):
             "--max-workers", "2",
             "--spawn-delay-s", "0",
         ])
-    assert fake_run.call_count == 0
+    assert fake_main.call_count == 0
 
 
 def test_shard_assignment_is_stable(tmp_path: Path, monkeypatch):
@@ -142,7 +142,7 @@ def test_shard_assignment_is_stable(tmp_path: Path, monkeypatch):
 
 
 def test_shards_distributed_across_pending_papers(tmp_path: Path, monkeypatch):
-    """Spawned containers spread across all configured shards."""
+    """Local jobs spread across all configured shards."""
     ra = _import(SCRIPTS)
     monkeypatch.setenv("OPENAI_API_KEY", "test")
 
@@ -151,8 +151,8 @@ def test_shards_distributed_across_pending_papers(tmp_path: Path, monkeypatch):
         "\n".join(json.dumps({"arxiv_id": f"2401.{i:04d}"}) for i in range(20))
     )
 
-    fake_run = MagicMock(return_value=MagicMock(returncode=0))
-    with patch.object(ra, "subprocess", MagicMock(run=fake_run)), \
+    fake_main = MagicMock()
+    with patch.object(ra.accumulate_one, "main", fake_main), \
          patch.object(ra, "ThreadPoolExecutor", _InlineExecutor):
         ra.main(argv=[
             "--arxiv-ids", str(arxiv_ids_path),
@@ -162,8 +162,8 @@ def test_shards_distributed_across_pending_papers(tmp_path: Path, monkeypatch):
             "--spawn-delay-s", "0",
         ])
 
-    cmds = [c.args[0] for c in fake_run.call_args_list]
-    shards = {int(c[c.index("--shard-id") + 1]) for c in cmds}
+    argvs = [c.kwargs["argv"] for c in fake_main.call_args_list]
+    shards = {int(a[a.index("--shard-id") + 1]) for a in argvs}
     # With 20 papers and a stable hash, all 4 shards should be hit.
     assert shards == {0, 1, 2, 3}
 

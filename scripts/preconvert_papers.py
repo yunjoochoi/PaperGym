@@ -22,7 +22,7 @@ Run:
 Then copy the cache back to the main host:
 
     rsync -av gpu-server:/scratch/papers_cache/ \
-        /home/shaush/__research/papers_cache/
+        ./data/papers_cache/
 
 Notes
 -----

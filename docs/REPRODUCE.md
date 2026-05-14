@@ -1,6 +1,8 @@
-# Reproducing the paper
+# Paper Claim Ledger
 
-Each paper number maps to the script behind it and the file it was read from. [`scripts/reproduce_paper.sh`](../scripts/reproduce_paper.sh) runs every step in order.
+This file is an optional audit ledger. The main README is sufficient to rerun
+the paper results; this document maps each reported paper claim to the script,
+output file, and JSON field behind it.
 
 Run all commands from the repo root with `OPENAI_API_KEY` and Bedrock credentials set ([README setup](../README.md#setup)).
 
@@ -23,7 +25,7 @@ The A condition (no-tool extraction baseline) is in the [`papergym_notool/`](../
 | Shuffle control: grounding → 1.00, drop ≈ 3.82 (n=85 A, n=82 C) | [`scripts/seed_shuffled.py`](../scripts/seed_shuffled.py) | `data/eval/shuffled_20260503T080925/summary.json` | `A.true_mean`, `A.shuffled_mean`, `A.drop_mean` |
 
 ```bash
-# A condition = direct extraction (companion repo); C = tool-augmented (this repo)
+# A condition = direct extraction (papergym_notool/); C = tool-augmented (this repo)
 uv run python scripts/seed_quality_eval.py \
   --library A=path/to/no-tool-library --library C=path/to/tool-library \
   --papers-cache data/papers_cache \

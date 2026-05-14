@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Re-run every evaluation behind the paper (Stages 2, 3, and the loop
-# ablation). Stage 1 lives in the PaperGym_notool companion repository.
+# ablation). Stage 1 no-tool extraction lives in papergym_notool/.
 #
 # Inputs (must already exist):
 #   - data/library/                 cross-domain seed library (build it via

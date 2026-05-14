@@ -124,7 +124,7 @@ def main(argv=None):
                          "arXiv fetch requests. Set 0 to disable.")
     p.add_argument("--papers-cache", type=Path, default=None,
                     help="Host path to a pre-converted paper.md cache "
-                         "(e.g., /home/shaush/__research/papers_cache). "
+                         "(e.g., data/papers_cache). "
                          "When supplied, mounted into the container at "
                          "/papers_cache:ro and the Accumulator skips docling "
                          "for any arxiv_id present there.")

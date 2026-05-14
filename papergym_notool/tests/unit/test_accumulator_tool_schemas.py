@@ -1,13 +1,9 @@
-from papergym.agents.accumulator import ACCUMULATOR_TOOLS
+import papergym.agents.accumulator as accumulator_mod
 
 
-def test_has_required_tools():
-    names = [t["function"]["name"] for t in ACCUMULATOR_TOOLS]
-    assert set(names) == {"Read", "Grep", "Bash"}
+def test_no_tool_baseline_exports_no_tool_schemas():
+    assert not hasattr(accumulator_mod, "ACCUMULATOR_TOOLS")
 
 
-def test_no_done_tool():
-    """`done` was removed; the agent terminates by emitting JSON content
-    instead of invoking a structured-output tool."""
-    names = [t["function"]["name"] for t in ACCUMULATOR_TOOLS]
-    assert "done" not in names
+def test_no_tool_baseline_still_exports_accumulator():
+    assert hasattr(accumulator_mod, "Accumulator")

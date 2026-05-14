@@ -38,23 +38,18 @@ source .venv/bin/activate
 cp .env.examples .env   # add OPENAI_API_KEY etc.
 ```
 
-Host requirements: Docker daemon (the baseline still sandboxes each paper
-in a fresh container; only the in-container agent loop is replaced).
+Host requirements: no Docker daemon is needed for this no-tool baseline.
+The runner executes locally because the accumulator does not expose `bash`
+or repository-inspection tools to the model.
 
 ---
 
 ## Reproduce Stage 1 baseline
 
-The procedure mirrors the parent project's bootstrap, but uses the
-no-tool accumulator image.
+The procedure mirrors the parent project's bootstrap, but runs locally
+instead of spawning per-paper containers.
 
-### 1. Build the no-tool accumulator image
-
-```bash
-bash scripts/build_image.sh   # → papergym-accumulator-notool:latest
-```
-
-### 2. Pick papers (or reuse the parent's sample)
+### 1. Pick papers (or reuse the parent's sample)
 
 ```bash
 # Option A: reuse the parent's sampled arxiv_ids (recommended for the
@@ -65,26 +60,27 @@ cp ../data/arxiv_ids.jsonl data/arxiv_ids.jsonl
 .venv/bin/python scripts/sample_envs.py --out data/arxiv_ids.jsonl
 ```
 
-### 3. Run the no-tool accumulator
+### 2. Run the no-tool accumulator
 
 ```bash
 .venv/bin/python scripts/run_accumulator.py \
     --arxiv-ids data/arxiv_ids.jsonl \
     --library-root data/library \
-    --events-dir data/events
+    --events-dir data/events \
+    --work-root data/work
 ```
 
-Inside each container, `accumulate_one.py` fetches and converts the paper
-to markdown, then calls the accumulator agent in single-pass mode: the
-full `paper.md` is injected into the user message and the model emits the
+For each paper, `accumulate_one.py` fetches and converts the paper to
+markdown, then calls the accumulator agent in single-pass mode: the full
+`paper.md` is injected into the user message and the model emits the
 `{title, domain, seeds[]}` JSON in one completion. No tool dispatch, no
-ReAct loop.
+ReAct loop, and no Docker sandbox.
 
-Output library shape matches the parent project's
-(`data/library/seeds.jsonl` + `data/library/faiss/<DOMAIN>.index`), so the
-parent's judges accept it as-is.
+Output library shape matches the parent project's sharded layout
+(`data/library/shard_*/seeds.jsonl` + `data/library/shard_*/faiss/<DOMAIN>.index`),
+so the parent's judges accept it as-is.
 
-### 4. Score with the parent's Stage 1 rubric judges
+### 3. Score with the parent's Stage 1 rubric judges
 
 From the parent project (`../`), with both libraries on disk:
 
@@ -92,18 +88,20 @@ From the parent project (`../`), with both libraries on disk:
 cd ..
 source .venv/bin/activate
 .venv/bin/python scripts/seed_quality_eval.py \
-    --tool-library     data/library \
-    --notool-library   papergym_notool/data/library \
-    --out              data/eval/stage1
+    --library A=papergym_notool/data/library \
+    --library C=data/library \
+    --papers-cache data/papers_cache \
+    --output-dir data/eval/stage1
 .venv/bin/python scripts/seed_shuffled.py \
-    --tool-library     data/library \
-    --notool-library   papergym_notool/data/library \
-    --out              data/eval/stage1_shuffled
+    --judgements data/eval/stage1/<run>/judgements.jsonl \
+    --library A=papergym_notool/data/library \
+    --library C=data/library \
+    --papers-cache data/papers_cache \
+    --output-dir data/eval/stage1_shuffled
 ```
 
-(Argument names may vary; pass `--help` on each script for the current
-flags. The expected outputs reproduce the Stage 1 numbers in Section 3.2
-of the paper.)
+The expected outputs reproduce the Stage 1 numbers in Section 3.2 of the
+paper.
 
 ---
 
@@ -116,7 +114,7 @@ Conceptually, only Stage 1's *accumulator agent* differs. Concretely:
 | `src/papergym/agents/accumulator/agent.py` | Single-pass completion; no `read`/`grep`/`bash` binding, no `run_tool_loop`. |
 | `src/papergym/agents/accumulator/accumulator.yaml` | Prompt assumes the full paper is in the user message. |
 | `scripts/accumulate_one.py` | No `--max-steps` (no loop). |
-| `docker/Dockerfile` | Smaller — no tool deps. |
+| `scripts/run_accumulator.py` | Runs `accumulate_one.py` locally; no Docker spawn. |
 
 Stages 2–3 (paraphraser, retrieval, synthesizer) are **not** exercised in
 this subdirectory; run those from the parent project against whichever

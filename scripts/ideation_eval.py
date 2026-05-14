@@ -8,7 +8,7 @@ random library seeds, so C vs D isolates the embedding-retrieval signal.
 Usage:
     uv run python scripts/ideation_eval.py \\
         --queries data/queries.yaml \\
-        --library /home/shaush/__research/PaperGym/data/library \\
+        --library data/library \\
         --conditions A,B,C,D \\
         --output-dir data/eval \\
         --judge-model openai/bedrock.anthropic.claude-sonnet-4-6 \\

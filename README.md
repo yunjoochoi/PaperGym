@@ -67,19 +67,59 @@ print('METHOD:', base.method)
 
 ## End-to-end reproduction
 
-End-to-end paper pipeline (assumes the seed library is already built; see [Bootstrap](#bootstrap) for the library-building step):
+The commands below are sufficient to rerun the paper results from the
+released artifacts. The tool-augmented seed library lives in
+[`data/library/`](data/library/); the no-tool Stage 1 baseline library lives
+in [`papergym_notool/data/library/`](papergym_notool/data/library/).
+Library generation is provenance, not part of the default reproduction path.
+See [Bootstrap](#bootstrap) only if you want to rebuild the tool-augmented
+library from arXiv.
+
+### Stage 1: seed extraction quality
+
+Stage 1 compares two existing libraries: `A` is direct no-tool extraction
+(full `paper.md` in one LLM turn), and `C` is the tool-augmented accumulator.
+The rubric judges need the converted paper markdown cache used for grounding
+checks.
+
+```bash
+PAPERS_CACHE=${PAPERS_CACHE:-data/papers_cache}
+JUDGE=${JUDGE_MODEL}
+
+uv run python scripts/seed_quality_eval.py \
+  --library A=papergym_notool/data/library \
+  --library C=data/library \
+  --papers-cache "$PAPERS_CACHE" \
+  --judge-model "$JUDGE"
+
+STAGE1_RUN=$(ls -td data/eval/[0-9]* | head -1)
+
+uv run python scripts/seed_shuffled.py \
+  --judgements "$STAGE1_RUN/judgements.jsonl" \
+  --library A=papergym_notool/data/library \
+  --library C=data/library \
+  --papers-cache "$PAPERS_CACHE" \
+  --judge-model "$JUDGE"
+```
+
+### Stages 2 and 3
+
+The full Stage 2/3 reproduction script reruns retrieval, ideation,
+pairwise/per-condition judges, attribution judging, and the novelty iteration
+loop:
 
 ```bash
 bash scripts/reproduce_paper.sh
 ```
 
-Each stage re-runs LLM synthesis (generation) and then applies the rubric judges over the same outputs. Stage 1 (library construction) is excluded — see the Bootstrap section below or the companion repo.
+Each stage writes a timestamped run directory under `data/eval/`. Existing
+released run directories are kept untouched.
 
-Each stage writes a timestamped run directory under `data/eval/`.
+The README is the canonical reproduction entry point. [`docs/REPRODUCE.md`](docs/REPRODUCE.md)
+is an optional claim-by-claim ledger that maps paper claims to scripts,
+output files, and JSON fields.
 
 Both the generator (`LITELLM_MODEL`) and the independent judge (`JUDGE_MODEL`) are read from `.env`. The judge must be in a different model family from the generator for self-bias control; the `.env.examples` defaults pair a GPT-5 generator with a Sonnet 4.6 judge.
-
-The script runs Stages 2, 3, and the novelty iteration loop. The Stage 1 *no-tool extraction baseline* is in the [`papergym_notool/`](papergym_notool/) subdirectory; the Stage 1 rubric judges (`seed_quality_eval.py`, `seed_shuffled.py`) are in this repo and consume both libraries — see [`papergym_notool/README.md`](papergym_notool/README.md) for the baseline's setup and [`docs/REPRODUCE.md`](docs/REPRODUCE.md#stage-1--tool-augmented-seed-extraction-section-32) for the joint Stage 1 reproduction flow.
 
 ### Bootstrap
 
@@ -144,7 +184,7 @@ PaperGym/
 └── papergym_notool/                    # Stage 1 no-tool extraction baseline
     ├── src/papergym/                   # variant: direct prompting (no read/grep/bash)
     ├── scripts/                        # baseline entry points
-    ├── docker/Dockerfile               # baseline sandbox
+    ├── data/library/                   # no-tool baseline seed library
     └── README.md                       # baseline setup + reproduce steps
 ```
 
