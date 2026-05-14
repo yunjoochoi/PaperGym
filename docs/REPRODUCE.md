@@ -14,7 +14,7 @@ Stage 2/3 read from [`data/library/`](../data/library/) and [`data/queries.yaml`
 
 ## Stage 1 — Tool-augmented seed extraction (Section 3.2)
 
-The A condition (no-tool extraction baseline) is in [PaperGym_notool](https://github.com/yunjoochoi/PaperGym_notool); the judges below run in this repo and score both libraries.
+The A condition (no-tool extraction baseline) is in the [`papergym_notool/`](../papergym_notool/) subdirectory; the judges below run in this repo and score both libraries.
 
 | Paper claim | Script | Output file | Field |
 |---|---|---|---|

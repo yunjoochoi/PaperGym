@@ -1,0 +1,15 @@
+# Bootstrap paper list. Title = exact full paper name. Authors optional but recommended
+# (disambiguates titles the arxiv API might confuse with similarly-named work).
+
+papers:
+  - title: "s1: Simple test-time scaling"
+    authors: "Niklas Muennighoff, Zitong Yang, Weijia Shi, et al."
+
+  - title: "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"
+    authors: "Jason Wei, Xuezhi Wang, Dale Schuurmans, et al."
+
+  - title: "Efficient Test-Time Adaptation of Vision-Language Models"
+    authors: "Adilbek Karmanov, Dayan Guan, Shijian Lu, et al."
+
+  - title: "Mitigating Object Hallucinations in Large Vision-Language Models through Visual Contrastive Decoding"
+    authors: "Sicong Leng, Hang Zhang, Guanzheng Chen, et al."

@@ -79,7 +79,7 @@ Each stage writes a timestamped run directory under `data/eval/`.
 
 Both the generator (`LITELLM_MODEL`) and the independent judge (`JUDGE_MODEL`) are read from `.env`. The judge must be in a different model family from the generator for self-bias control; the `.env.examples` defaults pair a GPT-5 generator with a Sonnet 4.6 judge.
 
-The script runs Stages 2, 3, and the novelty iteration loop. The Stage 1 *no-tool extraction baseline* is in the [`PaperGym_notool`](https://github.com/yunjoochoi/PaperGym_notool) companion repo; the Stage 1 rubric judges (`seed_quality_eval.py`, `seed_shuffled.py`) are in this repo and consume both libraries — see [`docs/REPRODUCE.md`](docs/REPRODUCE.md#stage-1--tool-augmented-seed-extraction-section-32).
+The script runs Stages 2, 3, and the novelty iteration loop. The Stage 1 *no-tool extraction baseline* is in the [`papergym_notool/`](papergym_notool/) subdirectory; the Stage 1 rubric judges (`seed_quality_eval.py`, `seed_shuffled.py`) are in this repo and consume both libraries — see [`papergym_notool/README.md`](papergym_notool/README.md) for the baseline's setup and [`docs/REPRODUCE.md`](docs/REPRODUCE.md#stage-1--tool-augmented-seed-extraction-section-32) for the joint Stage 1 reproduction flow.
 
 ### Bootstrap
 
@@ -139,7 +139,13 @@ PaperGym/
 │   └── eval/                           # evaluation outputs (timestamped)
 │
 ├── docker/Dockerfile                   # Accumulator sandbox
-└── tests/                              # pytest unit tests
+├── tests/                              # pytest unit tests
+│
+└── papergym_notool/                    # Stage 1 no-tool extraction baseline
+    ├── src/papergym/                   # variant: direct prompting (no read/grep/bash)
+    ├── scripts/                        # baseline entry points
+    ├── docker/Dockerfile               # baseline sandbox
+    └── README.md                       # baseline setup + reproduce steps
 ```
 
 ## License
