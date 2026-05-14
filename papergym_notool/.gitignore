@@ -9,8 +9,6 @@ build/
 runs/
 
 # Experiment outputs (data/arxiv_ids.jsonl stays tracked)
-data/library/
-data/library_*/
 data/events/
 data/events_*/
 

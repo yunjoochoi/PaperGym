@@ -1,0 +1,459 @@
+{"arxiv_id": "1707.02786", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Learning to Compose Task-Specific Tree Structures", "n_seeds": 2}
+{"arxiv_id": "1906.02416", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Sparse Parallel Training of Hierarchical Dirichlet Process Topic Models", "n_seeds": 3}
+{"arxiv_id": "1910.00275", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Bad Form: Comparing Context-Based and Form-Based Few-Shot Learning in Distributional Semantic Models", "n_seeds": 3}
+{"arxiv_id": "2209.03320", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "What does a platypus look like? Generating customized prompts for zero-shot image classification", "n_seeds": 3}
+{"arxiv_id": "2212.13894", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "LAMBADA: Backward Chaining for Automated Reasoning in Natural Language", "n_seeds": 3}
+{"arxiv_id": "2201.03514", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Black-Box Tuning for Language-Model-as-a-Service", "n_seeds": 3}
+{"arxiv_id": "2212.09648", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "NusaCrowd: Open Source Initiative for Indonesian NLP Resources", "n_seeds": 3}
+{"arxiv_id": "2010.13984", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Interpretation of NLP models through input marginalization", "n_seeds": 3}
+{"arxiv_id": "2005.01190", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Influence Paths for Characterizing Subject-Verb Number Agreement in LSTM Language Models", "n_seeds": 3}
+{"arxiv_id": "2107.07150", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Tailor: Generating and Perturbing Text with Semantic Controls", "n_seeds": 3}
+{"arxiv_id": "2205.02014", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "On Continual Model Refinement in Out-of-Distribution Data Streams", "n_seeds": 3}
+{"arxiv_id": "2012.01303", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Complex Coordinate-Based Meta-Analysis with Probabilistic Programming", "n_seeds": 3}
+{"arxiv_id": "2208.07400", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "SYNKB: Semantic Search for Synthetic Procedures", "n_seeds": 2}
+{"arxiv_id": "2012.07701", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Simple or Complex? Learning to Predict Readability of Bengali Texts", "n_seeds": 3}
+{"arxiv_id": "2109.07152", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Incorporating Residual and Normalization Layers into Analysis of Masked Language Models", "n_seeds": 3}
+{"arxiv_id": "2202.00980", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Robust Training of Neural Networks using Scale Invariant Architectures", "n_seeds": 3}
+{"arxiv_id": "2412.13660", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "PsyDT: Using LLMs to Construct the Digital Twin of Psychological Counselor with Personalized Counseling Style for Psychological Counseling", "n_seeds": 2}
+{"arxiv_id": "2407.01976", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "A Bounding Box is Worth One Token - Interleaving Layout and Text in a Large Language Model for Document Understanding", "n_seeds": 3}
+{"arxiv_id": "2402.11436", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Pride and Prejudice: LLM Amplifies Self-Bias in Self-Refinement", "n_seeds": 3}
+{"arxiv_id": "2404.17546", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Probabilistic Inference in Language Models via Twisted Sequential Monte Carlo", "n_seeds": 3}
+{"arxiv_id": "2406.14556", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Asynchronous Large Language Model Enhanced Planner for Autonomous Driving", "n_seeds": 3}
+{"arxiv_id": "2312.05693", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Agile-Quant: Activation-Guided Quantization for Faster Inference of LLMs on the Edge", "n_seeds": 3}
+{"arxiv_id": "2305.01750", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Few-shot In-context Learning for Knowledge Base Question Answering", "n_seeds": 3}
+{"arxiv_id": "2406.11050", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "A Peek into Token Bias: Large Language Models Are Not Yet Genuine Reasoners", "n_seeds": 3}
+{"arxiv_id": "2311.04939", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "LooGLE: Can Long-Context Language Models Understand Long Contexts?", "n_seeds": 3}
+{"arxiv_id": "2303.08559", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Large Language Model Is Not a Good Few-shot Information Extractor, but a Good Reranker for Hard Samples!", "n_seeds": 3}
+{"arxiv_id": "2406.11657", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Can LLM be a Personalized Judge?", "n_seeds": 3}
+{"arxiv_id": "2401.04716", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Low-Resource Vision Challenges for Foundation Models", "n_seeds": 3}
+{"arxiv_id": "2502.20172", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Multimodal Representation Alignment for Image Generation: Text-Image Interleaved Control Is Easier Than You Think", "n_seeds": 3}
+{"arxiv_id": "2403.10750", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Depression Detection on Social Media with Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2305.13395", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "BioDEX: Large-Scale Biomedical Adverse Drug Event Extraction for Real-World Pharmacovigilance", "n_seeds": 3}
+{"arxiv_id": "2406.14670", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Exploring Design Choices for Building Language-Specific LLMs", "n_seeds": 3}
+{"arxiv_id": "2411.18499", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "OpenING: A Comprehensive Benchmark for Judging Open-ended Interleaved Image-Text Generation", "n_seeds": 3}
+{"arxiv_id": "2408.10455", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "IDEA: Enhancing the Rule Learning Ability of Large Language Model Agent through Induction, Deduction, and Abduction", "n_seeds": 3}
+{"arxiv_id": "2406.12274", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "SAFEINFER: Context Adaptive Decoding Time Safety Alignment for Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2402.16602", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Rethinking Negative Instances for Generative Named Entity Recognition", "n_seeds": 3}
+{"arxiv_id": "2404.10876", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Course Recommender Systems Need to Consider the Job Market", "n_seeds": 3}
+{"arxiv_id": "2406.12822", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Is It Good Data for Multilingual Instruction Tuning or Just Bad Multilingual Evaluation for Large Language Models?", "n_seeds": 3}
+{"arxiv_id": "2411.11641", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "TSINR: Capturing Temporal Continuity via Implicit Neural Representations for Time Series Anomaly Detection", "n_seeds": 3}
+{"arxiv_id": "2502.13516", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "SPPD: Self-training with Process Preference Learning Using Dynamic Value Margin", "n_seeds": 3}
+{"arxiv_id": "2410.11900", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "FLARE: Faithful Logic-Aided Reasoning and Exploration", "n_seeds": 3}
+{"arxiv_id": "2506.00064", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Mis-prompt: Benchmarking Large Language Models for Proactive Error Handling", "n_seeds": 3}
+{"arxiv_id": "2309.08827", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "S3-DST: Structured Open-Domain Dialogue Segmentation and State Tracking in the Era of LLMs", "n_seeds": 3}
+{"arxiv_id": "2509.21978", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "MotivGraph-SoIQ: Integrating Motivational Knowledge Graphs and Socratic Dialogue for Enhanced LLM Ideation", "n_seeds": 3}
+{"arxiv_id": "2404.07840", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "On Training Data Influence of GPT Models", "n_seeds": 3}
+{"arxiv_id": "2505.23794", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "R3-RAG: Learning Step-by-Step Reasoning and Retrieval for LLMs via Reinforcement Learning", "n_seeds": 3}
+{"arxiv_id": "2506.15157", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Robust Instant Policy: Leveraging Student's t-Regression Model for Robust In-context Imitation Learning of Robot Manipulation", "n_seeds": 2}
+{"arxiv_id": "2305.15028", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "IMAGENETVC: Zero- and Few-Shot Visual Commonsense Evaluation on 1000 ImageNet Categories", "n_seeds": 3}
+{"arxiv_id": "2509.01354", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "DPF-CM: A Data Processing Framework with Privacy-Preserving Vector Databases for Chinese Medical LLMs Training and Deployment", "n_seeds": 3}
+{"arxiv_id": "2305.13048", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "RWKV: Reinventing RNNs for the Transformer Era", "n_seeds": 3}
+{"arxiv_id": "2305.01937", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Can Large Language Models Be an Alternative to Human Evaluation?", "n_seeds": 3}
+{"arxiv_id": "2304.05197", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Multi-step Jailbreaking Privacy Attacks on ChatGPT", "n_seeds": 3}
+{"arxiv_id": "2310.20150", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Unlearn What You Want to Forget: Efficient Unlearning for LLMs", "n_seeds": 2}
+{"arxiv_id": "2312.11514", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "LLM in a Flash: Efficient Large Language Model Inference with Limited Memory", "n_seeds": 3}
+{"arxiv_id": "2403.07183", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Monitoring AI-Modified Content at Scale: A Case Study on the Impact of ChatGPT on AI Conference Peer Reviews", "n_seeds": 3}
+{"arxiv_id": "2402.18679", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "DATA INTERPRETER: AN LLM AGENT FOR DATA SCIENCE", "n_seeds": 2}
+{"arxiv_id": "2307.11729", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "OUTFOX: LLM-Generated Essay Detection Through In-Context Learning with Adversarially Generated Examples", "n_seeds": 3}
+{"arxiv_id": "2410.12405", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "ProSA: Assessing and Understanding the Prompt Sensitivity of LLMs", "n_seeds": 3}
+{"arxiv_id": "2303.10868", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Retrieving Multimodal Information for Augmented Generation: A Survey", "n_seeds": 3}
+{"arxiv_id": "2309.11382", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Discuss Before Moving: Visual Language Navigation via Multi-expert Discussions", "n_seeds": 3}
+{"arxiv_id": "2401.08541", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Scalable Pre-training of Large Autoregressive Image Models", "n_seeds": 3}
+{"arxiv_id": "2404.05225", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "LayoutLLM: Layout Instruction Tuning with Large Language Models for Document Understanding", "n_seeds": 3}
+{"arxiv_id": "2402.06925", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "A Thorough Examination of Decoding Methods in the Era of LLMs", "n_seeds": 3}
+{"arxiv_id": "2410.21333", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Mind Your Step (by Step): Chain-of-Thought can Reduce Performance on Tasks where Thinking Makes Humans Worse", "n_seeds": 3}
+{"arxiv_id": "2403.01244", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Mitigating Catastrophic Forgetting in Large Language Models with Self-Synthesized Rehearsal", "n_seeds": 3}
+{"arxiv_id": "2502.04180", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Multi-agent Architecture Search via Agentic Supernet", "n_seeds": 3}
+{"arxiv_id": "2305.14878", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Leveraging GPT-4 for Automatic Translation Post-Editing", "n_seeds": 3}
+{"arxiv_id": "2310.08903", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "SeqXGPT: Sentence-Level AI-Generated Text Detection", "n_seeds": 2}
+{"arxiv_id": "2402.10426", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "DELL: Generating Reactions and Explanations for LLM-Based Misinformation Detection", "n_seeds": 3}
+{"arxiv_id": "2303.08268", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Chat with the Environment: Interactive Multimodal Perception Using Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2410.13928", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Automatically Interpreting Millions of Features in Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2411.14794", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "VideoEspresso: A Large-Scale Chain-of-Thought Dataset for Fine-Grained Video Reasoning via Core Frame Selection", "n_seeds": 3}
+{"arxiv_id": "2403.09028", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "ChartInstruct: Instruction Tuning for Chart Comprehension and Reasoning", "n_seeds": 3}
+{"arxiv_id": "2402.14865", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Dynamic Evaluation of Large Language Models by Meta Probing Agents", "n_seeds": 3}
+{"arxiv_id": "2404.13948", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Typos that Broke the RAG's Back: Genetic Attack on RAG Pipeline by Simulating Documents in the Wild via Low-level Perturbations", "n_seeds": 3}
+{"arxiv_id": "2503.10630", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "UniGoal: Towards Universal Zero-shot Goal-oriented Navigation", "n_seeds": 2}
+{"arxiv_id": "2311.00967", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Vision-Language Interpreter for Robot Task Planning", "n_seeds": 3}
+{"arxiv_id": "2311.17391", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Unveiling the Implicit Toxicity in Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2311.08648", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Explore Spurious Correlations at the Concept Level in Language Models for Text Classification", "n_seeds": 3}
+{"arxiv_id": "2412.00596", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "PhyT2V: LLM-Guided Iterative Self-Refinement for Physics-Grounded Text-to-Video Generation", "n_seeds": 3}
+{"arxiv_id": "2305.08264", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "MatSci-NLP: Evaluating Scientific Language Models on Materials Science Language Tasks Using Text-to-Schema Modeling", "n_seeds": 3}
+{"arxiv_id": "2306.17840", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Statler: State-Maintaining Language Models for Embodied Reasoning", "n_seeds": 3}
+{"arxiv_id": "2305.14210", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Skill-Based Few-Shot Selection for In-Context Learning", "n_seeds": 2}
+{"arxiv_id": "2312.09039", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "TAP4LLM: Table Provider on Sampling, Augmenting, and Packing Semi-structured Data for Large Language Model Reasoning", "n_seeds": 3}
+{"arxiv_id": "2404.14361", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Better Synthetic Data by Retrieving and Transforming Existing Datasets", "n_seeds": 3}
+{"arxiv_id": "2502.14902", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "PathRAG: Pruning Graph-Based Retrieval Augmented Generation with Relational Paths", "n_seeds": 3}
+{"arxiv_id": "2503.20188", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Rethinking Vision-Language Model in Face Forensics: Multi-Modal Interpretable Forged Face Detector", "n_seeds": 3}
+{"arxiv_id": "2402.12501", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Your Vision-Language Model Itself Is a Strong Filter: Towards High-Quality Instruction Tuning with Data Selection", "n_seeds": 3}
+{"arxiv_id": "2411.11984", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Understanding Chain-of-Thought in LLMs through Information Theory", "n_seeds": 3}
+{"arxiv_id": "2305.12870", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Lion: Adversarial Distillation of Proprietary Large Language Models", "n_seeds": 2}
+{"arxiv_id": "2406.17232", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Beyond Demographics: Aligning Role-playing LLM-based Agents Using Human Belief Networks", "n_seeds": 3}
+{"arxiv_id": "2311.04284", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "CRAB: Assessing the Strength of Causal Relationships Between Real-World Events", "n_seeds": 3}
+{"arxiv_id": "2311.01041", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Learn to Refuse: Making Large Language Models More Controllable and Reliable through Knowledge Scope Limitation and Refusal Mechanism", "n_seeds": 3}
+{"arxiv_id": "2404.02655", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Calibrating the Confidence of Large Language Models by Eliciting Fidelity", "n_seeds": 2}
+{"arxiv_id": "2401.10226", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Towards Language-Driven Video Inpainting via Multimodal Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2305.02363", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Entity Tracking in Language Models", "n_seeds": 3}
+{"arxiv_id": "2402.05926", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "On the Convergence of Zeroth-Order Federated Tuning for Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2401.03346", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "An Investigation of Large Language Models for Real-World Hate Speech Detection", "n_seeds": 3}
+{"arxiv_id": "2405.12063", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "CLAMBER: A Benchmark of Identifying and Clarifying Ambiguous Information Needs in Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2310.09872", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Leveraging Large Language Models for Node Generation in Few-Shot Learning on Text-Attributed Graphs", "n_seeds": 3}
+{"arxiv_id": "2502.09650", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Principled Data Selection for Alignment: The Hidden Risks of Difficult Examples", "n_seeds": 3}
+{"arxiv_id": "2402.12530", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Parallel Structures in Pre-training Data Yield In-Context Learning", "n_seeds": 3}
+{"arxiv_id": "2504.03137", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "LightPROF: A Lightweight Reasoning Framework for Large Language Model on Knowledge Graph", "n_seeds": 3}
+{"arxiv_id": "2407.12435", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "F-HOI: Toward Fine-grained Semantic-Aligned 3D Human-Object Interactions", "n_seeds": 3}
+{"arxiv_id": "2310.09639", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "DPZero: Private Fine-Tuning of Language Models without Backpropagation", "n_seeds": 3}
+{"arxiv_id": "2305.19426", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "ScoNe: Benchmarking Negation Reasoning in Language Models With Fine-Tuning and In-Context Learning", "n_seeds": 3}
+{"arxiv_id": "2403.00812", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "LoRA Meets Dropout under a Unified Framework", "n_seeds": 3}
+{"arxiv_id": "1908.06066", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Unicoder-VL: A Universal Encoder for Vision and Language by Cross-modal Pre-training", "n_seeds": 3}
+{"arxiv_id": "1906.00067", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "OK-VQA: A Visual Question Answering Benchmark Requiring External Knowledge", "n_seeds": 3}
+{"arxiv_id": "1805.04770", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Born-Again Neural Networks", "n_seeds": 3}
+{"arxiv_id": "1812.06587", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "Grounded Video Description", "n_seeds": 3}
+{"arxiv_id": "1909.02701", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Visual Semantic Reasoning for Image-Text Matching", "n_seeds": 3}
+{"arxiv_id": "1904.10151", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "REVERIE: Remote Embodied Visual Referring Expression in Real Indoor Environments", "n_seeds": 2}
+{"arxiv_id": "1708.04686", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "VQS: Linking Segmentations to Questions and Answers for Supervised Attention in VQA and Question-Focused Semantic Segmentation", "n_seeds": 3}
+{"arxiv_id": "1704.03152", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Deep Multimodal Representation Learning from Temporal Data", "n_seeds": 3}
+{"arxiv_id": "1803.08896", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Explicit Reasoning over End-to-End Neural Architectures for Visual Question Answering", "n_seeds": 3}
+{"arxiv_id": "1812.06398", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Gold Seeker: Information Gain from Policy Distributions for Goal-oriented Vision-and-Language Reasoning", "n_seeds": 3}
+{"arxiv_id": "1709.04093", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Joint Learning of Set Cardinality and State Distribution", "n_seeds": 3}
+{"arxiv_id": "1909.02244", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Robust Navigation with Language Pretraining and Stochastic Sampling", "n_seeds": 2}
+{"arxiv_id": "1809.04938", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "LiveBot: Generating Live Video Comments Based on Visual and Textual Contexts", "n_seeds": 3}
+{"arxiv_id": "1712.00527", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Adaptive Sampled Softmax with Kernel Based Sampling", "n_seeds": 3}
+{"arxiv_id": "2202.03052", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "OFA: Unifying Architectures, Tasks, and Modalities Through a Simple Sequence-to-Sequence Learning Framework", "n_seeds": 3}
+{"arxiv_id": "2202.11742", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Think Global, Act Local: Dual-scale Graph Transformer for Vision-and-Language Navigation", "n_seeds": 3}
+{"arxiv_id": "2006.06830", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Data Augmentation for Graph Neural Networks", "n_seeds": 3}
+{"arxiv_id": "2210.04150", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Open-Vocabulary Semantic Segmentation with Mask-adapted CLIP", "n_seeds": 2}
+{"arxiv_id": "2210.03117", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "MaPLe: Multi-modal Prompt Learning", "n_seeds": 3}
+{"arxiv_id": "2102.03334", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "ViLT: Vision-and-Language Transformer Without Convolution or Region Supervision", "n_seeds": 3}
+{"arxiv_id": "2212.07796", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "CREPE: Can Vision-Language Foundation Models Reason Compositionally?", "n_seeds": 3}
+{"arxiv_id": "2203.15350", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "End-to-End Transformer Based Model for Image Captioning", "n_seeds": 3}
+{"arxiv_id": "2105.06453", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Episodic Transformer for Vision-and-Language Navigation", "n_seeds": 2}
+{"arxiv_id": "2103.12944", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Scene-Intuitive Agent for Remote Embodied Visual Grounding", "n_seeds": 3}
+{"arxiv_id": "2005.04625", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "BabyWalk: Going Farther in Vision-and-Language Navigation by Taking Baby Steps", "n_seeds": 3}
+{"arxiv_id": "2206.02886", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Graph Rationalization with Environment-based Augmentations", "n_seeds": 3}
+{"arxiv_id": "2109.06860", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Broaden the Vision: Geo-Diverse Visual Commonsense Reasoning", "n_seeds": 3}
+{"arxiv_id": "2204.01694", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "'This is my unicorn, Fluffy': Personalizing frozen vision-language representations", "n_seeds": 3}
+{"arxiv_id": "2104.11832", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Playing Lottery Tickets with Vision and Language", "n_seeds": 3}
+{"arxiv_id": "2210.08773", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Plug-and-Play VQA: Zero-shot VQA by Conjoining Large Pretrained Models with Zero Training", "n_seeds": 3}
+{"arxiv_id": "2111.12085", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "UniTAB: Unifying Text and Box Outputs for Grounded Vision-Language Modeling", "n_seeds": 2}
+{"arxiv_id": "2211.10277", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Task Residual for Tuning Vision-Language Models", "n_seeds": 3}
+{"arxiv_id": "2107.03331", "status": "ok", "shard_id": 2, "domain": "CV", "title": "KOALA: A Kalman Optimization Algorithm with Loss Adaptivity", "n_seeds": 3}
+{"arxiv_id": "2203.03878", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "HyperPELT: Unified Parameter-Efficient Language Model Tuning for Both Language and Vision-and-Language Tasks", "n_seeds": 3}
+{"arxiv_id": "2104.09379", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "BM-NAS: Bilevel Multimodal Neural Architecture Search", "n_seeds": 3}
+{"arxiv_id": "2108.07253", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Who's Waldo? Linking People Across Text and Images", "n_seeds": 2}
+{"arxiv_id": "2211.11152", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "You Need Multiple Exiting: Dynamic Early Exiting for Accelerating Unified Vision Language Model", "n_seeds": 3}
+{"arxiv_id": "2110.02501", "status": "ok", "shard_id": 1, "domain": "CV", "title": "On the Surrogate Gap between Contrastive and Supervised Losses", "n_seeds": 3}
+{"arxiv_id": "2108.04938", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "BERTHop: An Effective Vision-and-Language Model for Chest X-ray Disease Diagnosis", "n_seeds": 2}
+{"arxiv_id": "2211.02580", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Evaluating and Improving Factuality in Multimodal Abstractive Summarization", "n_seeds": 3}
+{"arxiv_id": "2212.08158", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "MM-SHAP: A Performance-agnostic Metric for Measuring Multimodal Contributions in Vision and Language Models & Tasks", "n_seeds": 3}
+{"arxiv_id": "2509.09372", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "VLA-ADAPTER: AN EFFECTIVE PARADIGM FOR TINY-SCALE VISION-LANGUAGE-ACTION MODEL", "n_seeds": 3}
+{"arxiv_id": "2403.14003", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Multi-Modal Hallucination Control by Visual Information Grounding", "n_seeds": 3}
+{"arxiv_id": "2402.12501", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Your Vision-Language Model Itself Is a Strong Filter: Towards High-Quality Instruction Tuning with Data Selection", "n_seeds": 3}
+{"arxiv_id": "2402.02207", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Safety Fine-Tuning at (Almost) No Cost: A Baseline for Vision Large Language Models", "n_seeds": 3}
+{"arxiv_id": "2401.07314", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "MapGPT: Map-Guided Prompting with Adaptive Path Planning for Vision-and-Language Navigation", "n_seeds": 3}
+{"arxiv_id": "2412.19723", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "OS-Genesis: Automating GUI Agent Trajectory Construction via Reverse Task Synthesis", "n_seeds": 2}
+{"arxiv_id": "2309.16650", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "ConceptGraphs: Open-Vocabulary 3D Scene Graphs for Perception and Planning", "n_seeds": 3}
+{"arxiv_id": "2404.16006", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "MMT-Bench: A Comprehensive Multimodal Benchmark for Evaluating Large Vision-Language Models Towards Multitask AGI", "n_seeds": 3}
+{"arxiv_id": "2503.02199", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Words or Vision: Do Vision-Language Models Have Blind Faith in Text?", "n_seeds": 3}
+{"arxiv_id": "2504.05303", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "InteractVLM: 3D Interaction Reasoning from 2D Foundational Models", "n_seeds": 3}
+{"arxiv_id": "2412.13540", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Benchmarking and Improving Large Vision-Language Models for Fundamental Visual Graph Understanding and Reasoning", "n_seeds": 3}
+{"arxiv_id": "2406.01256", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Augmented Commonsense Knowledge for Remote Object Grounding", "n_seeds": 3}
+{"arxiv_id": "2412.06141", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "MMedPO: Aligning Medical Vision-Language Models with Clinical-Aware Multimodal Preference Optimization", "n_seeds": 3}
+{"arxiv_id": "2402.15610", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Selective 'Selective Prediction': Reducing Unnecessary Abstention in Vision-Language Reasoning", "n_seeds": 2}
+{"arxiv_id": "2506.08391", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "SECOND: Mitigating Perceptual Hallucination in Vision-Language Models via Selective and Contrastive Decoding", "n_seeds": 3}
+{"arxiv_id": "2301.12614", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "RREx-BoT: Remote Referring Expressions with a Bag of Tricks", "n_seeds": 3}
+{"arxiv_id": "2311.11241", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Open-Vocabulary Camouflaged Object Segmentation", "n_seeds": 3}
+{"arxiv_id": "2505.05528", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "X-Transfer Attacks: Towards Super Transferable Adversarial Attacks on CLIP", "n_seeds": 3}
+{"arxiv_id": "2506.21586", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Can Vision Language Models Understand Mimed Actions?", "n_seeds": 3}
+{"arxiv_id": "2406.07145", "status": "ok", "shard_id": 3, "domain": "RL", "title": "Failures Are Fated, But Can Be Faded: Characterizing and Mitigating Unwanted Behaviors in Large-Scale Vision and Language Models", "n_seeds": 3}
+{"arxiv_id": "2407.02218", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Multi-Modal Video Dialog State Tracking in the Wild", "n_seeds": 3}
+{"arxiv_id": "2505.14257", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "Mitigating Hallucination in Large Vision-Language Models through Aligning Attention Distribution to Information Flow", "n_seeds": 3}
+{"arxiv_id": "2409.20551", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "UniAff: A Unified Representation of Affordances for Tool Usage and Articulation with Vision-Language Models", "n_seeds": 3}
+{"arxiv_id": "2511.03196", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Cross-Modal Alignment via Variational Copula Modelling", "n_seeds": 3}
+{"arxiv_id": "2504.08125", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Gen3DEval: Using vLLMs for Automatic Evaluation of Generated 3D Objects", "n_seeds": 3}
+{"arxiv_id": "2512.02517", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "SkyMoE: A Vision-Language Foundation Model for Enhancing Geospatial Interpretation with Mixture of Experts", "n_seeds": 3}
+{"arxiv_id": "2412.02071", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Progress-Aware Video Frame Captioning", "n_seeds": 3}
+{"arxiv_id": "2305.10355", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "Evaluating Object Hallucination in Large Vision-Language Models", "n_seeds": 3}
+{"arxiv_id": "2311.10122", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Video-LLaVA: Learning United Visual Representation by Alignment Before Projection", "n_seeds": 2}
+{"arxiv_id": "2310.14566", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "HALLUSIONBENCH: An Advanced Diagnostic Suite for Entangled Language Hallucination and Visual Illusion in Large Vision-Language Models", "n_seeds": 2}
+{"arxiv_id": "2302.10174", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Towards Universal Fake Image Detectors that Generalize Across Generative Models", "n_seeds": 3}
+{"arxiv_id": "2503.22020", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "CoT-VLA: Visual Chain-of-Thought Reasoning for Vision-Language-Action Models", "n_seeds": 3}
+{"arxiv_id": "2304.06712", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "What does CLIP know about a red circle? Visual prompt engineering for VLMs", "n_seeds": 3}
+{"arxiv_id": "2310.19785", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "What's 'up' with vision-language models? Investigating their struggle with spatial reasoning", "n_seeds": 3}
+{"arxiv_id": "2503.10622", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Transformers without Normalization", "n_seeds": 3}
+{"arxiv_id": "2407.15795", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "AdaCLIP: Adapting CLIP with Hybrid Learnable Prompts for Zero-Shot Anomaly Detection", "n_seeds": 3}
+{"arxiv_id": "2308.06735", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "AerialVLN : Vision-and-Language Navigation for UAVs", "n_seeds": 3}
+{"arxiv_id": "2306.07282", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Waffling around for Performance: Visual Classification with Random Words and Broad Concepts", "n_seeds": 3}
+{"arxiv_id": "2304.04514", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "DetCLIPv2: Scalable Open-Vocabulary Object Detection Pre-training via Word-Region Alignment", "n_seeds": 3}
+{"arxiv_id": "2406.11317", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "GUICourse: From General Vision Language Model to Versatile GUI Agent", "n_seeds": 3}
+{"arxiv_id": "2406.11251", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Unifying Multimodal Retrieval via Document Screenshot Embedding", "n_seeds": 3}
+{"arxiv_id": "2404.15406", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Wiki-LLaVA: Hierarchical Retrieval-Augmented Generation for Multimodal LLMs", "n_seeds": 3}
+{"arxiv_id": "2309.00616", "status": "ok", "shard_id": 1, "domain": "CV", "title": "OpenIns3D: Snap and Lookup for 3D Open-vocabulary Instance Segmentation", "n_seeds": 3}
+{"arxiv_id": "2303.12112", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "Positive-Augmented Contrastive Learning for Image and Video Captioning Evaluation", "n_seeds": 2}
+{"arxiv_id": "2307.11545", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Bridging Vision and Language Encoders: Parameter-Efficient Tuning for Referring Image Segmentation", "n_seeds": 2}
+{"arxiv_id": "2412.07626", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "OmniDocBench: Benchmarking Diverse PDF Document Parsing with Comprehensive Annotations", "n_seeds": 3}
+{"arxiv_id": "2404.07177", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Scaling Laws for Data Filtering: Data Curation cannot be Compute Agnostic", "n_seeds": 3}
+{"arxiv_id": "2402.02235", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "Image Fusion via Vision-Language Model", "n_seeds": 3}
+{"arxiv_id": "2404.03924", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Learning Correlation Structures for Vision Transformers", "n_seeds": 3}
+{"arxiv_id": "2003.03284", "status": "ok", "shard_id": 2, "domain": "CV", "title": "TASKNORM: Rethinking Batch Normalization for Meta-Learning", "n_seeds": 2}
+{"arxiv_id": "2006.04043", "status": "ok", "shard_id": 3, "domain": "CV", "title": "SVGA-Net: Sparse Voxel-Graph Attention Network for 3D Object Detection from Point Clouds", "n_seeds": 2}
+{"arxiv_id": "2104.01136", "status": "ok", "shard_id": 2, "domain": "CV", "title": "LeViT: a Vision Transformer in ConvNet's Clothing for Faster Inference", "n_seeds": 3}
+{"arxiv_id": "2312.09612", "status": "ok", "shard_id": 2, "domain": "CV", "title": "TOP-ReID: Multi-spectral Object Re-Identification with Token Permutation", "n_seeds": 2}
+{"arxiv_id": "2310.05245", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Influence of Camera-LiDAR Configuration on 3D Object Detection for Autonomous Driving", "n_seeds": 2}
+{"arxiv_id": "2005.12597", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Perceptual Extreme Super Resolution Network with Receptive Field Block", "n_seeds": 3}
+{"arxiv_id": "2309.08134", "status": "ok", "shard_id": 3, "domain": "CV", "title": "AnyOKP: One-Shot and Instance-Aware Object Keypoint Extraction with Pretrained ViT", "n_seeds": 3}
+{"arxiv_id": "2309.02429", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Building a Winning Team: Selecting Source Model Ensembles using a Submodular Transferability Estimation Approach", "n_seeds": 3}
+{"arxiv_id": "2209.03320", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "What does a platypus look like? Generating customized prompts for zero-shot image classification", "n_seeds": 3}
+{"arxiv_id": "2008.08731", "status": "ok", "shard_id": 0, "domain": "CV", "title": "GPR-based Subsurface Object Detection and Reconstruction Using Random Motion and DepthNet", "n_seeds": 2}
+{"arxiv_id": "2112.09747", "status": "ok", "shard_id": 2, "domain": "CV", "title": "A Simple Single-Scale Vision Transformer for Object Detection and Instance Segmentation", "n_seeds": 3}
+{"arxiv_id": "2011.13377", "status": "ok", "shard_id": 2, "domain": "CV", "title": "How Well Do Self-Supervised Models Transfer?", "n_seeds": 3}
+{"arxiv_id": "2211.07091", "status": "ok", "shard_id": 2, "domain": "CV", "title": "BiViT: Extremely Compressed Binary Vision Transformers", "n_seeds": 3}
+{"arxiv_id": "2405.04299", "status": "ok", "shard_id": 0, "domain": "CV", "title": "ViewFormer: Exploring Spatiotemporal Modeling for Multi-View 3D Occupancy Perception via View-Guided Transformers", "n_seeds": 3}
+{"arxiv_id": "2203.08563", "status": "ok", "shard_id": 3, "domain": "CV", "title": "MonoJSG: Joint Semantic and Geometric Cost Volume for Monocular 3D Object Detection", "n_seeds": 3}
+{"arxiv_id": "1803.08660", "status": "ok", "shard_id": 0, "domain": "CV", "title": "Lifting Layers: Analysis and Applications", "n_seeds": 3}
+{"arxiv_id": "2405.16925", "status": "ok", "shard_id": 1, "domain": "CV", "title": "OED: Towards One-stage End-to-End Dynamic Scene Graph Generation", "n_seeds": 3}
+{"arxiv_id": "2106.13365", "status": "ok", "shard_id": 3, "domain": "CV", "title": "RSN: Range Sparse Net for Efficient, Accurate LiDAR 3D Object Detection", "n_seeds": 3}
+{"arxiv_id": "2012.02107", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Robust Instance Segmentation through Reasoning about Multi-Object Occlusion", "n_seeds": 3}
+{"arxiv_id": "1912.01991", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Self-Supervised Learning of Pretext-Invariant Representations", "n_seeds": 3}
+{"arxiv_id": "2101.06405", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Semi Supervised Deep Quick Instance Detection and Segmentation", "n_seeds": 3}
+{"arxiv_id": "2303.08983", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Reinforce Data, Multiply Impact: Improved Model Accuracy and Robustness with Dataset Reinforcement", "n_seeds": 3}
+{"arxiv_id": "2403.13171", "status": "ok", "shard_id": 2, "domain": "CV", "title": "LUWA Dataset: Learning Lithic Use-Wear Analysis on Microscopic Images", "n_seeds": 3}
+{"arxiv_id": "2203.10790", "status": "ok", "shard_id": 3, "domain": "CV", "title": "ScalableViT: Rethinking the Context-oriented Generalization of Vision Transformer", "n_seeds": 2}
+{"arxiv_id": "1910.05395", "status": "ok", "shard_id": 2, "domain": "CV", "title": "FuseMODNet: Real-Time Camera and LiDAR based Moving Object Detection for robust low-light Autonomous Driving", "n_seeds": 3}
+{"arxiv_id": "2310.00031", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Text-image Alignment for Diffusion-based Perception", "n_seeds": 3}
+{"arxiv_id": "1801.01750", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Nonparametric Stochastic Contextual Bandits", "n_seeds": 3}
+{"arxiv_id": "2411.00209", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Semantic Knowledge Distillation for Onboard Satellite Earth Observation Image Classification", "n_seeds": 2}
+{"arxiv_id": "2403.19067", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Low-Rank Rescaled Vision Transformer Fine-Tuning: A Residual Design Approach", "n_seeds": 3}
+{"arxiv_id": "1702.08272", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "A Dataset for Developing and Benchmarking Active Vision", "n_seeds": 3}
+{"arxiv_id": "2410.05800", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Core Tokensets for Data-Efficient Sequential Training of Transformers", "n_seeds": 3}
+{"arxiv_id": "1912.01321", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Less Is Better: Unweighted Data Subsampling via Influence Function", "n_seeds": 3}
+{"arxiv_id": "2212.00972", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Cloud-Device Collaborative Adaptation to Continual Changing Environments in the Real-world", "n_seeds": 2}
+{"arxiv_id": "2511.06857", "status": "ok", "shard_id": 2, "domain": "CV", "title": "Ambiguity-aware Truncated Flow Matching for Ambiguous Medical Image Segmentation", "n_seeds": 3}
+{"arxiv_id": "2304.05370", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Overload: Latency Attacks on Object Detection for Edge Devices", "n_seeds": 3}
+{"arxiv_id": "1703.10025", "status": "ok", "shard_id": 0, "domain": "CV", "title": "Flow-Guided Feature Aggregation for Video Object Detection", "n_seeds": 2}
+{"arxiv_id": "2504.09086", "status": "ok", "shard_id": 1, "domain": "CV", "title": "RICCARDO: Radar Hit Prediction and Convolution for Camera-Radar 3D Object Detection", "n_seeds": 3}
+{"arxiv_id": "2502.02919", "status": "ok", "shard_id": 2, "domain": "CV", "title": "Maximizing the Position Embedding for Vision Transformers with Global Average Pooling", "n_seeds": 2}
+{"arxiv_id": "2009.09258", "status": "ok", "shard_id": 2, "domain": "CV", "title": "Can You Spot the Chameleon? Adversarially Camouflaging Images from Co-Salient Object Detection", "n_seeds": 2}
+{"arxiv_id": "2109.07111", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Elastic Tracker: A Spatio-temporal Trajectory Planner for Flexible Aerial Tracking", "n_seeds": 3}
+{"arxiv_id": "2107.11787", "status": "ok", "shard_id": 0, "domain": "CV", "title": "Leveraging Auxiliary Tasks with Affinity Learning for Weakly Supervised Semantic Segmentation", "n_seeds": 2}
+{"arxiv_id": "2203.05469", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Prediction-Guided Distillation for Dense Object Detection", "n_seeds": 2}
+{"arxiv_id": "2309.12312", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "ForceSight: Text-Guided Mobile Manipulation with Visual-Force Goals", "n_seeds": 3}
+{"arxiv_id": "2306.05067", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Improving Visual Prompt Tuning for Self-supervised Vision Transformers", "n_seeds": 2}
+{"arxiv_id": "2311.17081", "status": "ok", "shard_id": 3, "domain": "CV", "title": "I-MedSAM: Implicit Medical Image Segmentation with Segment Anything", "n_seeds": 3}
+{"arxiv_id": "2503.17261", "status": "ok", "shard_id": 2, "domain": "CV", "title": "Cross-Modal Interactive Perception Network with Mamba for Lung Tumor Segmentation in PET-CT Images", "n_seeds": 3}
+{"arxiv_id": "2003.11818", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Hit-Detector: Hierarchical Trinity Architecture Search for Object Detection", "n_seeds": 3}
+{"arxiv_id": "2309.08955", "status": "ok", "shard_id": 3, "domain": "CV", "title": "IntelliBeeHive: An Automated Honey Bee, Pollen, and Varroa Destructor Monitoring System", "n_seeds": 3}
+{"arxiv_id": "2207.10130", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Latent Discriminant Deterministic Uncertainty", "n_seeds": 3}
+{"arxiv_id": "2105.02440", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Detection, Tracking, and Counting Meets Drones in Crowds: A Benchmark", "n_seeds": 3}
+{"arxiv_id": "2205.11098", "status": "ok", "shard_id": 3, "domain": "CV", "title": "PointDistiller: Structured Knowledge Distillation Towards Efficient and Compact 3D Detection", "n_seeds": 2}
+{"arxiv_id": "2112.01695", "status": "ok", "shard_id": 0, "domain": "CV", "title": "Hybrid Instance-aware Temporal Fusion for Online Video Instance Segmentation", "n_seeds": 2}
+{"arxiv_id": "2412.13156", "status": "ok", "shard_id": 3, "domain": "CV", "title": "S2S2: Semantic Stacking for Robust Semantic Segmentation in Medical Imaging", "n_seeds": 3}
+{"arxiv_id": "2109.08141", "status": "ok", "shard_id": 2, "domain": "CV", "title": "An End-to-End Transformer Model for 3D Object Detection", "n_seeds": 3}
+{"arxiv_id": "2301.13803", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Fairness-aware Vision Transformer via Debiased Self-Attention", "n_seeds": 2}
+{"arxiv_id": "2402.19286", "status": "ok", "shard_id": 2, "domain": "CV", "title": "PrPSeg: Universal Proposition Learning for Panoramic Renal Pathology Segmentation", "n_seeds": 3}
+{"arxiv_id": "2204.02084", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Real-time Hyperspectral Imaging in Hardware via Trained Metasurface Encoders", "n_seeds": 3}
+{"arxiv_id": "2303.03595", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "LoGoNet: Towards Accurate 3D Object Detection with Local-to-Global Cross-Modal Fusion", "n_seeds": 3}
+{"arxiv_id": "2301.00330", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Efficient On-device Training via Gradient Filtering", "n_seeds": 3}
+{"arxiv_id": "2206.01256", "status": "ok", "shard_id": 0, "domain": "CV", "title": "PETRv2: A Unified Framework for 3D Perception from Multi-Camera Images", "n_seeds": 3}
+{"arxiv_id": "2406.11070", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Fine-grained Classes and How to Find Them", "n_seeds": 3}
+{"arxiv_id": "2406.13433", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Certification for Differentially Private Prediction in Gradient-Based Training", "n_seeds": 3}
+{"arxiv_id": "2404.00722", "status": "ok", "shard_id": 1, "domain": "CV", "title": "DRCT: Saving Image Super-Resolution away from Information Bottleneck", "n_seeds": 2}
+{"arxiv_id": "1907.10156", "status": "ok", "shard_id": 2, "domain": "CV", "title": "DR Loss: Improving Object Detection by Distributional Ranking", "n_seeds": 2}
+{"arxiv_id": "1711.02768", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Bayesian Scale Estimation for Monocular SLAM Based on Generic Object Detection for Correcting Scale Drift", "n_seeds": 3}
+{"arxiv_id": "2403.10187", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Grasp Anything: Combining Teacher-Augmented Policy Gradient Learning with Instance Segmentation to Grasp Arbitrary Objects", "n_seeds": 3}
+{"arxiv_id": "2002.06659", "status": "ok", "shard_id": 2, "domain": "RL", "title": "TempLe: Learning Template of Transitions for Sample Efficient Multi-task RL", "n_seeds": 3}
+{"arxiv_id": "2507.04452", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "SimLauncher: Launching Sample-Efficient Real-world Robotic Reinforcement Learning via Simulation Pre-training", "n_seeds": 3}
+{"arxiv_id": "2409.06957", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Policy Filtration for RLHF to Mitigate Noise in Reward Models", "n_seeds": 3}
+{"arxiv_id": "2102.06924", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Online Apprenticeship Learning", "n_seeds": 3}
+{"arxiv_id": "1911.04418", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Visual Geometric Skill Inference by Watching Human Demonstration", "n_seeds": 3}
+{"arxiv_id": "2304.12966", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Towards Theoretical Understanding of Inverse Reinforcement Learning", "n_seeds": 3}
+{"arxiv_id": "2408.01880", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Walk Wisely on Graph: Knowledge Graph Reasoning with Dual Agents via Efficient Guidance-Exploration", "n_seeds": 2}
+{"arxiv_id": "2509.00520", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "ERANK: Fusing Supervised Fine-Tuning and Reinforcement Learning for Effective and Efficient Text Reranking", "n_seeds": 3}
+{"arxiv_id": "2407.14733", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "Hard Prompts Made Interpretable: Sparse Entropy Regularization for Prompt Tuning with RL", "n_seeds": 2}
+{"arxiv_id": "2509.10063", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "TwinTac: A Wide-Range, Highly Sensitive Tactile Sensor with Real-to-Sim Digital Twin Sensor Model", "n_seeds": 3}
+{"arxiv_id": "2412.15904", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "What Are Step-Level Reward Models Rewarding? Counterintuitive Findings from MCTS-boosted Mathematical Reasoning", "n_seeds": 3}
+{"arxiv_id": "2508.19607", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Impedance Primitive-augmented Hierarchical Reinforcement Learning for Sequential Tasks", "n_seeds": 3}
+{"arxiv_id": "2406.01939", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Speeding up Policy Simulation in Supply Chain RL", "n_seeds": 3}
+{"arxiv_id": "2511.11828", "status": "ok", "shard_id": 3, "domain": "RL", "title": "Conformal Constrained Policy Optimization for Cost-Effective LLM Agents", "n_seeds": 3}
+{"arxiv_id": "2108.08265", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "End-to-End Urban Driving by Imitating a Reinforcement Learning Coach", "n_seeds": 2}
+{"arxiv_id": "2410.17389", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Navigating Noisy Feedback: Enhancing Reinforcement Learning with Error-Prone Language Models", "n_seeds": 3}
+{"arxiv_id": "2502.13417", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "RLTHF: Targeted Human Feedback for LLM Alignment", "n_seeds": 3}
+{"arxiv_id": "2307.03015", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Sequential Neural Barriers for Scalable Dynamic Obstacle Avoidance", "n_seeds": 3}
+{"arxiv_id": "2502.13516", "status": "ok", "shard_id": 1, "domain": "LLM_NLP", "title": "SPPD: Self-training with Process Preference Learning Using Dynamic Value Margin", "n_seeds": 3}
+{"arxiv_id": "2404.10876", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Course Recommender Systems Need to Consider the Job Market", "n_seeds": 3}
+{"arxiv_id": "1910.07972", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Adaptive Curriculum Generation from Demonstrations for Sim-to-Real Visuomotor Control", "n_seeds": 3}
+{"arxiv_id": "2111.11004", "status": "ok", "shard_id": 0, "domain": "RL", "title": "Gradient Temporal Difference with Momentum: Stability and Convergence", "n_seeds": 3}
+{"arxiv_id": "2403.04436", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Learning Human-to-Humanoid Real-Time Whole-Body Teleoperation", "n_seeds": 3}
+{"arxiv_id": "2208.05327", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Fast Offline Policy Optimization for Large Scale Recommendation", "n_seeds": 3}
+{"arxiv_id": "2402.12685", "status": "ok", "shard_id": 2, "domain": "RL", "title": "XRL-Bench: A Benchmark for Evaluating and Comparing Explainable Reinforcement Learning Techniques", "n_seeds": 3}
+{"arxiv_id": "2112.06054", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Deterministic and Discriminative Imitation (D2-Imitation): Revisiting Adversarial Imitation for Sample Efficiency", "n_seeds": 2}
+{"arxiv_id": "1909.03403", "status": "ok", "shard_id": 0, "domain": "CV", "title": "Open Compound Domain Adaptation", "n_seeds": 2}
+{"arxiv_id": "2409.16048", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Whole-Body End-Effector Pose Tracking", "n_seeds": 3}
+{"arxiv_id": "2305.06178", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Sequence-Agnostic Multi-Object Navigation", "n_seeds": 2}
+{"arxiv_id": "1702.08272", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "A Dataset for Developing and Benchmarking Active Vision", "n_seeds": 3}
+{"arxiv_id": "2508.19598", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Encouraging Good Processes Without the Need for Good Answers: Reinforcement Learning for LLM Agent Planning", "n_seeds": 3}
+{"arxiv_id": "2006.01110", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Encoding formulas as deep networks: Reinforcement learning for zero-shot execution of LTL formulas", "n_seeds": 3}
+{"arxiv_id": "1811.08086", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Model Learning for Look-ahead Exploration in Continuous Control", "n_seeds": 3}
+{"arxiv_id": "2310.08091", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Discerning Temporal Difference Learning", "n_seeds": 3}
+{"arxiv_id": "2410.14972", "status": "ok", "shard_id": 1, "domain": "RL", "title": "MENTOR: Mixture-of-Experts Network with Task-Oriented Perturbation for Visual Reinforcement Learning", "n_seeds": 2}
+{"arxiv_id": "2406.14537", "status": "ok", "shard_id": 3, "domain": "RL", "title": "MacroHFT: Memory Augmented Context-aware Reinforcement Learning On High Frequency Trading", "n_seeds": 2}
+{"arxiv_id": "2505.23794", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "R3-RAG: Learning Step-by-Step Reasoning and Retrieval for LLMs via Reinforcement Learning", "n_seeds": 2}
+{"arxiv_id": "2207.00986", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Stabilizing Off-Policy Deep Reinforcement Learning from Pixels", "n_seeds": 2}
+{"arxiv_id": "2309.17078", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Unsupervised Large Language Model Alignment for Information Retrieval via Contrastive Feedback", "n_seeds": 3}
+{"arxiv_id": "2407.21260", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Bellman Unbiasedness: Toward Provably Efficient Distributional Reinforcement Learning with General Value Function Approximation", "n_seeds": 3}
+{"arxiv_id": "2404.17546", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Probabilistic Inference in Language Models via Twisted Sequential Monte Carlo", "n_seeds": 3}
+{"arxiv_id": "2107.09088", "status": "ok", "shard_id": 1, "domain": "RL", "title": "Reward-Weighted Regression Converges to a Global Optimum", "n_seeds": 3}
+{"arxiv_id": "2209.12029", "status": "ok", "shard_id": 3, "domain": "RL", "title": "Open-Ended Diverse Solution Discovery with Regulated Behavior Patterns for Cross-Domain Adaptation", "n_seeds": 3}
+{"arxiv_id": "2311.17391", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Unveiling the Implicit Toxicity in Large Language Models", "n_seeds": 3}
+{"arxiv_id": "1712.00579", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Online Reinforcement Learning in Stochastic Games", "n_seeds": 3}
+{"arxiv_id": "2110.10149", "status": "ok", "shard_id": 0, "domain": "RL", "title": "Continuous Control with Action Quantization from Demonstrations", "n_seeds": 3}
+{"arxiv_id": "2206.11054", "status": "ok", "shard_id": 2, "domain": "RL", "title": "S2RL: Do We Really Need to Perceive All States in Deep Multi-Agent Reinforcement Learning?", "n_seeds": 3}
+{"arxiv_id": "2402.05724", "status": "ok", "shard_id": 3, "domain": "RL", "title": "Model-Based RL for Mean-Field Games is not Statistically Harder than Single-Agent RL", "n_seeds": 3}
+{"arxiv_id": "2409.17472", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "Autoregressive Multi-trait Essay Scoring via Reinforcement Learning with Scoring-aware Multiple Rewards", "n_seeds": 3}
+{"arxiv_id": "2302.09772", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Demonstration-Guided Reinforcement Learning with Efficient Exploration for Task Automation of Surgical Robot", "n_seeds": 2}
+{"arxiv_id": "2308.13049", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Bayesian Exploration Networks", "n_seeds": 3}
+{"arxiv_id": "2212.10843", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Generating Multiple-Length Summaries via Reinforcement Learning for Unsupervised Sentence Summarization", "n_seeds": 3}
+{"arxiv_id": "2203.14912", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Advanced Skills through Multiple Adversarial Motion Priors in Reinforcement Learning", "n_seeds": 3}
+{"arxiv_id": "1909.02119", "status": "ok", "shard_id": 3, "domain": "RL", "title": "Inductive-bias-driven Reinforcement Learning for Efficient Schedules in Heterogeneous Clusters", "n_seeds": 3}
+{"arxiv_id": "1802.06891", "status": "ok", "shard_id": 2, "domain": "RL", "title": "Fourier Policy Gradients", "n_seeds": 3}
+{"arxiv_id": "2302.04375", "status": "ok", "shard_id": 0, "domain": "RL", "title": "A NEAR-OPTIMAL ALGORITHM FOR SAFE REINFORCEMENT LEARNING UNDER INSTANTANEOUS HARD CONSTRAINTS", "n_seeds": 3}
+{"arxiv_id": "2405.01402", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Learning Force Control for Legged Manipulation", "n_seeds": 3}
+{"arxiv_id": "2503.09730", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Local Look-Ahead Guidance via Verifier-in-the-Loop for Automated Theorem Proving", "n_seeds": 2}
+{"arxiv_id": "2505.07271", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "On the Robustness of Reward Models for Language Model Alignment", "n_seeds": 3}
+{"arxiv_id": "2109.07812", "status": "ok", "shard_id": 2, "domain": "LLM_NLP", "title": "Transductive Learning for Unsupervised Text Style Transfer", "n_seeds": 3}
+{"arxiv_id": "2504.05694", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "Large Language Models Enhanced Hyperbolic Space Recommender Systems", "n_seeds": 2}
+{"arxiv_id": "2203.08372", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Multi-View Document Representation Learning for Open-Domain Dense Retrieval", "n_seeds": 2}
+{"arxiv_id": "2502.13840", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Unbiased Collaborative Filtering with Fair Sampling", "n_seeds": 2}
+{"arxiv_id": "2007.02747", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "GAG: Global Attributed Graph Neural Network for Streaming Session-based Recommendation", "n_seeds": 2}
+{"arxiv_id": "2404.10876", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Course Recommender Systems Need to Consider the Job Market", "n_seeds": 2}
+{"arxiv_id": "2208.05327", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Fast Offline Policy Optimization for Large Scale Recommendation", "n_seeds": 3}
+{"arxiv_id": "2310.16294", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Producer-Side Experiments Based on Counterfactual Interleaving Designs for Online Recommender Systems", "n_seeds": 3}
+{"arxiv_id": "2409.16627", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Train Once, Deploy Anywhere: Matryoshka Representation Learning for Multimodal Recommendation", "n_seeds": 3}
+{"arxiv_id": "2301.13821", "status": "ok", "shard_id": 1, "domain": "CV", "title": "Complete Neural Networks for Complete Euclidean Graphs", "n_seeds": 3}
+{"arxiv_id": "1804.05312", "status": "ok", "shard_id": 3, "domain": "CV", "title": "Local Descriptors Optimized for Average Precision", "n_seeds": 3}
+{"arxiv_id": "2508.00751", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Harnessing the Power of Interleaving and Counterfactual Evaluation for Airbnb Search Ranking", "n_seeds": 3}
+{"arxiv_id": "1703.01049", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Deconvolving Feedback Loops in Recommender Systems", "n_seeds": 2}
+{"arxiv_id": "2112.11136", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Adversarial Gradient Driven Exploration for Deep Click-Through Rate Prediction", "n_seeds": 2}
+{"arxiv_id": "2204.10872", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Learning-to-Rank at the Speed of Sampling: Plackett-Luce Gradient Estimation With Minimal Computational Complexity", "n_seeds": 2}
+{"arxiv_id": "1811.01802", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "Intervention Harvesting for Context-Dependent Examination-Bias Estimation", "n_seeds": 3}
+{"arxiv_id": "2310.17749", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Salespeople vs SalesBot: Exploring the Role of Educational Value in Conversational Recommender Systems", "n_seeds": 3}
+{"arxiv_id": "2005.09347", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Controllable Multi-Interest Framework for Recommendation", "n_seeds": 2}
+{"arxiv_id": "1911.09153", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Gradient-based Optimization for Bayesian Preference Elicitation", "n_seeds": 2}
+{"arxiv_id": "2112.08679", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Are Graph Augmentations Necessary? Simple Graph Contrastive Learning for Recommendation", "n_seeds": 2}
+{"arxiv_id": "2305.10837", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "Adaptive Graph Contrastive Learning for Recommendation", "n_seeds": 2}
+{"arxiv_id": "2402.02718", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "Denoising Time Cycle Modeling for Recommendation", "n_seeds": 3}
+{"arxiv_id": "2409.17711", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Efficient Pointwise-Pairwise Learning-to-Rank for News Recommendation", "n_seeds": 2}
+{"arxiv_id": "1808.01842", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Beyond 1/2-Approximation for Submodular Maximization on Massive Data Streams", "n_seeds": 3}
+{"arxiv_id": "2502.15572", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "DReSD: Dense Retrieval for Speculative Decoding", "n_seeds": 3}
+{"arxiv_id": "2304.03501", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Continuous Input Embedding Size Search For Recommender Systems", "n_seeds": 3}
+{"arxiv_id": "2206.12811", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "Towards Representation Alignment and Uniformity in Collaborative Filtering", "n_seeds": 3}
+{"arxiv_id": "2509.09459", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Boosting Data Utilization for Multilingual Dense Retrieval", "n_seeds": 3}
+{"arxiv_id": "2402.07092", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Generalizing Conversational Dense Retrieval via LLM-Cognition Data Augmentation", "n_seeds": 3}
+{"arxiv_id": "2511.15122", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Multi-Aspect Cross-modal Quantization for Generative Recommendation", "n_seeds": 2}
+{"arxiv_id": "2406.15657", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "FIRST: Faster Improved Listwise Reranking with Single Token Decoding", "n_seeds": 3}
+{"arxiv_id": "2504.05315", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Coherency Improved Explainable Recommendation via Large Language Model", "n_seeds": 3}
+{"arxiv_id": "2307.02759", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "Knowledge Graph Self-Supervised Rationalization for Recommendation", "n_seeds": 3}
+{"arxiv_id": "2210.13678", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Bridging the Training-Inference Gap for Dense Phrase Retrieval", "n_seeds": 3}
+{"arxiv_id": "2212.04720", "status": "ok", "shard_id": 0, "domain": "RL", "title": "Multi-Task Off-Policy Learning from Bandit Feedback", "n_seeds": 3}
+{"arxiv_id": "2305.12753", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Learning to Rank Utterances for Query-Focused Meeting Summarization", "n_seeds": 2}
+{"arxiv_id": "2305.14302", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "VIP5: Towards Multimodal Foundation Models for Recommendation", "n_seeds": 2}
+{"arxiv_id": "1902.00087", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Learning Triggers for Heterogeneous Treatment Effects", "n_seeds": 3}
+{"arxiv_id": "2306.08808", "status": "ok", "shard_id": 3, "domain": "IR_REC", "title": "ReLoop2: Building Self-Adaptive Recommendation Models via Responsive Error Compensation Loop", "n_seeds": 2}
+{"arxiv_id": "2210.05521", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Hybrid Inverted Index Is a Robust Accelerator for Dense Retrieval", "n_seeds": 3}
+{"arxiv_id": "2408.00802", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Leveraging LLM Reasoning Enhances Personalized Recommender Systems", "n_seeds": 3}
+{"arxiv_id": "2007.07085", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Semi-supervised Collaborative Filtering by Text-enhanced Domain Adaptation", "n_seeds": 2}
+{"arxiv_id": "2010.06070", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Neural Representations in Hybrid Recommender Systems: Prediction versus Regularization", "n_seeds": 2}
+{"arxiv_id": "2101.04849", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Probabilistic Metric Learning with Adaptive Margin for Top-K Recommendation", "n_seeds": 3}
+{"arxiv_id": "1905.10668", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Is a Single Vector Enough? Exploring Node Polysemy for Network Embedding", "n_seeds": 3}
+{"arxiv_id": "1910.10086", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Meta Matrix Factorization for Federated Rating Predictions", "n_seeds": 2}
+{"arxiv_id": "2106.07041", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Correcting Exposure Bias for Link Recommendation", "n_seeds": 3}
+{"arxiv_id": "2205.12035", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "RetroMAE: Pre-Training Retrieval-oriented Language Models Via Masked Auto-Encoder", "n_seeds": 3}
+{"arxiv_id": "2205.14060", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Content Filtering with Inattentive Information Consumers", "n_seeds": 3}
+{"arxiv_id": "2303.13835", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "Where to Go Next for Recommender Systems? ID- vs. Modality-based Recommender Models Revisited", "n_seeds": 3}
+{"arxiv_id": "2505.07166", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "Pre-training vs. Fine-tuning: A Reproducibility Study on Dense Retrieval Knowledge Acquisition", "n_seeds": 3}
+{"arxiv_id": "2210.11773", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "SimANS: Simple Ambiguous Negatives Sampling for Dense Text Retrieval", "n_seeds": 3}
+{"arxiv_id": "2208.04560", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Multi-Task Fusion via Reinforcement Learning for Long-Term User Satisfaction in Recommender Systems", "n_seeds": 3}
+{"arxiv_id": "2104.10907", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "XCrossNet: Feature Structure-Oriented Learning for Click-Through Rate Prediction", "n_seeds": 3}
+{"arxiv_id": "2401.16659", "status": "ok", "shard_id": 2, "domain": "IR_REC", "title": "History-Aware Conversational Dense Retrieval", "n_seeds": 3}
+{"arxiv_id": "2007.03634", "status": "ok", "shard_id": 0, "domain": "IR_REC", "title": "PinnerSage: Multi-Modal User Embedding Framework for Recommendations at Pinterest", "n_seeds": 3}
+{"arxiv_id": "2406.06729", "status": "ok", "shard_id": 1, "domain": "IR_REC", "title": "Synthetic Query Generation using Large Language Models for Virtual Assistants", "n_seeds": 3}
+{"arxiv_id": "2012.08561", "status": "ok", "shard_id": 0, "domain": "LLM_NLP", "title": "Pre-Training Transformers as Energy-Based Cloze Models", "n_seeds": 3}
+{"arxiv_id": "1704.03152", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Deep Multimodal Representation Learning from Temporal Data", "n_seeds": 3}
+{"arxiv_id": "2403.13169", "status": "ok", "shard_id": 3, "domain": "SPEECH", "title": "WAV2GLOSS: Generating Interlinear Glossed Text from Speech", "n_seeds": 3}
+{"arxiv_id": "2507.08603", "status": "ok", "shard_id": 1, "domain": "SPEECH", "title": "Unlocking Speech Instruction Data Potential with Query Rewriting", "n_seeds": 3}
+{"arxiv_id": "2506.00736", "status": "ok", "shard_id": 3, "domain": "SPEECH", "title": "IMPACT: Iterative Mask-based Parallel Decoding for Text-to-Audio Generation with Diffusion Modeling", "n_seeds": 3}
+{"arxiv_id": "2305.08709", "status": "ok", "shard_id": 1, "domain": "SPEECH", "title": "Back Translation for Speech-to-text Translation Without Transcripts", "n_seeds": 3}
+{"arxiv_id": "2210.13189", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Can Visual Context Improve Automatic Speech Recognition for an Embodied Agent?", "n_seeds": 2}
+{"arxiv_id": "2403.04245", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "A Study of Dropout-Induced Modality Bias on Robustness to Missing Video Frames for Audio-Visual Speech Recognition", "n_seeds": 3}
+{"arxiv_id": "2212.09648", "status": "ok", "shard_id": 3, "domain": "LLM_NLP", "title": "NusaCrowd: Open Source Initiative for Indonesian NLP Resources", "n_seeds": 3}
+{"arxiv_id": "2004.14840", "status": "ok", "shard_id": 1, "domain": "SPEECH", "title": "Multiresolution and Multimodal Speech Recognition with Transformers", "n_seeds": 3}
+{"arxiv_id": "2101.07597", "status": "ok", "shard_id": 2, "domain": "SPEECH", "title": "UniSpeech: Unified Speech Representation Learning with Labeled and Unlabeled Data", "n_seeds": 2}
+{"arxiv_id": "2410.12266", "status": "ok", "shard_id": 2, "domain": "SPEECH", "title": "FlashAudio: Rectified Flows for Fast and High-fidelity Text-to-Audio Generation", "n_seeds": 3}
+{"arxiv_id": "2306.07547", "status": "ok", "shard_id": 3, "domain": "SPEECH", "title": "UniCATS: A Unified Context-Aware Text-to-Speech Framework with Contextual VQ-Diffusion and Vocoding", "n_seeds": 2}
+{"arxiv_id": "2104.06162", "status": "ok", "shard_id": 0, "domain": "MULTIMODAL", "title": "Visually Informed Binaural Audio Generation without Binaural Audios", "n_seeds": 3}
+{"arxiv_id": "2410.06608", "status": "ok", "shard_id": 0, "domain": "SPEECH", "title": "Bahasa Harmony: A Comprehensive Dataset for Bahasa Text-to-Speech Synthesis with Discrete Codec Modeling of EnGen-TTS.", "n_seeds": 3}
+{"arxiv_id": "2510.12116", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "Understanding the Modality Gap: An Empirical Study on the Speech-Text Alignment Mechanism of Large Speech Language Models", "n_seeds": 3}
+{"arxiv_id": "2203.07172", "status": "ok", "shard_id": 0, "domain": "SPEECH", "title": "RED-ACE: Robust Error Detection for ASR using Confidence Embeddings", "n_seeds": 2}
+{"arxiv_id": "2511.09282", "status": "ok", "shard_id": 1, "domain": "MULTIMODAL", "title": "End-to-end Contrastive Language-Speech Pretraining Model For Long-form Spoken Question Answering", "n_seeds": 3}
+{"arxiv_id": "2509.19567", "status": "ok", "shard_id": 0, "domain": "SPEECH", "title": "Retrieval Augmented Generation based context discovery for ASR", "n_seeds": 2}
+{"arxiv_id": "2511.03080", "status": "ok", "shard_id": 3, "domain": "SPEECH", "title": "PolyNorm: Few-Shot LLM-Based Text Normalization for Text-to-Speech", "n_seeds": 3}
+{"arxiv_id": "2212.01039", "status": "ok", "shard_id": 2, "domain": "SPEECH", "title": "SoftCorrect: Error Correction with Soft Detection for Automatic Speech Recognition", "n_seeds": 3}
+{"arxiv_id": "2506.01916", "status": "ok", "shard_id": 3, "domain": "SPEECH", "title": "DNCASR: End-to-End Training for Speaker-Attributed ASR", "n_seeds": 3}
+{"arxiv_id": "2305.09764", "status": "ok", "shard_id": 2, "domain": "SPEECH", "title": "Application-Agnostic Language Modeling for On-Device ASR", "n_seeds": 3}
+{"arxiv_id": "2004.10093", "status": "ok", "shard_id": 2, "domain": "SPEECH", "title": "Curriculum Pre-training for End-to-End Speech Translation", "n_seeds": 3}
+{"arxiv_id": "2412.03075", "status": "ok", "shard_id": 1, "domain": "SPEECH", "title": "ASR-EC BENCHMARK: EVALUATING LARGE LANGUAGE MODELS ON CHINESE ASR ERROR CORRECTION", "n_seeds": 3}
+{"arxiv_id": "2406.04350", "status": "ok", "shard_id": 2, "domain": "SPEECH", "title": "Prompt-guided Precise Audio Editing with Diffusion Models", "n_seeds": 3}
+{"arxiv_id": "2105.00708", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "Exploiting Audio-Visual Consistency with Partial Supervision for Spatial Audio Generation", "n_seeds": 2}
+{"arxiv_id": "2207.02971", "status": "ok", "shard_id": 1, "domain": "SPEECH", "title": "Branchformer: Parallel MLP-Attention Architectures to Capture Local and Global Context for Speech Recognition and Understanding", "n_seeds": 3}
+{"arxiv_id": "2109.09577", "status": "ok", "shard_id": 3, "domain": "SPEECH", "title": "MeetDot: Videoconferencing with Live Translation Captions", "n_seeds": 3}
+{"arxiv_id": "2504.08024", "status": "ok", "shard_id": 1, "domain": "SPEECH", "title": "Summarizing Speech: A Comprehensive Survey", "n_seeds": 3}
+{"arxiv_id": "2502.01046", "status": "ok", "shard_id": 0, "domain": "SPEECH", "title": "Emotional Face-to-Speech", "n_seeds": 3}
+{"arxiv_id": "2502.00459", "status": "ok", "shard_id": 3, "domain": "MULTIMODAL", "title": "AudioGenX: Explainability on Text-to-Audio Generative Models", "n_seeds": 3}
+{"arxiv_id": "2110.12257", "status": "ok", "shard_id": 0, "domain": "CV", "title": "Game of Gradients: Mitigating Irrelevant Clients in Federated Learning", "n_seeds": 3}
+{"arxiv_id": "1703.06907", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World", "n_seeds": 3}
+{"arxiv_id": "1903.01066", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Reinforcement Learning on Variable Impedance Controller for High-Precision Robotic Assembly", "n_seeds": 2}
+{"arxiv_id": "1802.10153", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Slip Detection with Combined Tactile and Visual Information", "n_seeds": 3}
+{"arxiv_id": "1710.09483", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Multimodal Probabilistic Model-Based Planning for Human-Robot Interaction", "n_seeds": 2}
+{"arxiv_id": "1803.09956", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Learning Synergies between Pushing and Grasping with Self-supervised Deep Reinforcement Learning", "n_seeds": 2}
+{"arxiv_id": "1909.12906", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Meta Reinforcement Learning for Sim-to-real Domain Adaptation", "n_seeds": 2}
+{"arxiv_id": "1903.04053", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Affordance Learning for End-to-End Visuomotor Robot Control", "n_seeds": 3}
+{"arxiv_id": "1912.12773", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Learning Predictive Models From Observation and Interaction", "n_seeds": 3}
+{"arxiv_id": "1708.04225", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Deep Object-Centric Representations for Generalizable Robot Learning", "n_seeds": 3}
+{"arxiv_id": "1903.08693", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Using Local Experiences for Global Motion Planning", "n_seeds": 3}
+{"arxiv_id": "1909.04312", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Learning Actions from Human Demonstration Video for Robotic Manipulation", "n_seeds": 3}
+{"arxiv_id": "1910.00682", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Accelerated Robot Learning via Human Brain Signals", "n_seeds": 3}
+{"arxiv_id": "1911.00969", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Learning to Scaffold the Development of Robotic Manipulation Skills", "n_seeds": 3}
+{"arxiv_id": "1909.04269", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "GlassLoc: Plenoptic Grasp Pose Detection in Transparent Clutter", "n_seeds": 3}
+{"arxiv_id": "1904.07723", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Rigid Body Motion Prediction with Planar Non-convex Contact Patch", "n_seeds": 3}
+{"arxiv_id": "2105.06411", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Coarse-to-Fine Imitation Learning: Robot Manipulation from a Single Demonstration", "n_seeds": 3}
+{"arxiv_id": "2101.11812", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "SwingBot: Learning Physical Features from In-hand Tactile Exploration for Dynamic Swing-up Manipulation", "n_seeds": 2}
+{"arxiv_id": "2109.08771", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Search-Based Task Planning with Learned Skill Effect Models for Lifelong Robotic Manipulation", "n_seeds": 3}
+{"arxiv_id": "2111.07975", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Semantically Grounded Object Matching for Robust Robotic Scene Rearrangement", "n_seeds": 3}
+{"arxiv_id": "2406.11142", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Graspness Discovery in Clutters for Fast and Accurate Grasp Detection", "n_seeds": 3}
+{"arxiv_id": "2107.06924", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Deformable Elasto-Plastic Object Shaping using an Elastic Hand and Model-Based Reinforcement Learning", "n_seeds": 3}
+{"arxiv_id": "2103.16772", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Causal Reasoning in Simulation for Structure and Transfer Learning of Robot Manipulation Policies", "n_seeds": 3}
+{"arxiv_id": "2012.13693", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Spatial Reasoning from Natural Language Instructions for Robot Manipulation", "n_seeds": 3}
+{"arxiv_id": "2203.01983", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Implicit Kinematic Policies: Unifying Joint and Cartesian Action Spaces in End-to-End Robot Learning", "n_seeds": 3}
+{"arxiv_id": "2210.15206", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Learning on the Job: Self-Rewarding Offline-to-Online Finetuning for Industrial Insertion of Novel Connectors from Vision", "n_seeds": 3}
+{"arxiv_id": "2103.05401", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Deep 6-DoF Tracking of Unknown Objects for Reactive Grasping", "n_seeds": 3}
+{"arxiv_id": "2202.07600", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Bayesian Imitation Learning for End-to-End Mobile Manipulation", "n_seeds": 3}
+{"arxiv_id": "2203.08715", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Multiscale Sensor Fusion and Continuous Control with Neural CDEs", "n_seeds": 3}
+{"arxiv_id": "2208.02312", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Rearrangement-Based Manipulation via Kinodynamic Planning and Dynamic Planning Horizons", "n_seeds": 3}
+{"arxiv_id": "2103.09555", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Textile Taxonomy and Classification Using Pulling and Twisting", "n_seeds": 3}
+{"arxiv_id": "2310.07896", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "NoMaD: Goal Masked Diffusion Policies for Navigation and Exploration", "n_seeds": 3}
+{"arxiv_id": "2405.08576", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Hearing Touch: Audio-Visual Pretraining for Contact-Rich Manipulation", "n_seeds": 3}
+{"arxiv_id": "2410.14972", "status": "ok", "shard_id": 1, "domain": "RL", "title": "MENTOR: Mixture-of-Experts Network with Task-Oriented Perturbation for Visual Reinforcement Learning", "n_seeds": 2}
+{"arxiv_id": "2501.04693", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Beyond Sight: Finetuning Generalist Robot Policies with Heterogeneous Sensors via Language Grounding", "n_seeds": 3}
+{"arxiv_id": "2311.02847", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Kinematic-aware Prompting for Generalizable Articulated Object Manipulation with LLMs", "n_seeds": 2}
+{"arxiv_id": "2308.16185", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Learning Vision-based Pursuit-Evasion Robot Policies", "n_seeds": 3}
+{"arxiv_id": "2305.17783", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Visual Affordance Prediction for Guiding Robot Exploration", "n_seeds": 2}
+{"arxiv_id": "2507.21981", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "DISCOVERSE: Efficient Robot Simulation in Complex High-Fidelity Environments", "n_seeds": 3}
+{"arxiv_id": "2404.12524", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "DoughNet: A Visual Predictive Model for Topological Manipulation of Deformable Objects", "n_seeds": 3}
+{"arxiv_id": "2411.01915", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "RoboCrowd: Scaling Robot Data Collection through Crowdsourcing", "n_seeds": 3}
+{"arxiv_id": "2506.17110", "status": "ok", "shard_id": 3, "domain": "ROBOTICS", "title": "Monocular One-Shot Metric-Depth Alignment for RGB-Based Robot Grasping", "n_seeds": 3}
+{"arxiv_id": "2511.13707", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "OpenRoboCare : A Multimodal Multi-Task Expert Demonstration Dataset for Robot Caregiving", "n_seeds": 3}
+{"arxiv_id": "2503.05020", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "GRIP: A General Robotic Incremental Potential Contact Simulation Dataset for Unified Deformable-Rigid Coupled Grasping", "n_seeds": 3}
+{"arxiv_id": "2501.04268", "status": "ok", "shard_id": 1, "domain": "ROBOTICS", "title": "Robotic Programmer: Video Instructed Policy Code Generation for Robotic Manipulation", "n_seeds": 3}
+{"arxiv_id": "2304.08488", "status": "ok", "shard_id": 2, "domain": "ROBOTICS", "title": "Affordances from Human Videos as a Versatile Representation for Robotics", "n_seeds": 3}
+{"arxiv_id": "2503.08375", "status": "ok", "shard_id": 0, "domain": "ROBOTICS", "title": "Gait in Eight: Efficient On-Robot Learning for Omnidirectional Quadruped Locomotion", "n_seeds": 3}
+{"arxiv_id": "2309.02561", "status": "ok", "shard_id": 2, "domain": "MULTIMODAL", "title": "Physically Grounded Vision-Language Models for Robotic Manipulation", "n_seeds": 2}
