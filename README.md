@@ -1,6 +1,6 @@
 # PaperGym
 
-PaperGym treats each ML paper as an interactive environment 'a *gym*' for an LLM agent to investigate. A tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores each paper and distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
+PaperGym treats each ML paper as an interactive environment a *gym* for an LLM agent to investigate. A tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores each paper and distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
 
 ML idea-synthesis systems typically retrieve prior work from the same subfield as the query. On top of this library, PaperGym evaluates a different stance: paraphrase the query into each of 7 ML domains, retrieve mechanism seeds grounded in each domain, and synthesize a method that explicitly cites which mechanism it borrowed from where.
 
@@ -41,7 +41,7 @@ from eval.ideation import run_condition_c
 from papergym.library import LibraryStore
 from papergym.llm import LLMClient
 
-query = "How can we serve long-context LLMs efficiently at inference time?"
+query = "How can we serve long context LLMs efficiently at inference time?"
 
 library = LibraryStore.open_merged(Path('data/library'))
 out = run_condition_c(query=query, library=library, llm=LLMClient(),
@@ -50,16 +50,16 @@ print('METHOD:', out.method)
 print('INSPIRED_BY:', out.inspired_by)
 ```
 
-`LibraryStore.open_merged` auto-detects sharded subdirs. The query is paraphrased into 7 domain reframings, top-k seeds retrieved per paraphrase, and the synthesizer composes a method with per-seed `borrowed_aspect`.
+`LibraryStore.open_merged` auto detects sharded subdirs. The query is paraphrased into 7 domain reframings, top-k seeds retrieved per paraphrase, and the synthesizer composes a method with per-seed `borrowed_aspect`.
 
-Baseline comparison (condition A, no retrieval, problem-only) on the same query:
+Baseline comparison (condition A, no retrieval, problem only) on the same query:
 
 ```python
 from dotenv import load_dotenv; load_dotenv()
 from eval.ideation import run_condition_a
 from papergym.llm import LLMClient
 
-query = "How can we serve long-context LLMs efficiently at inference time?"
+query = "How can we serve long context LLMs efficiently at inference time?"
 
 base = run_condition_a(query=query, llm=LLMClient())
 print('METHOD:', base.method)
