@@ -1,6 +1,6 @@
 # PaperGym
 
-PaperGym treats each ML paper as an interactive environment — a *gym* — for an LLM agent to investigate. A tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores each paper and distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
+PaperGym treats each ML paper as an interactive environment 'a *gym*' for an LLM agent to investigate. A tool-augmented agent (read / grep / bash inside Docker, plus optional `git clone` of the paper's code repo) explores each paper and distills 1–3 mechanism seeds. The released library has 1,167 seeds across 446 papers and 7 ML domains.
 
 ML idea-synthesis systems typically retrieve prior work from the same subfield as the query. On top of this library, PaperGym evaluates a different stance: paraphrase the query into each of 7 ML domains, retrieve mechanism seeds grounded in each domain, and synthesize a method that explicitly cites which mechanism it borrowed from where.
 
