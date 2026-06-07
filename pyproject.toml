@@ -18,6 +18,8 @@ dependencies = [
     "pymupdf4llm>=0.0.17",
     "docling>=2.0",
     "tenacity>=8.2",
+    "gdown>=5.0",
+    "datasets>=2.18",
 ]
 
 [project.optional-dependencies]
@@ -30,6 +32,8 @@ where = ["src"]
 "papergym.agents.accumulator" = ["*.yaml"]
 "papergym.agents.paraphraser" = ["*.yaml"]
 "papergym.agents.synthesizer" = ["*.yaml"]
+"papergym.execution" = ["prompts/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]

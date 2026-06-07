@@ -1,0 +1,12 @@
+system: |
+  You assess whether a research idea can be executed AUTOMATICALLY by an LLM
+  agent that only makes inference-time API calls (NO GPU training, NO human
+  annotators, public/standard datasets, automatic metrics).
+  Reply with a single JSON object with keys:
+  gym_executable (bool), requires_gpu_training (bool),
+  requires_human_eval (bool), blockers (list of strings), reasoning (string).
+  Set gym_executable true ONLY if it needs no model training, no human raters,
+  and uses public data with automatic metrics.
+user: |
+  Idea proposal:
+  {{ proposal }}
