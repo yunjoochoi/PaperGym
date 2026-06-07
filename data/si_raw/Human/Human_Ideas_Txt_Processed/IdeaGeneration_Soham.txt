@@ -1,0 +1,46 @@
+Title: Identifying Optimal Languages for Improving Zero-Shot Low-Resource XNLI Performance
+
+1. Problem Statement: Performing logical reasoning in low-resource languages is still less accurate than in English, the native language of Large Language Models (LLMs).
+
+2. Motivation: Current research on LLM reasoning primarily focuses on English and other high-resource languages. Low-resource languages suffer in performance across various downstream tasks, including reasoning. Due to limited data availability, it is challenging to obtain sufficient training data or perform pretraining for these languages. In countries like India, with 121 languages, improving cross-lingual reasoning performance will help democratize access to AI-based products in the future. Inspired by the Chain-of-Dictionary and Cross-Lingual Thought Prompting papers, we propose that correctly identifying the closest languages to target low-resource languages and providing multilingual dictionaries for these identified languages would provide more useful information for low-resource tasks.
+
+3. Proposed Method: The overall process entails the following:
+	(1) Identify closest languages given the target low-resource language. For example, Hindi and Urdu languages are very similar, as are Assamese and Bengali. This list could be curated using active learning strategies like DeMux or could be a manually curated list.
+	(2) Create multilingual dictionaries as in the Chain of Dictionary paper.
+	(3) Combine the multilingual dictionary with the prompt from Cross Lingual Thought Prompting to enable step-by-step reasoning of cross-lingual problems in English.
+	(4) Generate responses for several downstream reasoning tasks.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Datasets: Choose datasets that evaluate reasoning in different languages, such as XNLI, mCSQA, and XCOPA.
+	- Step 2: Identify closest/most relevant languages given target low-resource language
+		• Use DeMux-inspired active learning strategies for identifying the list of useful languages for the required task and downstream language.
+		• Alternatively, manually curate a list of languages based on internet sources and linguistic research.
+	- Step 3: Construct Prompts: The prompts will leverage two prior works.
+		• Create multilingual, chained dictionaries using the relevant/close languages, as done in the Chain-of-dictionary paper.
+		• Concatenate the above dictionaries to the prompt from the Cross Lingual Thought Prompting paper.
+	- Step 4: Select Models: Test GPT-3.5 (Text-Davinci-003), GPT-4, Claude-3.5 from Anthropic, as well as the open-source LLaMA-3 and Mistral Models.
+	- Step 5: Get Results: Obtain answer predictions from the models on these datasets with the proposed method. The baseline for comparison would be multilingual dictionaries with randomly selected languages and the simple step-by-step Chain of Thought prompt.
+	- Step 6: Analyze Results: Compare whether the new method improves the performance of LLMs in these tasks compared to the baselines.
+
+5. Test Case Examples:
+	- Test Case 1:
+		• Input:
+			Premise: ۔ےہ اترک بذج یمرگ ہدایز تہب گنر لاک
+			Hypothesis: ۔ےیہاچ یننہپ ٹرش یٹ ہایس ںیم ںویمرگ وک پآ
+		• Correct Output: Contradiction
+		• Baseline Prompt Input (Direct Prompting): Let's think step-by-step and establish the relationship between the following premise and hypothesis. The relationship is one of entailment, contradiction or neutral.
+			noire in french means black in english means negra in spanish
+			chemise in french means shirt in english means camisa in spanish
+		• Proposed Prompt Input:
+			I want you to act as an expert in Natural Language Inference for Urdu.
+			Problem
+			Premise: <input>
+			Hypothesis: <input>
+			You should retell the premise and hypothesis in English. You should perform step by step reasoning whether the relationship between the two is contradiction, entailment or neutral.
+			You should tell me the answer in the format "Answer:"
+			Below are some multilingual dictionaries for reference
+			black in english means, काला in Hindi, means ہایس in Urdu
+			shirt in english means, कमीज in Hindi, ضیمق means in Urdu
+		• Explanation: Given the prompt and the chained multilingual dictionary of close languages, the model should be better able to determine the answer in the target low-resource language.
+
+6. Fallback Plan: If the proposed method does not help compared to the baseline, we will analyze each step of the process and perform ablation studies with each of the identified close languages. This will help determine the interplay of the identified languages and whether each of them helps boost or worsen performance for the target language. We will also consider refining our language selection criteria, exploring alternative multilingual dictionary construction methods, and investigating different prompt structures to improve the effectiveness of our approach.

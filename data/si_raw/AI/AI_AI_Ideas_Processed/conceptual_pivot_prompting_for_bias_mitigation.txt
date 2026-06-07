@@ -1,0 +1,50 @@
+Title: Conceptual Pivot Prompting: Reducing Social Biases in Large Language Models through Analogical Reframing
+
+1. Problem Statement: Large language models often rely on superficial associations, leading to biased outputs when dealing with sensitive topics or underrepresented groups. This bias can perpetuate harmful stereotypes and unfair treatment in AI-powered applications.
+
+2. Motivation: Existing approaches to bias mitigation in language models often focus on direct bias mitigation or simple prompt engineering techniques. These methods may not fully address the underlying issue of stereotypical associations deeply embedded in the models' training data. We hypothesize that by forcing the model to approach concepts from multiple, seemingly unrelated angles, we can break stereotypical associations and encourage more nuanced understanding. This approach is inspired by human cognitive processes, where analogical reasoning can lead to novel insights and reduced bias.
+
+3. Proposed Method: We introduce Conceptual Pivot Prompting (CPP), a technique that leverages analogies from diverse domains to reframe potentially biased concepts. The process involves four main steps:
+	(1) Identifying key concepts in the initial prompt that might trigger biased responses.
+	(2) Generating a series of analogies for each concept from unrelated domains (e.g., comparing gender roles to ecosystem dynamics).
+	(3) Constructing a 'pivot prompt' that presents the original task through the lens of these analogies.
+	(4) Using this pivot prompt to guide the model's reasoning before addressing the original task.
+The final prompt structure interleaves the original task with the pivot analogies, encouraging the model to draw novel connections and break stereotypical patterns of thought.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use three datasets that are prone to social biases:
+		(1) Occupation prediction dataset (e.g., a subset of the BiosBias dataset)
+		(2) Character description dataset (e.g., a curated subset of the OpenAI WebText dataset)
+		(3) Social relationship inference dataset (e.g., a subset of the StereoSet dataset)
+	Step 2: Baseline Prompts: For each task, we will create standard prompts without any debiasing techniques. For example, for occupation prediction: 'Given the following person's description, predict their most likely occupation: [DESCRIPTION]'.
+	Step 3: Identify Key Concepts: For each task, identify the key concepts that might trigger biased responses. For example, in occupation prediction, concepts might include gender, ethnicity, or age.
+	Step 4: Generate Analogies: For each key concept, generate 3-5 analogies from unrelated domains. For example, for gender in occupation prediction: 'Consider how different tree species play various roles in a forest ecosystem' or 'Think about how different instruments contribute to an orchestra'.
+	Step 5: Construct Pivot Prompts: Create pivot prompts that incorporate the analogies. For example: 'Before predicting the person's occupation, consider the following: In a forest ecosystem, different tree species play various roles. Some provide shelter, others produce fruit, and some fix nitrogen in the soil. Similarly, in human society, different individuals contribute in diverse ways. Now, given this perspective, predict the most likely occupation for the following person: [DESCRIPTION]'.
+	Step 6: Implement CPP: Combine the original task prompt with the pivot prompt. For example: '[PIVOT PROMPT] Based on this analogical perspective, now address the original task: [ORIGINAL PROMPT]'.
+	Step 7: Model Selection: We will use GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API for our experiments.
+	Step 8: Experiment Execution: For each dataset and task:
+		(a) Run the baseline prompts.
+		(b) Run the CPP prompts.
+		(c) Collect model outputs for both methods.
+	Step 9: Evaluation: Evaluate the outputs using:
+		(a) Task-specific performance metrics (e.g., accuracy for occupation prediction).
+		(b) Bias metrics such as the Demographic Parity Difference or Equal Opportunity Difference.
+		(c) Qualitative analysis of a subset of outputs to assess nuance and stereotyping.
+	Step 10: Ablation Studies: Conduct ablation studies by varying the number and type of analogies used in the pivot prompts to understand their impact on bias reduction and task performance.
+	Step 11: Analysis: Compare the performance of CPP against the baseline prompts across all tasks and metrics. Analyze trends, strengths, and limitations of the approach.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input: Predict the most likely occupation for the following person: Sarah is 35 years old, loves working with children, and has a degree in education.
+		Baseline Prompt Expected Output: Based on the description, the most likely occupation for Sarah is a teacher or educator.
+		Proposed Prompt Input: Before predicting the person's occupation, consider the following analogy: In a coral reef ecosystem, different species play various roles. Some fish clean parasites off larger fish, while others protect the reef from predators. Each species contributes uniquely to the ecosystem's balance. Similarly, in human society, individuals contribute in diverse ways, often beyond traditional expectations. Now, given this perspective, predict the most likely occupation for the following person: Sarah is 35 years old, loves working with children, and has a degree in education.
+		Proposed Prompt Expected Output: Considering the analogy of a coral reef ecosystem, where different species contribute in unique and sometimes unexpected ways, we can approach Sarah's potential occupation with a broader perspective. While Sarah's love for working with children and her degree in education might initially suggest a traditional teaching role, there are many ways these qualities and skills could be applied in various occupations. Some possibilities include:
+			1. Educational Technology Developer: Creating innovative learning tools for children.
+			2. Child Psychologist: Using her understanding of children to provide mental health support.
+			3. Children's Museum Curator: Designing interactive educational exhibits.
+			4. Pediatric Nurse: Combining her love for children with healthcare.
+			5. Educational Policy Advisor: Shaping policies to improve children's education at a systemic level.
+		While a teacher remains a possibility, this approach encourages us to consider a wider range of occupations that align with Sarah's skills and interests, potentially reducing gender-based occupational stereotypes.
+		Explanation: The baseline prompt leads to a stereotypical association between women who love working with children and teaching. The CPP approach, using the coral reef analogy, encourages a broader consideration of how Sarah's skills and interests could be applied in various occupations, potentially reducing gender-based occupational stereotypes.
+
+6. Fallback Plan: If the proposed CPP method does not significantly reduce bias or negatively impacts task performance, we will explore the following alternatives: Analyze the generated analogies to understand if they are sufficiently diverse and relevant. We might need to refine our analogy generation process or curate a set of pre-defined analogies for each domain. Investigate whether the pivot prompts are too complex or distracting from the main task. We could experiment with simpler analogies or a more streamlined integration of the analogies into the main prompt. Explore combining CPP with other bias mitigation techniques, such as counterfactual data augmentation or explicit bias statements. If bias reduction is achieved but at the cost of task performance, we could frame the project as a trade-off analysis, exploring the balance between bias mitigation and task effectiveness in different contexts.

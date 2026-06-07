@@ -1,0 +1,100 @@
+Title: Cross-Lingual Concept Harmonization Prompting for Improved Abstract Concept Translation
+
+1. Problem Statement: Large language models struggle to accurately translate abstract concepts and idiomatic expressions across linguistically distant languages, especially for low-resource language pairs. This challenge is particularly acute when dealing with abstract ideas that may not have direct lexical equivalents across cultures.
+
+2. Motivation: Current approaches often rely on parallel corpora or bilingual dictionaries, which are limited for low-resource languages. Inspired by the way humans use conceptual metaphors to understand abstract ideas across cultures, we propose a method to harmonize concepts across languages using universal semantic primitives and embodied experiences. This approach leverages the LLM's ability to understand and generate explanations in multiple languages, potentially bridging the gap between linguistically distant cultures without requiring extensive parallel data.
+
+3. Proposed Method: We introduce Cross-Lingual Concept Harmonization Prompting (CLCHP), which decomposes abstract concepts into more basic, universally understood semantic primitives and embodied experiences. The process involves four main steps:
+	(1) Concept Decomposition: Breaking down the source language concept into semantic primitives and embodied experiences.
+	(2) Cross-Lingual Primitive Mapping: Aligning these primitives with their counterparts in the target language.
+	(3) Concept Reconstruction: Reassembling the concept in the target language using the mapped primitives and culturally appropriate metaphors.
+	(4) Iterative Refinement: Using the model to generate explanations and examples in both languages, then comparing and refining the translations based on conceptual similarity rather than lexical equivalence.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Create a test set of 100 abstract concepts in English, with their translations in 5 typologically diverse languages (e.g., Mandarin Chinese, Swahili, Hindi, Arabic, and Russian).
+		- Include human-annotated explanations and examples for each concept in all languages.
+	Step 2: Baseline Methods Implementation
+		- Implement three baseline methods:
+			a) Direct translation using a state-of-the-art neural machine translation model (e.g., Google Translate API).
+			b) Few-shot prompting with examples of abstract concept translations.
+			c) Chain-of-thought prompting for step-by-step translation reasoning.
+	Step 3: CLCHP Implementation
+		- Implement the four steps of CLCHP using GPT-4 API:
+			a) Concept Decomposition: Prompt GPT-4 to break down the English concept into semantic primitives and embodied experiences.
+			b) Cross-Lingual Primitive Mapping: Use GPT-4 to map these primitives to the target language.
+			c) Concept Reconstruction: Prompt GPT-4 to reassemble the concept in the target language.
+			d) Iterative Refinement: Use GPT-4 to generate explanations and examples in both languages, then refine the translation.
+	Step 4: Evaluation
+		- Evaluate the performance of CLCHP against the baselines using:
+			a) Human evaluation of conceptual equivalence on a 5-point Likert scale.
+			b) BLEU score between generated translations and human reference translations.
+			c) Semantic similarity between source and target language explanations using multilingual sentence embeddings (e.g., LaBSE).
+	Step 5: Analysis
+		- Perform detailed analysis on:
+			a) Performance across different language pairs.
+			b) Types of concepts that benefit most from CLCHP.
+			c) Effectiveness of each step in the CLCHP process.
+			d) Error analysis and categorization of remaining challenges.
+
+5. Test Case Examples:
+	Test Case 1:
+		- Baseline Prompt Input (Direct Translation): Translate the concept of 'serendipity' to Mandarin Chinese.
+		- Baseline Prompt Expected Output (Direct Translation): 机缘巧合
+		- Baseline Prompt Input (Few-shot Prompting): Translate the following abstract concept from English to Mandarin Chinese. Provide an explanation and an example in both languages.
+			Example 1:
+			English: Nostalgia
+			Mandarin: 怀旧
+			Explanation (English): A sentimental longing or wistful affection for the past, typically for a period or place with happy personal associations.
+			Explanation (Mandarin): 对过去的怀念或眷恋，通常是对与快乐的个人回忆相关的某个时期或地方的思念。
+			Example (English): Listening to a song from your childhood and feeling a mix of joy and sadness as you remember those times.
+			Example (Mandarin): 听到一首儿时的歌曲，回想起那段时光，感到既欢乐又伤感。
+			Now translate:
+			English: Serendipity
+		- Baseline Prompt Expected Output (Few-shot Prompting):
+			Mandarin: 机缘巧合
+			Explanation (English): The occurrence of events by chance in a happy or beneficial way.
+			Explanation (Mandarin): 偶然发生的幸运或有益的事件。
+			Example (English): Finding a rare book you've been searching for years while browsing a small, unfamiliar bookstore during a vacation.
+			Example (Mandarin): 在度假时浏览一家不熟悉的小书店，偶然发现了你多年来一直在寻找的一本珍贵书籍。
+		- Proposed Prompt Input (CLCHP; Step 1: Concept Decomposition): Break down the concept of 'serendipity' into its core semantic components and embodied experiences:
+		- Proposed Prompt Expected Output (CLCHP; Step 1: Concept Decomposition):
+			Core semantic components:
+			1. Unexpectedness
+			2. Positive outcome
+			3. Discovery
+			4. Chance occurrence
+			Embodied experiences:
+			1. Feeling of surprise
+			2. Sense of joy or excitement
+			3. Recognition of fortunate timing
+			4. Awareness of unlikely coincidence
+		- Proposed Prompt Input (CLCHP; Step 2: Cross-Lingual Primitive Mapping): Map the following semantic components and embodied experiences of 'serendipity' to Mandarin Chinese:
+			[Output from Step 1]
+		- Proposed Prompt Output (CLCHP; Step 2: Cross-Lingual Primitive Mapping):
+			Semantic components in Mandarin:
+			1. 意外性 (yìwài xìng) - unexpectedness
+			2. 正面结果 (zhèngmiàn jiéguǒ) - positive outcome
+			3. 发现 (fāxiàn) - discovery
+			4. 偶然事件 (ǒurán shìjiàn) - chance occurrence
+			Embodied experiences in Mandarin:
+			1. 惊喜感 (jīngxǐ gǎn) - feeling of surprise
+			2. 喜悦或兴奋 (xǐyuè huò xīngfèn) - sense of joy or excitement
+			3. 意识到时机恰到好处 (yìshí dào shíjī qià dào hǎochù) - recognition of fortunate timing
+			4. 意识到不太可能的巧合 (yìshí dào bú tài kěnéng de qiāohé) - awareness of unlikely coincidence
+		- Proposed Prompt Input (CLCHP; Step 3: Concept Reconstruction): Using the mapped semantic components and embodied experiences, reconstruct the concept of 'serendipity' in Mandarin Chinese, providing a concise term, explanation, and example:
+		- Proposed Prompt Output (CLCHP; Step 3: Concept Reconstruction):
+			Mandarin term: 机缘巧合 (jīyuán qiāohé)
+			Explanation: 机缘巧合是指在意料之外发生的幸运事件，它结合了意外性、正面结果、发现和偶然性。这个概念包含了惊喜、喜悦、对时机的认识，以及对不太可能发生的巧合的体验。
+			Example: 你在散步时不小心拐错了弯，却意外发现了一家隐藏的小咖啡馆。走进去后，你不仅品尝到了美味的咖啡，还结识了一位志同道合的朋友，这段相遇最终改变了你的人生轨迹。
+		- Proposed Prompt Input (CLCHP; Step 4: Iterative Refinement): Compare the following translations of 'serendipity' in English and Mandarin. Refine the Mandarin translation to better capture the nuances of the concept:
+			English: Serendipity is the occurrence of events by chance in a happy or beneficial way.
+			Mandarin: [Output from Step 3]
+		- Proposed Prompt Output (CLCHP; Step 4: Iterative Refinement):
+			Refined Mandarin translation:
+			机缘巧合 (jīyuán qiāohé)
+			解释：机缘巧合是指在毫无预期的情况下，偶然发生的幸运或有益事件。它融合了意外性、积极成果、新发现和偶然性。这个概念不仅包含了惊喜和喜悦的情感体验，还强调了对时机绝妙和难以置信的巧合的认知。
+			例子：你在旅行时迷路了，却意外发现了一个鲜为人知的美丽景点。在那里，你不仅欣赏到了令人惊叹的风景，还遇到了一位当地艺术家，他的作品深深打动了你，启发你开始了一段新的艺术探索之旅。这种偶然的相遇和随之而来的积极影响，正是机缘巧合的完美诠释。
+		- Explanation: CLCHP improves upon direct translation and few-shot prompting by breaking down the concept into universal components, mapping them cross-lingually, and then reconstructing the concept in the target language. This process allows for a more nuanced and culturally appropriate translation that captures the essence of the abstract concept better than literal translations or simple explanations.
+
+6. Fallback Plan: If CLCHP does not significantly outperform baselines, we can pivot to an analysis paper exploring why abstract concept translation remains challenging for LLMs. We would conduct a detailed error analysis, categorizing the types of concepts that are most difficult to translate and the specific aspects of the translation process that are problematic. We could also investigate how the performance varies across different language pairs and concept types. Additionally, we might explore how different components of CLCHP (decomposition, mapping, reconstruction, refinement) contribute to the final output, potentially identifying which steps are most crucial or need improvement. This analysis could provide valuable insights into the limitations of current LLMs in cross-lingual understanding and generation of abstract concepts, guiding future research in this area.

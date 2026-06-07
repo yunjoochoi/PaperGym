@@ -1,0 +1,54 @@
+Title: Cross-culture Self-Debiasing through Cross-lingual Interactions among Large Language Models
+
+1. Problem Statement: Large language models display unsolved social biases and stereotypes.
+
+2. Motivation: Current efforts to address bias in LLMs predominantly focus on single languages and cultures, particularly English. We aim to advance culture-wise debiasing through self-improvement in LLMs by engaging models trained on different language-culture pairs in discussions. This approach can generate an explainable list of culture-wise biases or stereotypes with reduced human annotation requirements.
+
+3. Proposed Method: Our process consists of four core steps:
+    (1) Generate social/cultural related questions by prompting LLMs to create a list of queries.
+    (2) Translate the list of questions to different languages.
+    (3) Obtain social/cultural answer pairs from LLMs trained in different languages and backgrounds by presenting each query to the models.
+    (4) Collect and compare the answers from different language/culture LLMs on the same question (potentially translating all responses to one language for easier comparison).
+    (5) Mitigate inconsistencies by generating a new response that incorporates answers from different perspectives, effectively combining responses from various language/culture-based LLMs.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Generate social/cultural related questions by prompting LLMs to create a list of queries. This can be accomplished through multiple trials and prompts, merging the results.
+    - Step 2: Translate the list of questions to different languages using a state-of-the-art translation model, such as GPT.
+    - Step 3: Prompt the LLMs with each social/cultural question.
+        a) Model selection:
+            - Model set 1: GPT-3.5 in English, Spanish, French, German, Chinese, Japanese, Arabic, etc.
+            - Model set 2: GPT-4 in English, Spanish, French, German, Chinese, Japanese, Arabic, etc.
+            - Model set 3: Claude-3.5 in English, Spanish, French, German, Chinese, Japanese, Arabic, etc.
+            - Model set 4: PaLM 2 in English, Spanish, French, German, Chinese, Japanese, Arabic, etc.
+            - Model set 5: Mistral 7B in English, Spanish, French, German, Chinese, Japanese, Arabic, etc.
+        b) Process: For each model set, given a query from the list of questions, generate responses using each LLM, creating social/cultural answer pairs from models trained in different languages and backgrounds.
+    - Step 4: Collect and compare the answers of different language/culture LLMs on the same question (potentially translating all to one language for easier comparison). Prompt one language model to summarize and highlight/flag any questions given different answers in different languages.
+    - Step 5: Mitigate inconsistencies by generating a new response that incorporates answers from different perspectives, effectively combining responses from various language/culture-based LLMs.
+    - Step 6: Analyze Results: Compare whether the new answer provides a more well-rounded response that considers different cultural backgrounds.
+
+5. Test Case Examples:
+    Test Case Example 1: Baseline method failure
+        - Baseline Prompt Input (English): What do people usually wear at weddings?
+        - Baseline Prompt Expected Output (English): 
+            Men: Tuxedo, black bow tie, formal white shirt, black formal shoes. 
+            Women: Wedding Gown: Often white or ivory, can vary in style from ballgown to mermaid to A-line, usually made from luxurious fabrics like satin, lace, tulle, or chiffon. Veil: Length varies from short to cathedral-length.
+        - Baseline Prompt Input (Mandarin, translated to English): What do people usually wear at weddings?
+        - Baseline Prompt Expected Output (Mandarin, translated to English): 
+            Women: Qipao or Dragon and Phoenix Gown: Usually red, symbolizing festivity and good luck, often adorned with gold embroidery.
+            Man: Zhongshan Suit or Changshan: Traditional Chinese attire, typically red or other festive colors.
+
+    Test Case Example 2: Proposed method success
+        - Proposed Prompt Input (English): What do people usually wear at weddings?
+        - Proposed Prompt Expected Output (English): 
+            In traditional Western Weddings:
+            Men usually wear: Tuxedo, black bow tie, formal white shirt, and black formal shoes. 
+            Women usually wear: Wedding gowns (Often white or ivory, can vary in style from ballgown to mermaid to A-line, usually made from luxurious fabrics like satin, lace, tulle, or chiffon) and veils (Length varies from short to cathedral-length).
+            In traditional Chinese Weddings:
+            Women usually wear: Qipao or Dragon and Phoenix Gown: Usually red, symbolizing festivity and good luck, often adorned with gold embroidery.
+            Men usually wear: Zhongshan Suit or Changshan: Traditional Chinese attire, typically red or other festive colors.
+        - Proposed Prompt Input (Mandarin, translated to English): What do people usually wear at weddings?
+        - Proposed Prompt Expected Output (Mandarin, translated to English): 
+            [Same as the English output above]
+        - Explanation: Given a user query on culture-based activities like a wedding, a large language model trained under a single language and preserving certain cultural biases may provide limited answers. By combining responses from different language-based models, we mitigate the issue of inherent cultural biases or stereotypes obtained from training data.
+
+6. Fallback Plan: If the plan does not yield expected results due to all models providing identical answers, which is highly improbable, it would be worthwhile to investigate the underlying causes. This could involve examining datasets, model training details, and online-learning setups of the different models. If the summarization methods in the final step prove ineffective, one could focus on analyzing the unaligned question sets and propose new ways to combine different opinions from various pairs. Alternatively, this could serve as a foundation for creating a valuable dataset for future research.

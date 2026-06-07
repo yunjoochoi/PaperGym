@@ -1,0 +1,68 @@
+Title: Chain-of-Quote Prompting Improves Factuality and Attribution in Multi-Hop Reasoning
+
+1. Problem Statement: Large language models (LLMs) are known to generate fluent but factually incorrect outputs, often termed hallucination. Moreover, it is difficult to attribute the source of their claims. This creates hurdles to effective multi-hop reasoning: LLMs can be misled by their earlier mistakes in the reasoning process, and it is non-trivial to determine which reasoning steps were initially incorrect.
+
+2. Motivation: Prior work demonstrates that LLMs are aware of verbatim quotes from pretraining data, and increased quoting leads to improved factuality and attribution. However, these studies have not integrated quoting into the reasoning process. Existing prompting techniques for reasoning, such as Chain-of-Thought and Chain-of-Verification prompting, do not improve attribution. Our primary motivation is to combine quoting and reasoning through our novel prompting technique to enhance both factuality and attribution.
+
+3. Proposed Method: The proposed Chain-of-Quote prompting method consists of the following steps:
+	a. Instruct the model to answer in a "step by step" format. Importantly, for each step, the model must decide whether to quote from well-known sources of data (for example, Wikipedia).
+	b. For each step of reasoning the model generates:
+		i. First, check whether the model decides to quote.
+		ii. If the model decides not to quote, generate one single reasoning step, keep it as the current step result, and move on to the next step.
+		iii. If the model decides to quote, generate N candidates for this reasoning step. For each candidate, measure quoting from a pre-determined knowledge corpus (such as Wikipedia) using QUIP-Score proposed by Weller et al. (2024). Choose the candidate with the highest QUIP-Score as the current step result and move on to the next step.
+	c. Repeat step b until the model has generated a final answer.
+
+4. Step-by-Step Experiment Plan:
+	a. Gather datasets: Utilize datasets on multi-hop reasoning, such as StrategyQA and HotpotQA.
+	b. Write system prompts: Develop specific system prompts that instruct the model to answer questions in a multi-step reasoning format and determine whether quoting from trusted sources of pre-training data would be beneficial. Include a system prompt such as: "Answer the question below in a step-by-step manner. For each step, begin your output with the step number, for example, (1), (2), or (3). For each step, first specify the subproblem you are tackling. Then determine whether quoting from Wikipedia will be helpful. Finally, output your reasoning on this subproblem." Consider adding few-shot examples for this step.
+	c. Run Chain-of-Quote prompting on QA datasets: Following the outline of the approach, generate reasoning chains for each step, determine whether quoting is needed, and generate final answers. Test on both open-source models such as LLaMA-3-8B-Instruct, Phi-3-mini-4k-instruct and proprietary models such as GPT-4 and Claude-3.5.
+	d. Conduct evaluation: Assess the accuracy on the QA datasets as a measure of factuality. Evaluate the overall QUIP-Score as well as the average QUIP-Score of reasoning steps where quoting is determined helpful as a measure of attribution. For baselines, consider direct prompting with the question and existing methods such as CoT, CoVe, and Chain-of-Knowledge prompting. Note that our method can also be added on top of these baselines to potentially improve performance.
+
+5. Test Case Examples:
+	Case 1:
+	Baseline prompt: Could the members of The Police perform lawful arrests?
+	Baseline response: Yes, police are legally entitled to perform lawful arrests.
+	Chain-of-Quote prompt: Answer the question below in a step-by-step manner. For each step, begin your output with the step number, for example, (1), (2), or (3). For each step, first specify the subproblem you are tackling. Then determine whether quoting from Wikipedia will be helpful. Finally, output your reasoning on this subproblem. Question: Could the members of The Police perform lawful arrests?
+	Chain-of-Quote response:
+	Step (1)
+	Subproblem: Who can perform lawful arrests?
+	Requires quoting: Yes
+	Reasoning: According to Wikipedia, "Police and various other officers have powers of arrest."
+
+	Step (2)
+	Subproblem: Who are members of The Police?
+	Requires quoting: Yes
+	Reasoning: According to Wikipedia, "The Police were an English rock band formed in London in 1977."
+
+	Step (3)
+	Subproblem: Could the members of The Police perform lawful arrests?
+	Requires quoting: No
+	Reasoning: Members of The Police are rock band members and are not police officers. Therefore, they cannot perform lawful arrests.
+
+	Step (4)
+	Final answer: No
+
+	Case 2:
+	Baseline prompt: Is there a warthog on Broadway?
+	Baseline response: No, there isn't.
+	Chain-of-Quote prompt: Answer the question below in a step-by-step manner. For each step, begin your output with the step number, for example, (1), (2), or (3). For each step, first specify the subproblem you are tackling. Then determine whether quoting from Wikipedia will be helpful. Finally, output your reasoning on this subproblem. Question: Is there a warthog on Broadway?
+	Chain-of-Quote response:
+	Step (1)
+	Subproblem: What are some of the popular shows on Broadway?
+	Requires quoting: Yes
+	Reasoning: According to Wikipedia, "Eleven shows currently running on Broadway have at least 1,000 performances: the 1996 revival of Chicago, The Lion King, Wicked, The Book of Mormon, Aladdin, Hamilton, Harry Potter and the Cursed Child, Hadestown, Moulin Rouge!, Six, and MJ the Musical."
+
+	Step (2)
+	Subproblem: Is there a warthog in The Lion King?
+	Requires quoting: Yes
+	Reasoning: According to Wikipedia, the lion king has a character "Pumbaa: a male warthog who also becomes a friend with Simba. Voice type: baritone."
+
+	Step (3)
+	Subproblem: Is there a warthog on Broadway?
+	Requires quoting: No
+	Reasoning: Because there is a warthog in The Lion King, and The Lion King is one of the popular shows on Broadway, there is a warthog on Broadway.
+
+	Step (4)
+	Final answer: Yes
+
+6. Fallback Plan: If the proposed method does not yield the expected results or proves less effective than the baseline, we will analyze the frequency of the model's engagement in the "quote mode" during reasoning steps. This analysis can provide insights for debugging and inform alternative methods. A potential alternative approach involves fine-tuning on gold quoted reasoning chains. We can retrieve gold passages from the corpus (such as Wikipedia), convert them to quotes in the reasoning chain, and then fine-tune the model on this curated data. Previous research indicates that fine-tuning can significantly enhance quoting capabilities, suggesting this could be a viable alternative for improving reasoning as well.

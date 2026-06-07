@@ -1,0 +1,115 @@
+Title: Adversarial Constraint Injection for Robust Code Generation in Large Language Models
+
+1. Problem Statement: Generated code often fails to handle edge cases or satisfy all specified constraints, especially for complex requirements. This issue limits the reliability and applicability of code generation models in real-world scenarios.
+
+2. Motivation: Existing methods like test-driven development approaches use predefined test cases to guide generation, but these may not cover all possible edge cases or constraints. By dynamically generating adversarial constraints during the code generation process, we can push the LLM to produce more robust and compliant code. This approach leverages the LLM's own capabilities to challenge and improve its outputs, potentially leading to more comprehensive and reliable code generation.
+
+3. Proposed Method: We introduce Adversarial Constraint Injection (ACI), a two-agent system where a 'constraint generator' LLM continuously proposes new edge cases, invariants, and constraints based on the current state of the generated code. These are dynamically injected into the prompt for the main 'code generator' LLM. The constraint generator is rewarded for finding violations in the generated code, creating an adversarial dynamic that pushes towards more robust solutions. The system alternates between generation and constraint proposal until a stable, compliant solution is reached.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Collect a diverse set of programming tasks from platforms like LeetCode, HackerRank, and CodeForces.
+		- Ensure a mix of difficulty levels and problem types.
+		- Create a test set of 100 problems, each with a clear problem statement, input/output examples, and a set of predefined constraints and edge cases.
+	Step 2: Baseline Implementation
+		- Implement three baseline methods:
+			(1) Standard prompting: directly prompt the LLM with the problem statement.
+			(2) Test-driven prompting: include predefined test cases in the prompt.
+			(3) Chain-of-Thought prompting: instruct the LLM to think step-by-step before generating the final code.
+	Step 3: ACI Implementation
+		- Implement the Adversarial Constraint Injection system:
+			(a) Code Generator: Use GPT-4 as the main code generation model.
+			(b) Constraint Generator: Use GPT-4 with a different system prompt to generate constraints.
+			(c) Implement the alternating process between code generation and constraint injection.
+	Step 4: Prompts Design
+		- Design prompts for each component:
+			(a) Code Generator: "Given the following problem and constraints, generate a Python function that solves the problem: [PROBLEM_STATEMENT] [CONSTRAINTS]"
+			(b) Constraint Generator: "Analyze the following code and problem statement. Propose a new constraint, edge case, or invariant that the current code might not handle correctly: [PROBLEM_STATEMENT] [CURRENT_CODE]"
+			(c) Iteration prompt: "The following constraint was identified: [NEW_CONSTRAINT]. Modify your code to handle this case while maintaining correctness for previous constraints."
+	Step 5: Evaluation Metrics
+		- Implement the following evaluation metrics:
+			(1) Pass rate on predefined test cases.
+			(2) Pass rate on dynamically generated test cases.
+			(3) Code complexity (measured by cyclomatic complexity).
+			(4) Execution time efficiency.
+			(5) Number of constraints/edge cases handled.
+	Step 6: Experiment Execution
+		- For each problem in the test set:
+			(1) Generate solutions using each baseline method.
+			(2) Generate solutions using ACI with a maximum of 5 iterations.
+			(3) Evaluate all solutions using the defined metrics.
+			(4) Record the number of iterations and constraints generated for ACI.
+	Step 7: Analysis
+		- Perform statistical analysis on the results:
+			(1) Compare the performance of ACI against baselines using paired t-tests for each metric.
+			(2) Analyze the correlation between the number of iterations/constraints and the improvement in solution quality.
+			(3) Categorize the types of constraints generated and their impact on code quality.
+
+5. Test Case Examples:
+	Test Case 1:
+		- Baseline Prompt Input: Write a Python function to find the longest palindromic substring in a given string.
+		- Baseline Prompt Expected Output:
+			def longest_palindrome(s):
+				if not s:
+					return ''
+				start, max_len = 0, 1
+				for i in range(len(s)):
+					len1 = expand_around_center(s, i, i)
+					len2 = expand_around_center(s, i, i + 1)
+					length = max(len1, len2)
+					if length > max_len:
+						start = i - (length - 1) // 2
+						max_len = length
+				return s[start:start + max_len]
+
+			def expand_around_center(s, left, right):
+				while left >= 0 and right < len(s) and s[left] == s[right]:
+					left -= 1
+					right += 1
+				return right - left - 1
+		- Proposed Prompt Input (ACI; Step 1: Initial Code Generation): Write a Python function to find the longest palindromic substring in a given string. Handle empty strings and strings with no palindromes.
+		- Proposed Prompt Expected Output (ACI; Step 1: Initial Code Generation):
+			def longest_palindrome(s):
+				if not s:
+					return ''
+				start, max_len = 0, 1
+				for i in range(len(s)):
+					len1 = expand_around_center(s, i, i)
+					len2 = expand_around_center(s, i, i + 1)
+					length = max(len1, len2)
+					if length > max_len:
+						start = i - (length - 1) // 2
+						max_len = length
+				return s[start:start + max_len]
+
+			def expand_around_center(s, left, right):
+				while left >= 0 and right < len(s) and s[left] == s[right]:
+					left -= 1
+					right += 1
+				return right - left - 1
+		- Proposed Prompt Input (ACI; Step 2: Constraint Generation): Analyze the following code and problem statement. Propose a new constraint, edge case, or invariant that the current code might not handle correctly: [PROBLEM_STATEMENT] [CURRENT_CODE]
+		- Proposed Prompt Expected Output (ACI; Step 2: Constraint Generation): The current code doesn't handle case sensitivity. It should treat uppercase and lowercase letters as the same when determining palindromes. For example, 'Aa' should be considered a palindrome.
+		- Proposed Prompt Input (ACI; Step 3: Code Refinement): The following constraint was identified: The function should treat uppercase and lowercase letters as the same when determining palindromes. Modify your code to handle this case while maintaining correctness for previous constraints.
+		- Proposed Prompt Expected Output (ACI; Step 3: Code Refinement):
+			def longest_palindrome(s):
+				if not s:
+					return ''
+				s = s.lower()  # Convert to lowercase
+				start, max_len = 0, 1
+				for i in range(len(s)):
+					len1 = expand_around_center(s, i, i)
+					len2 = expand_around_center(s, i, i + 1)
+					length = max(len1, len2)
+					if length > max_len:
+						start = i - (length - 1) // 2
+						max_len = length
+				return s[start:start + max_len]
+
+			def expand_around_center(s, left, right):
+				while left >= 0 and right < len(s) and s[left] == s[right]:
+					left -= 1
+					right += 1
+				return right - left - 1
+		- Explanation: The ACI method successfully identified a case that the original code didn't handle (case sensitivity) and refined the code to address this issue. This demonstrates how ACI can improve code robustness by considering additional constraints and edge cases.
+
+6. Fallback Plan: If the proposed ACI method does not significantly outperform baselines, we can pivot the project in several ways. We can analyze the types of constraints generated by the Constraint Generator to understand what kinds of edge cases LLMs are capable of identifying. This could provide insights into the strengths and limitations of LLMs in code analysis. Additionally, we can investigate the relationship between the number of iterations and code quality. Even if overall performance does not improve, there might be interesting patterns in how code evolves over iterations. We could also explore different reward mechanisms for the Constraint Generator. Instead of rewarding for finding violations, we could experiment with rewarding for generating constraints that lead to more efficient or readable code. Furthermore, we can conduct an ablation study to understand which components of ACI contribute most to any improvements seen. This could inform future research directions in improving code generation.

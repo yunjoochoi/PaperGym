@@ -1,0 +1,70 @@
+Title: Nested Polyglot Prompting: Improving Large Language Models' Performance on Low-Resource Languages
+
+1. Problem Statement: Large language models struggle with accurately translating and processing content in low-resource languages, especially when dealing with complex linguistic phenomena or domain-specific terminology. This issue limits the models' applicability and effectiveness in multilingual contexts, particularly for languages with limited training data.
+
+2. Motivation: Current approaches often rely on pivot languages or multilingual fine-tuning, which can lead to information loss or require extensive computational resources. By leveraging the model's knowledge of high-resource languages and gradually introducing low-resource language elements, we can create a more robust and accurate translation and understanding process. This method allows the model to build upon its existing knowledge base while adapting to the nuances of the target low-resource language.
+
+3. Proposed Method: We introduce Nested Polyglot Prompting, a multi-step prompting technique that gradually transitions from high-resource to low-resource languages. The process begins with a prompt in a high-resource language, then introduces elements of the target low-resource language in subsequent nested prompts. Each nested prompt builds upon the previous one, refining the translation and understanding. For example, to translate English to a low-resource language X, the process involves: 1) English prompt, 2) English with X words, 3) X with English phrases, 4) Full X with English clarifications, 5) Pure X output.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Select low-resource languages for evaluation: Swahili, Yoruba, and Quechua
+		- Prepare parallel corpora for these languages paired with English from sources like JW300, OPUS, or Tatoeba
+		- Create test sets of 1000 sentences for each language pair
+	Step 2: Baseline Methods Implementation
+		- Implement two baseline methods:
+			1) Direct translation: Translate directly from English to the target low-resource language
+			2) Pivot-based translation: Translate from English to a high-resource intermediate language (e.g., French or Spanish), then to the target low-resource language
+	Step 3: Nested Polyglot Prompting Implementation
+		- Implement the Nested Polyglot Prompting method with the following steps for each sentence:
+			a) English prompt
+			b) English with 25% target language words
+			c) 50% target language with English phrases
+			d) 75% target language with English clarifications
+			e) Full target language output
+	Step 4: Model Selection
+		- Use GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API for all experiments
+	Step 5: Translation Task
+		- For each sentence in the test set, apply the baseline methods and Nested Polyglot Prompting
+		- Store the outputs for evaluation
+	Step 6: Evaluation Metrics
+		- Calculate BLEU scores for all outputs
+		- Implement chrF++ score for a character-level evaluation, which may be more suitable for morphologically rich languages
+	Step 7: Human Evaluation
+		- Select a subset of 100 sentences for each language
+		- Have native speakers rate the translations on a scale of 1-5 for accuracy and fluency
+	Step 8: Downstream Task Evaluation
+		- Implement sentiment analysis and named entity recognition tasks for each language
+		- Use existing datasets or create small datasets (100 sentences each) if not available
+		- Apply the translated outputs to these tasks and compare performance
+	Step 9: Analysis
+		- Compare the performance of Nested Polyglot Prompting against the baselines using the collected metrics
+		- Analyze the results to identify patterns, strengths, and weaknesses of each method across different languages and tasks
+	Step 10: Ablation Study
+		- Conduct an ablation study by varying the number of steps in the Nested Polyglot Prompting process (e.g., 3 steps vs. 5 steps) to determine the optimal number of nesting levels
+
+5. Test Case Examples:
+	Test Case 1: Direct Translation
+		- Input: Translate the following English sentence to Swahili: 'The new environmental policy will significantly reduce carbon emissions.'
+		- Expected Output: Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa.
+	Test Case 2: Pivot-based Translation
+		- Input: First, translate the following English sentence to French: 'The new environmental policy will significantly reduce carbon emissions.' Then, translate the French sentence to Swahili.
+		- Expected Output:
+			Step 1 (English to French): 'La nouvelle politique environnementale réduira considérablement les émissions de carbone.'
+			Step 2 (French to Swahili): 'Sera mpya ya mazingira itapunguza sana uzalishaji wa kaboni.'
+	Test Case 3: Nested Polyglot Prompting
+		- Input:
+			Step 1 (English): Translate 'The new environmental policy will significantly reduce carbon emissions.' to Swahili.
+			Step 2 (English with 25% Swahili): Translate 'The new sera ya mazingira will significantly punguza carbon emissions.' to Swahili.
+			Step 3 (50% Swahili): Translate 'Sera mpya ya mazingira will significantly punguza utoaji wa carbon.' to Swahili.
+			Step 4 (75% Swahili): Translate 'Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa (carbon emissions).' to Swahili.
+			Step 5 (Full Swahili): Provide the final Swahili translation.
+		- Expected Output:
+			Step 1: Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa.
+			Step 2: Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa.
+			Step 3: Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa.
+			Step 4: Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa.
+			Step 5 (Final translation): Sera mpya ya mazingira itapunguza kwa kiasi kikubwa utoaji wa hewa ukaa.
+		- Explanation: The Nested Polyglot Prompting method allows for a gradual transition from English to Swahili, potentially leading to a more accurate and nuanced translation. It gives the model multiple opportunities to refine its understanding and output, potentially capturing subtleties that might be missed in direct or pivot-based translation.
+
+6. Fallback Plan: If the Nested Polyglot Prompting method does not show significant improvements over the baselines, we will explore several alternative directions. First, we will analyze the intermediate outputs at each step of the nesting process to identify where the method may be failing or introducing errors. This could provide insights into the model's handling of code-switching and gradual language transition. Second, we will experiment with different nesting strategies, such as starting with a high-resource language closely related to the target low-resource language, rather than English. Third, we will investigate combining Nested Polyglot Prompting with other techniques like few-shot learning or chain-of-thought prompting to see if this hybrid approach yields better results. Finally, if the method proves ineffective for translation tasks, we will pivot to exploring its potential in other multilingual tasks such as cross-lingual information retrieval or multilingual text classification, where the gradual language transition might offer different benefits.

@@ -1,0 +1,86 @@
+Title: Conceptual Scaffolding Prompting: Enhancing Mathematical Problem-Solving in Large Language Models
+
+1. Problem Statement: Large language models often struggle with complex mathematical problems that require building upon foundational concepts to reach a solution. Current approaches like Chain-of-Thought prompting may not effectively leverage the hierarchical nature of mathematical knowledge, leading to suboptimal performance on complex mathematical reasoning tasks.
+
+2. Motivation: Mathematical understanding often relies on a scaffold of interconnected concepts. Existing methods like Chain-of-Thought prompting focus on generating step-by-step reasoning but may not effectively capture the hierarchical structure of mathematical knowledge. By prompting the model to explicitly construct and navigate this conceptual scaffold, we can potentially improve its problem-solving capabilities. This approach is inspired by how humans learn and apply mathematics, often relying on a structured understanding of foundational concepts to tackle complex problems.
+
+3. Proposed Method: We introduce Conceptual Scaffolding Prompting (CSP), a multi-stage prompting technique. The method consists of four main steps:
+	(1) Concept Identification: Prompt the model to identify the core concepts needed to solve the problem.
+	(2) Hierarchical Arrangement: Ask the model to arrange these concepts in a hierarchical structure, from foundational to advanced.
+	(3) Conceptual Explanation: Guide the model to 'climb' this conceptual scaffold, explaining each concept and its relation to the problem at hand.
+	(4) Problem Solution: Prompt the model to use this conceptual journey to formulate and solve the original problem.
+This method encourages a more structured and robust approach to mathematical reasoning.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use three diverse mathematical reasoning datasets: MATH, GSM8K, and MMLU (mathematics subset). These datasets cover a range of mathematical topics and difficulty levels.
+	Step 2: Baseline Implementation: Implement three baseline methods:
+		(1) Standard prompting (direct question answering)
+		(2) Chain-of-Thought prompting
+		(3) Few-shot prompting with examples
+	Step 3: CSP Implementation: Implement the Conceptual Scaffolding Prompting method. For each problem, use the following prompt structure: "Given the problem: [PROBLEM], follow these steps: 1) List the key mathematical concepts needed to solve this problem. 2) Arrange these concepts in a hierarchical order, from most basic to most advanced. 3) For each concept, provide a brief explanation and how it relates to the problem. 4) Using this conceptual scaffold, solve the original problem step by step."
+	Step 4: Model Selection: We will use GPT-4 and GPT-3.5-turbo from OpenAI's API for our experiments. These models represent state-of-the-art performance in language modeling and are widely accessible.
+	Step 5: Evaluation: For each dataset and model combination, evaluate the performance using the following metrics:
+		(1) Accuracy: Percentage of correctly solved problems.
+		(2) Partial Credit: For multi-step problems, assign partial credit for correct intermediate steps.
+		(3) Conceptual Coherence: Manual evaluation of a subset of responses to assess the quality and relevance of the conceptual scaffolds generated.
+	Step 6: Ablation Studies: Conduct ablation studies to understand the contribution of each component of CSP:
+		(1) Remove the hierarchical arrangement step.
+		(2) Remove the conceptual explanation step.
+		(3) Vary the number of concepts requested in the first step.
+	Step 7: Error Analysis: Perform a detailed error analysis on a subset of incorrectly solved problems to identify patterns in where CSP fails and potential areas for improvement.
+	Step 8: Comparison with Baselines: Compare the performance of CSP against the baseline methods across all datasets and metrics. Use statistical tests (e.g., paired t-tests) to determine if the differences are significant.
+	Step 9: Generalization Test: Test the generalization capability of CSP by applying it to a held-out dataset not used during development, such as APPS (for code generation of mathematical algorithms).
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Standard Prompting): Q: A rectangle has a length that is 3 units longer than its width. If the perimeter of the rectangle is 26 units, what is the area of the rectangle?
+		Baseline Prompt Expected Output (Standard Prompting): The area of the rectangle is 40 square units.
+		Baseline Prompt Input (Chain-of-Thought Prompting): Q: A rectangle has a length that is 3 units longer than its width. If the perimeter of the rectangle is 26 units, what is the area of the rectangle? Let's approach this step-by-step:
+		Baseline Prompt Expected Output (Chain-of-Thought Prompting): 1) Let's define variables: Let w be the width of the rectangle. Then the length is w + 3.
+2) We know the perimeter is 26 units. The formula for perimeter is 2(length + width).
+3) So we can write the equation: 2(w + (w+3)) = 26
+4) Simplify: 2(2w + 3) = 26
+5) Solve for w: 4w + 6 = 26
+   4w = 20
+   w = 5
+6) If w = 5, then the length is 5 + 3 = 8
+7) The area of a rectangle is length * width
+8) So the area is 5 * 8 = 40 square units
+Therefore, the area of the rectangle is 40 square units.
+		Proposed Prompt Input (Conceptual Scaffolding Prompting): Given the problem: A rectangle has a length that is 3 units longer than its width. If the perimeter of the rectangle is 26 units, what is the area of the rectangle? Follow these steps: 1) List the key mathematical concepts needed to solve this problem. 2) Arrange these concepts in a hierarchical order, from most basic to most advanced. 3) For each concept, provide a brief explanation and how it relates to the problem. 4) Using this conceptual scaffold, solve the original problem step by step.
+		Proposed Prompt Expected Output (Conceptual Scaffolding Prompting): 1) Key mathematical concepts:
+   - Rectangle properties
+   - Perimeter
+   - Area
+   - Linear equations
+   - Algebraic manipulation
+
+2) Hierarchical arrangement:
+   1. Rectangle properties
+   2. Perimeter
+   3. Area
+   4. Linear equations
+   5. Algebraic manipulation
+
+3) Concept explanations:
+   1. Rectangle properties: A rectangle has four sides with opposite sides equal. In this problem, we're told the length is 3 units longer than the width.
+   2. Perimeter: The distance around the rectangle. It's given as 26 units and will be used to set up our equation.
+   3. Area: The space inside the rectangle, calculated by multiplying length by width. This is our final goal.
+   4. Linear equations: We'll need to set up and solve a linear equation to find the width and length.
+   5. Algebraic manipulation: We'll use this to solve our linear equation.
+
+4) Problem solution:
+   a) Let w = width of the rectangle. Then length = w + 3
+   b) Perimeter formula: 2(length + width) = 26
+   c) Substitute: 2(w + 3 + w) = 26
+   d) Simplify: 2(2w + 3) = 26
+   e) Solve for w: 4w + 6 = 26
+                   4w = 20
+                   w = 5
+   f) If w = 5, then length = 5 + 3 = 8
+   g) Area = length * width = 8 * 5 = 40
+
+Therefore, the area of the rectangle is 40 square units.
+		Explanation: The Conceptual Scaffolding Prompting method provides a more structured approach to problem-solving. It first identifies and organizes the relevant mathematical concepts, then explains how each concept relates to the problem. This scaffolding helps the model to approach the problem more systematically, potentially reducing errors and improving the clarity of the solution process.
+
+6. Fallback Plan: If the proposed Conceptual Scaffolding Prompting method does not significantly outperform the baselines, we can pursue several alternative directions. We will analyze the generated conceptual scaffolds to understand where they might be falling short, investigating whether the identified concepts are relevant and if the hierarchical arrangement is logical. This could lead to insights on how to improve the prompting strategy. We will also investigate whether CSP performs better on certain types of problems or mathematical domains, potentially turning the project into an analysis of when and why conceptual scaffolding is most effective. Additionally, we will explore combining CSP with other prompting techniques, such as few-shot learning or self-consistency checks, to leverage the strengths of multiple methods. A more detailed error analysis will be conducted to identify specific failure modes of CSP, informing the development of targeted improvements or alternative prompting strategies. If the conceptual scaffolds themselves prove valuable even if they don't directly improve problem-solving, we could pivot to exploring how these scaffolds might be used for other purposes, such as generating explanations or creating study materials.

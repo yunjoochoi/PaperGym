@@ -1,0 +1,134 @@
+Title: Adversarial Decomposition-Recomposition Prompting for Improved Code Generation in Large Language Models
+
+1. Problem Statement: Large language models often struggle with complex coding tasks that require breaking down problems into smaller, manageable components and then integrating these components into a cohesive solution. This limitation hinders their ability to generate high-quality, efficient, and maintainable code for intricate programming challenges.
+
+2. Motivation: Current approaches typically involve direct prompting for the entire solution or using simple step-by-step guidance, which may not capture the full complexity of problem decomposition and recomposition in software development. Drawing inspiration from adversarial training and the software engineering principle of 'divide and conquer', we propose a method that challenges the model to both decompose and recompose complex coding problems, improving its ability to handle intricate programming tasks.
+
+3. Proposed Method: We introduce Adversarial Decomposition-Recomposition Prompting (ADRP), a two-phase prompting technique:
+	(1) Decomposition Phase: The model is prompted to break down a complex coding task into smaller, atomic subtasks. An adversarial component then challenges this decomposition, forcing the model to justify and refine its breakdown.
+	(2) Recomposition Phase: The model is prompted to solve each subtask and then integrate these solutions. Another adversarial component challenges the integration, pushing the model to ensure consistency and optimize the overall solution.
+	The prompt includes instructions such as 'Decompose the following problem:', 'Critique the above decomposition:', 'Solve and integrate the subtasks:', and 'Identify potential issues in the integration:'. This adversarial back-and-forth encourages more robust and well-thought-out code generation.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Utilize the Codeforces dataset, which contains a diverse set of competitive programming problems.
+		- Select 100 problems of varying difficulty levels (easy, medium, hard) that require complex problem-solving skills.
+	Step 2: Baseline Implementation
+		- Implement three baseline methods:
+			a) Direct prompting: Simply provide the problem description to the model.
+			b) Chain-of-thought prompting: Append 'Let's approach this step by step:' to the problem description.
+			c) Few-shot prompting: Provide 2-3 examples of problem-solution pairs before presenting the target problem.
+	Step 3: ADRP Implementation
+		- Implement the ADRP method with the following steps:
+			a) Decomposition prompt: 'Decompose the following coding problem into smaller, manageable subtasks:'
+			b) Adversarial critique prompt: 'Critique the above decomposition. Identify any oversights or inefficiencies:'
+			c) Refined decomposition prompt: 'Refine the decomposition based on the critique:'
+			d) Subtask solution prompt: 'Solve each subtask:'
+			e) Integration prompt: 'Integrate the subtask solutions into a complete solution:'
+			f) Adversarial integration critique prompt: 'Identify potential issues in the integration:'
+			g) Final refinement prompt: 'Refine the integrated solution based on the critique:'
+	Step 4: Model Selection
+		- Utilize GPT-4 from the OpenAI API for all experiments, as it represents the current state-of-the-art in large language models for code generation.
+	Step 5: Evaluation Metrics
+		- Employ the following metrics:
+			a) Solution correctness: Percentage of test cases passed.
+			b) Code efficiency: Runtime and memory usage.
+			c) Code readability: Use automated tools like 'pylint' for Python code to assess readability and adherence to coding standards.
+			d) Decomposition quality: Have human experts rate the quality of problem decomposition on a scale of 1-5.
+	Step 6: Experiment Execution
+		- For each problem in the dataset:
+			a) Generate solutions using each baseline method.
+			b) Generate solutions using the ADRP method.
+			c) Evaluate all solutions using the defined metrics.
+	Step 7: Analysis
+		a) Compare the performance of ADRP against baselines across all metrics.
+		b) Analyze how ADRP performs on problems of different difficulty levels.
+		c) Examine the quality of decompositions and how they correlate with final solution quality.
+		d) Investigate how the adversarial components influence the refinement process.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Direct Prompting): Write a Python function to find the longest increasing subsequence in a given array of integers.
+		Baseline Prompt Expected Output (Direct Prompting):
+			def longest_increasing_subsequence(arr):
+				n = len(arr)
+				dp = [1] * n
+				for i in range(1, n):
+					for j in range(i):
+						if arr[i] > arr[j]:
+							dp[i] = max(dp[i], dp[j] + 1)
+				return max(dp)
+		Proposed Prompt Input (ADRP; Step 1: Decomposition): Decompose the following coding problem into smaller, manageable subtasks: Write a Python function to find the longest increasing subsequence in a given array of integers.
+		Proposed Prompt Expected Output (ADRP; Step 1: Decomposition):
+			1. Initialize a dynamic programming array
+			2. Implement the core logic to fill the DP array
+			3. Find the maximum value in the DP array
+			4. Reconstruct the longest increasing subsequence
+			5. Implement error handling and input validation
+		Proposed Prompt Input (ADRP; Step 2: Adversarial Critique): Critique the above decomposition. Identify any oversights or inefficiencies:
+		Proposed Prompt Expected Output (ADRP; Step 2: Adversarial Critique):
+			The decomposition is good, but it misses an opportunity for optimization:
+			1. The current approach has a time complexity of O(n^2), which can be improved.
+			2. There's no consideration for space optimization.
+			3. The reconstruction step is not necessary if we only need the length of the LIS.
+			4. There's no mention of handling edge cases like empty input arrays.
+		Proposed Prompt Input (ADRP; Step 3: Refined Decomposition): Refine the decomposition based on the critique:
+		Proposed Prompt Expected Output (ADRP; Step 3: Refined Decomposition):
+			1. Implement input validation and handle edge cases
+			2. Initialize a dynamic programming array with optimized space usage
+			3. Implement the core logic using binary search for O(n log n) time complexity
+			4. Find the length of the longest increasing subsequence
+			5. (Optional) Reconstruct the longest increasing subsequence if needed
+		Proposed Prompt Input (ADRP; Step 4: Final Solution): Implement the refined solution based on the decomposition:
+		Proposed Prompt Expected Output (ADRP; Step 4: Final Solution):
+			from bisect import bisect_left
+
+			def longest_increasing_subsequence(arr):
+				if not arr:
+					return 0
+				
+				n = len(arr)
+				# dp array to store the smallest tail of all increasing subsequences
+				dp = [0] * n
+				length = 0
+
+				for num in arr:
+					i = bisect_left(dp, num, 0, length)
+					dp[i] = num
+					if i == length:
+						length += 1
+
+				return length
+
+			# Optional: Reconstruct the LIS
+			def get_lis(arr):
+				if not arr:
+					return []
+				
+				n = len(arr)
+				dp = [0] * n
+				length = 0
+				prev = [-1] * n
+
+				for i, num in enumerate(arr):
+					j = bisect_left(dp, num, 0, length)
+					dp[j] = num
+					if j > 0:
+						prev[i] = dp[j-1]
+					if j == length:
+						length += 1
+
+				# Reconstruct the LIS
+				lis = []
+				last = dp[length-1]
+				for i in range(n-1, -1, -1):
+					if arr[i] == last:
+						lis.append(last)
+						last = prev[i]
+						if last == -1:
+							break
+
+				return lis[::-1]
+		Explanation: The ADRP method leads to a more efficient and comprehensive solution. It addresses the time complexity issue by using binary search, handles edge cases, and provides an optional reconstruction step. The adversarial critique helped identify potential improvements, leading to a refined decomposition and ultimately a better solution.
+
+6. Fallback Plan: If the proposed ADRP method does not significantly outperform the baselines, we can pivot the project in several ways. We could conduct an in-depth analysis of where ADRP fails, focusing on the quality of decompositions and adversarial critiques. This could provide insights into the limitations of current LLMs in complex reasoning tasks. Additionally, we could experiment with hybrid approaches that combine ADRP with other techniques like retrieval-augmented generation or fine-tuning on coding tasks. Investigating the impact of different adversarial components, such as varying the strength or focus of the critiques, could also yield valuable insights. Furthermore, extending the study to other domains beyond coding, such as mathematical problem-solving or logical reasoning tasks, could help understand the generalizability of the ADRP approach. Lastly, analyzing the intermediate outputs (decompositions, critiques, refinements) could provide insights into the model's reasoning process, which could inform future prompt engineering techniques.

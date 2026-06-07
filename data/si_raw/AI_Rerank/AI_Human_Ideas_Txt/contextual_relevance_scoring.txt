@@ -1,0 +1,66 @@
+Title: Contextual Relevance Scoring: Improving Factual Accuracy in Large Language Models through Two-Stage Prompting
+
+1. Problem Statement: Large language models often generate plausible-sounding but factually incorrect information, especially when dealing with complex or specialized topics. This issue of hallucination undermines the reliability and trustworthiness of these models in real-world applications.
+
+2. Motivation: Current approaches like retrieval-augmented generation and fact-checking against external knowledge bases have shown promise but still face limitations in terms of scalability and adaptability to diverse domains. Inspired by human experts who assess the relevance and reliability of information sources, we propose leveraging LLMs' ability to understand context and judge relevance to improve factual accuracy. This approach aims to utilize the model's own capabilities to enhance its performance, potentially offering a more flexible and generalizable solution to the hallucination problem.
+
+3. Proposed Method: We introduce Contextual Relevance Scoring (CRS), a two-stage prompting method. The key steps include:
+	(1) First stage: Prompt the LLM to generate a set of potentially relevant facts or statements related to the given query.
+	(2) Second stage: Use a separate prompt to ask the LLM to score each generated statement's relevance and reliability on a scale of 1-10, providing justification for each score.
+	(3) Final response construction: Use only the highest-scoring statements, with a threshold determined empirically.
+	(4) Prompt design: Include instructions to consider factors such as source credibility, recency, and logical consistency in both stages.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Utilize two datasets: TruthfulQA and FactualityPrompt
+		- TruthfulQA: 817 questions designed to assess truthful and informative model responses
+		- FactualityPrompt: 250 prompts across various domains, specifically designed to evaluate factual accuracy
+	Step 2: Baseline Implementation
+		- Implement two baseline methods:
+			(1) Standard prompting: directly querying the model with the question
+			(2) Retrieval-augmented generation: using a vector database (e.g., Pinecone) to retrieve relevant information before generating the answer
+	Step 3: CRS Implementation
+		- Implement the two-stage CRS method:
+			(a) First-stage prompt: "Generate 5 potentially relevant statements for the following question: [QUESTION]"
+			(b) Second-stage prompt: "Rate the relevance and reliability of each statement on a scale of 1-10, considering source credibility, recency, and logical consistency. Provide a brief justification for each score."
+			(c) Final answer generation: "Using only the statements with scores above 7, provide a concise answer to the question: [QUESTION]"
+	Step 4: Model Selection
+		- Utilize GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API for experiments
+	Step 5: Evaluation Metrics
+		- Employ the following metrics:
+			(1) Accuracy: percentage of correct answers
+			(2) Consistency: measure of how consistent the model's answers are across similar questions
+			(3) Human evaluation: a sample of responses will be evaluated by human judges for factual correctness and relevance
+	Step 6: Experiment Execution
+		- For each dataset and model combination:
+			(a) Run the baseline methods and record results
+			(b) Run the CRS method and record results
+			(c) Perform human evaluation on a subset of responses
+	Step 7: Analysis
+		- Compare the performance of CRS against the baselines
+		- Analyze the effectiveness of the relevance scoring mechanism by examining the correlation between scores and factual accuracy
+		- Investigate cases where CRS performs particularly well or poorly to identify strengths and limitations of the method
+
+5. Test Case Examples:
+	Example 1 (Baseline Failure):
+		Input: What is the capital of France?
+		Baseline Output: The capital of France is Paris. It is known as the 'City of Light' and is famous for its iconic Eiffel Tower, which was built in 1889. Paris is also home to world-renowned museums like the Louvre, which houses the Mona Lisa, and the Musée d'Orsay. The city is divided into 20 arrondissements and is crossed by the River Seine.
+		Explanation: While the baseline output is correct about Paris being the capital, it includes additional information that, while generally accurate, is not directly relevant to the question and could potentially introduce errors.
+	Example 2 (CRS Success):
+		Input: What is the capital of France?
+		CRS Stage 1 Output:
+			1. Paris is the capital of France.
+			2. France is a country in Western Europe.
+			3. The French government is centered in Paris.
+			4. Paris has been the capital since the Middle Ages.
+			5. Some people mistakenly believe other cities like Marseille or Lyon are the capital.
+		CRS Stage 2 Output:
+			1. Paris is the capital of France. (Score: 10) Justification: This is a widely known and easily verifiable fact.
+			2. France is a country in Western Europe. (Score: 7) Justification: While true, it's not directly relevant to the capital.
+			3. The French government is centered in Paris. (Score: 9) Justification: This supports Paris's status as the capital.
+			4. Paris has been the capital since the Middle Ages. (Score: 8) Justification: This provides historical context for Paris's status as capital.
+			5. Some people mistakenly believe other cities like Marseille or Lyon are the capital. (Score: 5) Justification: This is not directly relevant and could be misleading.
+		CRS Final Output: The capital of France is Paris. This is a well-established fact, and Paris has held this status since the Middle Ages. The French government is centered in Paris, further confirming its role as the capital.
+		Explanation: The CRS method successfully identifies the most relevant and reliable information, focusing on the direct answer to the question while providing some contextual information. It avoids including potentially misleading or irrelevant details, resulting in a more focused and accurate response.
+
+6. Fallback Plan: If the CRS method does not show significant improvement over the baselines, we will conduct a detailed error analysis to understand why. This may involve examining the generated statements from the first stage to see if they are sufficiently diverse and relevant, and analyzing the scoring mechanism in the second stage to determine if it's effectively distinguishing between reliable and unreliable information. We could also experiment with different scoring thresholds or alternative scoring criteria. Additionally, we might explore combining CRS with external knowledge retrieval to see if this hybrid approach yields better results. If these modifications don't lead to improvements, we could pivot the project towards an analysis paper, investigating why LLMs struggle with self-assessment of factual accuracy and what this reveals about their underlying knowledge representation and reasoning capabilities.

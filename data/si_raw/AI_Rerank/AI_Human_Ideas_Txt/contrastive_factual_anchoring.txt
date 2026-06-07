@@ -1,0 +1,75 @@
+Title: Contrastive Factual Anchoring: Improving Factuality and Reducing Hallucination in Large Language Models
+
+1. Problem Statement: Large language models often struggle to distinguish between factual knowledge and generated content, leading to hallucinations in their outputs. This issue undermines the reliability and trustworthiness of these models in various applications, particularly in tasks requiring accurate factual information.
+
+2. Motivation: Existing approaches to reduce hallucinations often rely on external knowledge bases or fact-checking modules, which can be computationally expensive and may not cover all domains. Our proposed method, Contrastive Factual Anchoring (CFA), leverages the model's own knowledge to generate contrasting factual and non-factual statements, creating internal anchors to guide more factual outputs. This approach is motivated by the idea that by explicitly distinguishing between facts and plausible falsehoods, the model can develop a stronger internal representation of factual information and use this to produce more reliable outputs.
+
+3. Proposed Method: Contrastive Factual Anchoring (CFA) works in three main steps:
+    (1) For a given query, prompt the model to generate a set of relevant factual statements it's highly confident about.
+    (2) Prompt the model to generate a set of plausible but intentionally false statements in the same domain.
+    (3) Ask the model to provide explanations for why each statement in step 2 is false.
+    When generating the final response, the model is prompted to constantly refer back to these contrastive sets, anchoring its output to the verified factual statements and avoiding patterns similar to the false statements.
+
+4. Step-by-Step Experiment Plan:
+    Step 1: Dataset Preparation
+        - Use two datasets for experiments: HotpotQA for multi-hop reasoning and WikiBio for biography generation.
+        - For HotpotQA, utilize the dev set (7,405 examples) for experiments.
+        - For WikiBio, randomly sample 5,000 examples from the test set.
+    Step 2: Baseline Implementation
+        - Implement two baseline methods:
+            a) Standard prompting: directly asking the model to answer the question or generate the biography.
+            b) Fact-checking augmented method: use an external fact-checking module (e.g., a smaller LM trained on a fact-verification dataset) to verify the model's output and request corrections if needed.
+    Step 3: CFA Implementation
+        - Implement the CFA method with the following steps:
+            a) Generate factual statements: "Given the query [QUERY], generate 5 relevant factual statements you're highly confident about."
+            b) Generate false statements: "Now, generate 3 plausible but intentionally false statements related to [QUERY]."
+            c) Explain false statements: "For each false statement, explain why it is false."
+            d) Final response generation: "Using the factual statements as anchors and avoiding patterns similar to the false statements, answer the following question: [QUERY]"
+    Step 4: Model Selection
+        - Use GPT-4 from OpenAI's API for all experiments, based on its strong performance and wide availability.
+    Step 5: Evaluation Metrics
+        - For HotpotQA, use Exact Match (EM) and F1 scores.
+        - For WikiBio, use ROUGE-L and a custom factual accuracy metric based on entity matching with the ground truth.
+    Step 6: Experiment Execution
+        - Run each method (standard prompting, fact-checking augmented, and CFA) on both datasets.
+        - For each dataset and method combination, process all examples and collect the outputs.
+    Step 7: Human Evaluation
+        - Randomly sample 100 outputs from each method for each dataset.
+        - Have three human annotators rate each output on a scale of 1-5 for factual accuracy and relevance to the query.
+    Step 8: Analysis
+        - Compare the performance of CFA against the baselines using the automated metrics and human evaluation scores.
+        - Conduct statistical significance tests (e.g., paired t-tests) to verify if the differences are significant.
+    Step 9: Ablation Studies
+        - Perform ablation studies by removing or modifying components of CFA:
+            a) Remove false statements generation.
+            b) Remove explanations for false statements.
+            c) Vary the number of factual and false statements generated.
+    Step 10: Error Analysis
+        - Manually analyze a subset of examples where CFA performs worse than baselines to identify potential areas for improvement.
+
+5. Test Case Examples:
+    Test Case 1:
+        Baseline Prompt Input (Standard Prompting): Q: Who was the director of the film that had Emma Stone playing an aspiring actress in Los Angeles?
+        Baseline Prompt Expected Output (Standard Prompting): The director of the film you're referring to is Damien Chazelle. The movie is 'La La Land', released in 2016, where Emma Stone played Mia, an aspiring actress in Los Angeles.
+        Proposed Prompt Input (CFA; Step 1: Generate Factual Statements): Given the query 'Who was the director of the film that had Emma Stone playing an aspiring actress in Los Angeles?', generate 5 relevant factual statements you're highly confident about.
+        Proposed Prompt Expected Output (CFA; Step 1: Generate Factual Statements):
+            1. Emma Stone starred in the film 'La La Land' released in 2016.
+            2. 'La La Land' was directed by Damien Chazelle.
+            3. In 'La La Land', Emma Stone played the role of Mia, an aspiring actress.
+            4. The film is set in Los Angeles, California.
+            5. 'La La Land' won multiple Academy Awards, including Best Director for Damien Chazelle.
+        Proposed Prompt Input (CFA; Step 2: Generate False Statements): Now, generate 3 plausible but intentionally false statements related to the director of the film that had Emma Stone playing an aspiring actress in Los Angeles.
+        Proposed Prompt Expected Output (CFA; Step 2: Generate False Statements):
+            1. The film was directed by Woody Allen.
+            2. The director also played a supporting role in the movie.
+            3. The director had never worked with Emma Stone before this film.
+        Proposed Prompt Input (CFA; Step 3: Explain False Statements): For each false statement, explain why it is false.
+        Proposed Prompt Expected Output (CFA; Step 3: Explain False Statements):
+            1. This is false because the film was directed by Damien Chazelle, not Woody Allen. Woody Allen has a distinct directorial style and typically works on different types of films.
+            2. This is false because Damien Chazelle did not appear in the film. He was solely the director and did not take on any acting roles in 'La La Land'.
+            3. This is false because Damien Chazelle had previously worked with Emma Stone on his film 'La La Land'. This was actually their first collaboration together.
+        Proposed Prompt Input (CFA; Step 4: Final Response Generation): Using the factual statements as anchors and avoiding patterns similar to the false statements, answer the following question: Who was the director of the film that had Emma Stone playing an aspiring actress in Los Angeles?
+        Proposed Prompt Expected Output (CFA; Step 4: Final Response Generation): The director of the film that had Emma Stone playing an aspiring actress in Los Angeles was Damien Chazelle. This film is 'La La Land', released in 2016, where Emma Stone portrayed Mia, an aspiring actress in Los Angeles. Chazelle directed this critically acclaimed movie, which went on to win multiple Academy Awards, including Best Director for Chazelle himself.
+        Explanation: The CFA method provides a more comprehensive and factually grounded response compared to standard prompting. By generating and contrasting factual and false statements, the model anchors its final response in verified information, reducing the likelihood of hallucination.
+
+6. Fallback Plan: If the proposed CFA method does not significantly improve factuality or reduce hallucinations compared to baselines, we can pivot the project in several ways. We could conduct a detailed analysis of the generated factual and false statements to understand where the method might be falling short. This could involve categorizing the types of facts and falsehoods generated, and examining their relevance and complexity. We could also investigate whether the model is effectively using these contrastive sets in its final response generation. Additionally, we might explore variations of the CFA method, such as iterative refinement where the model generates multiple rounds of factual and false statements, each time refining based on the previous round. Another direction could be to combine CFA with external knowledge sources, using the contrastive statements as a guide for more targeted fact-checking. Finally, we could shift focus to analyze how different types of queries or domains affect the effectiveness of CFA, potentially uncovering insights about the nature of hallucinations in language models.

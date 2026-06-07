@@ -23,20 +23,30 @@ TOPIC_TASK = {"Math": "gsm8k_accuracy"}
 def _summarise(results: list) -> dict:
     effs = [r["effectiveness"] for r in results if r["effectiveness"] is not None]
     faiths = [r["faithfulness_score"] for r in results if r["faithfulness_score"]]
-    return {
+    n_trust = sum(1 for r in results if r.get("trustworthy"))
+    summary = {
         "n_ideas": len(results),
         "n_scored": len(effs),
+        "n_trustworthy": n_trust,
         "effectiveness_mean": round(statistics.mean(effs), 4) if effs else None,
         "faithfulness_mean": round(statistics.mean(faiths), 4) if faiths else None,
     }
+    if n_trust < len(results):
+        summary["untrustworthy_note"] = (
+            "some/all runs used LocalSandbox (dev only, not a scored result)"
+            " — use --use-docker for trustworthy scores"
+        )
+    return summary
 
 
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--ideas", type=Path, default=Path("data/si_ideas"))
     p.add_argument("--output-dir", type=Path, default=Path("data/eval"))
-    p.add_argument("--n-examples", type=int, default=50)
+    p.add_argument("--n-examples", type=int, default=50,
+                   help="(agent hint only; scored size = len(test.jsonl) from prefetch_datasets)")
     p.add_argument("--use-docker", action="store_true")
+    p.add_argument("--budget-usd", type=float, default=5.0)
     p.add_argument("--limit", type=int, default=None)
     args = p.parse_args(argv)
 
@@ -67,7 +77,8 @@ def main(argv=None):
             res = run_one_idea(idea=idea, task=task, gen_llm=gen_llm,
                                judge_llm=judge_llm,
                                work_root=run_dir / idea.idea_id,
-                               use_docker=args.use_docker)
+                               use_docker=args.use_docker,
+                               budget_usd=args.budget_usd)
             fp.write(json.dumps(res.to_dict(), ensure_ascii=False) + "\n")
             fp.flush()
             results.append(res.to_dict())

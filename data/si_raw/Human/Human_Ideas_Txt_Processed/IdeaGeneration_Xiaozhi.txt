@@ -1,0 +1,57 @@
+Title: Stepwise Uncertainty Estimation in Chain-of-thought
+
+1. Problem Statement: Large Language Models (LLMs) after Reinforcement Learning from Human Feedback (RLHF) are shown to be poorly calibrated, meaning their output probabilities do not accurately reflect answer uncertainty. This necessitates the development of alternative methods for uncertainty estimation.
+
+2. Motivation: For effective black-box LLMs like GPT-4 and Claude-3.5, access to logits or weight tuning for calibration is typically unavailable. Prompting LLMs to verbalize their confidences is the default choice in these cases. Considering that chain-of-thought prompting is widely used in complicated reasoning tasks, which requires LLMs to provide multi-step outputs, we can leverage this multi-step nature to improve confidence estimation. Specifically, we propose requiring LLMs to verbalize their confidence at each step, and then aggregate these confidences as the uncertainty of the final reasoning answer.
+
+3. Proposed Method: Our stepwise uncertainty estimation method includes two steps:
+	(1) Prompting LLMs with chain-of-thought and additionally requiring the model to verbalize its confidence of the current step after each step.
+	(2) Aggregating the stepwise confidence estimations as the final confidence estimation. In this step, we have two options:
+		a. Prompting the LLM to verbalize its uncertainty estimation of the final answer considering the previous stepwise intermediate results.
+		b. Assuming the stepwise confidences given by LLMs are sufficiently independent of each other, and multiplying them as the final score.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Datasets: We choose reasoning datasets commonly used for chain-of-thought, such as GSM8K and StrategyQA.
+	- Step 2: Construct Prompts:
+		a. For baseline, we use vanilla chain-of-thought prompting and ask the model to verbalize its confidence estimation at the end.
+		b. For our stepwise method, we append additional instructions requiring the model to verbalize its confidence estimation for the current step after each step. At the end, we ask the model to give an uncertainty estimation of the final answer considering the previous stepwise estimations.
+	- Step 3: Select Models: We test GPT-3.5 and GPT-4 from the OpenAI API, as well as the open-source LLaMA-3-70B-instruct.
+	- Step 4: Get Results: Obtain answer predictions and confidence estimations from the models on these datasets with both the baseline and proposed method.
+	- Step 5: Analyze Results: Evaluate the performance with two metrics:
+		a. Expected Calibration Error (ECE) of the uncertainty estimation. Assess whether the proposed method improves calibration.
+		b. Correctness of the answers. Determine whether the proposed method improves or at least does not harm answer correctness.
+
+5. Test Case Examples:
+	- Baseline Prompt Input:
+		Please answer the given question step by step. Provide the probability that your final answer is correct (0.0 to 1.0) after answering the question.
+		Example Question: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can have 3 tennis balls. How many tennis balls does he have now?
+		Example Answer: Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11. The answer is 11.
+		Question: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many apples do they have?
+	- Baseline Prompt Expected Output:
+		The cafeteria started with 23 apples. They used 20 apples to make lunch. This leaves them with 23 - 20 = 3 apples. Then, they bought 6 more apples. Adding these to the remaining apples, we get 3 + 6 = 9 apples.
+		The answer is 9 apples.
+		Probability that the final answer is correct: 0.8
+	- Proposed Prompt Input (Step 1: Stepwise confidence estimation):
+		Please answer the given question step by step. Provide the probability that the current step is correct (0.0 to 1.0) after each step. Please provide the probability only for the current step and do not consider the previous steps.
+		Example Question: Roger has 5 tennis balls. He buys 2 more cans of tennis balls. Each can have 3 tennis balls. How many tennis balls does he have now?
+		Example Answer: Roger started with 5 balls. 2 cans of 3 tennis balls each is 6 tennis balls. 5 + 6 = 11. The answer is 11.
+		Question: The cafeteria had 23 apples. If they used 20 to make lunch and bought 6 more, how many apples do they have?
+	- Proposed Prompt Expected Output (Step 1: Stepwise confidence estimation):
+		The cafeteria started with 23 apples.
+		Probability that this step is correct: 1.0
+		They used 20 apples to make lunch.
+		Probability that this step is correct: 1.0
+		So, 23 apples - 20 apples = 3 apples remaining.
+		Probability that this step is correct: 1.0
+		Then they bought 6 more apples.
+		Probability that this step is correct: 1.0
+		So, 3 apples + 6 apples = 9 apples remaining.
+		Probability that this step is correct: 1.0
+		The answer is 9 apples.
+	- Proposed Prompt Input (Step 2: Aggregating Confidences):
+		Considering your previous estimations of probability, provide the probability that your final answer is correct (0.0 to 1.0).
+		(We can also just multiply the confidences)
+	- Proposed Prompt Expected Output (Step 2: Aggregating Confidences):
+		The probability that the final answer is correct is 1.0.
+
+6. Fallback Plan: If the proposed method does not yield improvements compared to the baseline, we will analyze each step of the uncertainty estimation to identify obvious erroneous estimations and potential common error patterns, which may lead to interesting insights. Another option is to incorporate fine-tuning techniques for improving calibration (such as those proposed by Xu et al., 2024) into each step and evaluate whether this approach brings more significant improvements than applying these techniques solely to the final uncertainty estimations. Ideally, the improvements will accumulate throughout the process.

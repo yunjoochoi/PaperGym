@@ -1,0 +1,53 @@
+Title: Linguistic Pivot Constellation: Enhancing Cross-Lingual Transfer for Low-Resource Languages and Dialects
+
+1. Problem Statement: Large language models struggle with cross-lingual transfer, especially for low-resource languages and dialects. This limitation hinders the models' ability to perform well on multilingual tasks involving these languages, potentially exacerbating digital language divides.
+
+2. Motivation: Current approaches often rely on parallel data or multilingual pretraining, which are limited for many language pairs. Inspired by how polyglots leverage similarities between known languages to learn new ones, we propose creating a network of conceptual bridges across languages. This method could potentially overcome the limitations of existing approaches by leveraging the model's broad knowledge to create connections between known and unknown linguistic territories.
+
+3. Proposed Method: We introduce Linguistic Pivot Constellation (LPC), a novel prompting technique that constructs a dynamic network of linguistic pivot points. For a given task, LPC first identifies conceptually similar languages or dialects to the target language. It then generates a constellation of prompts in these pivot languages, each capturing a different aspect of the task. The model is guided to 'triangulate' the correct response by considering these multiple perspectives. For example, to translate a rare dialect, LPC might use prompts in related languages, regional lingua francas, and even etymologically connected languages.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Data Collection
+		- Gather datasets for translation and question-answering tasks across a diverse set of low-resource languages and dialects.
+		- Utilize the FLORES-101 dataset for machine translation and the TyDi QA dataset for question answering.
+	Step 2: Baseline Implementation
+		- Implement standard few-shot prompting and existing cross-lingual transfer methods (e.g., zero-shot cross-lingual transfer) as baselines.
+	Step 3: LPC Implementation
+		- Develop the Linguistic Pivot Constellation method:
+			a) Create a language similarity matrix based on language families and geographical proximity.
+			b) Implement a function to select the most relevant pivot languages for a given target language.
+			c) Design prompts for each pivot language that capture different aspects of the task.
+	Step 4: Prompt Construction
+		- For each task and target language:
+			a) Select 3-5 pivot languages based on the similarity matrix.
+			b) Generate task-specific prompts in each pivot language.
+			c) Combine these prompts into a 'constellation' prompt that includes the original task in the target language.
+	Step 5: Model Selection
+		- Use GPT-4 as the primary model for experiments.
+		- Test with GPT-3.5-turbo for comparison.
+	Step 6: Experiment Execution
+		- For each task and target language:
+			a) Run the baseline methods.
+			b) Run the LPC method with varying numbers of pivot languages (1, 3, and 5).
+			c) Record the model outputs and performance metrics.
+	Step 7: Evaluation
+		- Evaluate the results using task-specific metrics:
+			- BLEU score for translation tasks
+			- F1 score for question answering tasks
+	Step 8: Analysis
+		- Analyze the effectiveness of different pivot language combinations and the method's scalability to extremely low-resource scenarios.
+		- Compare LPC performance against baselines across different language families and resource levels.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input: Translate the following Sicilian sentence to English: 'Unni c'è fumu c'è focu.'
+		Baseline Prompt Expected Output: Where there's smoke, there's fire.
+		Proposed Prompt Input: We will translate a Sicilian sentence to English. To help with this task, consider the following related phrases:
+			In Italian: 'Dove c'è fumo c'è fuoco.'
+			In Neapolitan: 'Addò ce sta 'o fummo ce sta 'o ffuoco.'
+			In Latin: 'Ubi fumus, ibi ignis.'
+		Now, translate the Sicilian sentence to English: 'Unni c'è fumu c'è focu.'
+		Proposed Prompt Expected Output: Where there's smoke, there's fire.
+		Explanation: The LPC method provides context from related languages (Italian, Neapolitan, and Latin), which can help the model better understand and translate the Sicilian phrase. This is especially useful for low-resource languages like Sicilian, where direct translation data might be limited.
+
+6. Fallback Plan: If the LPC method does not significantly outperform baselines, we will pivot the project towards an in-depth analysis of cross-lingual transfer mechanisms. We will investigate the relationship between language similarity and transfer effectiveness, the impact of pivot language selection on performance, and how different aspects of language (lexical, syntactic, semantic) transfer across the constellation. This analysis could provide valuable insights into the strengths and limitations of large language models in cross-lingual tasks, potentially informing future research directions in multilingual Natural Language Processing.

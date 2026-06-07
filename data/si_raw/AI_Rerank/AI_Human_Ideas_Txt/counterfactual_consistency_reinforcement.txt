@@ -1,0 +1,65 @@
+Title: Counterfactual Consistency Reinforcement: Improving Factuality in Large Language Models through Hypothetical Scenario Analysis
+
+1. Problem Statement: Large Language Models (LLMs) often generate plausible-sounding but factually incorrect information, especially when extrapolating beyond their training data. This issue of hallucination undermines the reliability and trustworthiness of LLMs in real-world applications.
+
+2. Motivation: Existing approaches to reduce hallucination often rely on external fact-checking or confidence calibration, which can be resource-intensive or limited in scope. Inspired by the scientific method of hypothesis testing and the philosophical concept of possible worlds, we propose a method that leverages the LLM's own reasoning capabilities to reinforce factual consistency. By challenging the model to consider alternative scenarios that would invalidate its initial response, we aim to improve the model's ability to critically evaluate its own outputs and produce more accurate information.
+
+3. Proposed Method: We present Counterfactual Consistency Reinforcement (CCR), a prompting technique that challenges the LLM to consider alternative scenarios. The process involves four steps:
+	(1) Generating an initial response
+	(2) Proposing counterfactual scenarios that would invalidate the response
+	(3) Evaluating the plausibility of these scenarios
+	(4) Refining the original response based on this analysis
+A prompt might include: "After generating your initial answer, propose three counterfactual scenarios that would make your answer incorrect. Evaluate the plausibility of each scenario. If any seem highly plausible, revise your original answer to account for this possibility."
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use three datasets to evaluate our method:
+		- TruthfulQA for assessing factual accuracy
+		- ARC-Challenge for scientific reasoning
+		- A subset of the Natural Questions dataset for open-domain question answering
+	Step 2: Baseline Methods: Implement three baseline methods:
+		- Standard prompting (direct question answering)
+		- Chain-of-Thought (CoT) prompting
+		- Self-consistency prompting
+	Step 3: CCR Implementation: Implement the CCR method with the following sub-steps for each query:
+		- Generate initial response
+		- Generate counterfactual scenarios
+		- Evaluate scenario plausibility
+		- Refine the response
+	Step 4: Model Selection: We will use GPT-3.5 (text-davinci-003) and GPT-4 from OpenAI's API for our experiments.
+	Step 5: Experiment Execution: For each dataset and method (baselines and CCR), generate responses using both models. Use a fixed number of 3 counterfactual scenarios for CCR.
+	Step 6: Evaluation: Assess the outputs using the following metrics:
+		- Accuracy (for TruthfulQA and ARC-Challenge)
+		- F1 score (for Natural Questions)
+		- Consistency score (measured by agreement between initial and refined responses)
+		- Uncertainty expression (frequency of uncertainty indicators in responses)
+	Step 7: Analysis: Compare CCR performance against baselines. Analyze the quality and relevance of generated counterfactuals. Examine cases where CCR leads to significant improvements or failures.
+
+5. Test Case Examples:
+	Example 1 (Baseline Failure):
+		Input: Q: What is the capital of France?
+		Baseline Output: The capital of France is Paris.
+		CCR Step 1 (Initial Response): The capital of France is Paris.
+		CCR Step 2 (Counterfactuals):
+			1. If France had moved its capital to Marseille in recent years.
+			2. If the question refers to a historical period when the capital was not Paris.
+			3. If there's a lesser-known 'France' in another country with a different capital.
+		CCR Step 3 (Plausibility Evaluation):
+			1. Highly implausible, as such a major change would be widely known.
+			2. Plausible, as the question doesn't specify a time period.
+			3. Somewhat plausible, but unlikely given the common understanding of 'France'.
+		CCR Step 4 (Refined Response): The current capital of France is Paris. However, it's worth noting that this answer assumes we're talking about modern-day France. If the question refers to a specific historical period, the capital might have been different.
+	Example 2 (CCR Success):
+		Input: Q: Who invented the telephone?
+		Baseline Output: Alexander Graham Bell invented the telephone in 1876.
+		CCR Step 1 (Initial Response): Alexander Graham Bell invented the telephone in 1876.
+		CCR Step 2 (Counterfactuals):
+			1. If Antonio Meucci's earlier work on the telephone was officially recognized.
+			2. If Elisha Gray's simultaneous invention was credited instead.
+			3. If 'telephone' refers to a different communication device not invented by Bell.
+		CCR Step 3 (Plausibility Evaluation):
+			1. Highly plausible, as Meucci's work predates Bell's patent.
+			2. Plausible, as Gray filed a caveat for a similar device on the same day as Bell's patent application.
+			3. Less plausible in this context, but possible if 'telephone' is ambiguously defined.
+		CCR Step 4 (Refined Response): The invention of the telephone is often credited to Alexander Graham Bell, who patented it in 1876. However, it's important to note that the history of the telephone's invention is complex and contested. Antonio Meucci developed a working telephone-like device as early as 1849, and in 2002, the U.S. House of Representatives passed a resolution acknowledging Meucci's contributions. Additionally, Elisha Gray filed a caveat for a similar device on the same day Bell filed his patent. Therefore, while Bell is commonly associated with the telephone's invention, the full story involves multiple inventors and parallel developments.
+
+6. Fallback Plan: If the CCR method doesn't show significant improvements over baselines, we will pivot our analysis to understand why. We'll examine the quality and relevance of the generated counterfactuals, assessing whether they truly challenge the initial response or if they're too far-fetched to be useful. We can also analyze the model's ability to accurately evaluate the plausibility of these counterfactuals. If the counterfactuals are good but the final refinement step isn't effective, we might explore different prompting strategies for the refinement phase. Additionally, we could investigate whether CCR is more effective for certain types of questions or domains, potentially leading to insights about when and how to apply this method most effectively. Finally, we could compare the uncertainty expressed in CCR responses versus baseline responses, to see if CCR at least improves the model's ability to express appropriate uncertainty even if it doesn't always lead to more accurate answers.

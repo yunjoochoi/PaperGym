@@ -1,0 +1,36 @@
+Title: Chain-of-Compilers: Towards Faithful Code Understanding and Execution
+
+1. Problem Statement: Executing complex code generated from code generation models often leads to erroneous behavior. Can we leverage the discrete nature of code to execute multiple compilations to judge and improve the generated code?
+
+2. Motivation: While code generation models have demonstrated rapid progress on simple benchmarks like HumanEval and MBPP, the recent rise of coding agents has revealed significant room for improvement on more sophisticated tasks. Code generation for complex repositories needs to leverage the inherent high-level structure as priors for generation. In this proposal, we will utilize this insight for improving and judging code generation on complex real-world repositories.
+
+3. Proposed Method: Given a sophisticated open-source repository (e.g., scikit-learn), we construct the symbol graph and package graph using tools widely available in the static code analysis community. We then dynamically retrieve metadata about individual packages and symbols and index them. For a given code generation task from this repository and the corresponding generation, we will reason over the package graph, symbol table, and relevant code snippets through our LLM reasoner to generate a set of question-answer pairs on how code edits will change the behavior of the output. We will execute the proposed code edits and verify the predicted behavior against the actual behavior. These counterfactual tests will enable us to calibrate the reasoning proficiency of our LLM reasoner for this task.
+
+Leveraging this, we can construct a bag of diverse LLM reasoners, along with their confidence calibrations. We then utilize our bag of reasoners to generate appropriate unit tests for the code generation task and leverage our calibration to weight the correctness of the unit tests. Finally, we will use the outputs of these tests to improve the code generation through a framework like Self-Debug.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset discovery
+		- Choose datasets like SWE-BENCH to access complex open-source repositories and leverage the corresponding code generation tasks.
+	Step 2: Static code analysis
+		- Generate the symbol table and package graph through tools like Sourcegraph.
+		- Explore additional open-source tools for further customizations.
+	Step 3: Bag of LLM Reasoners
+		- Instantiate the bag of LLM reasoners with a diverse set of state-of-the-art LLMs, using diverse system prompts.
+	Step 4: Models
+		- Utilize open and closed-source models with diverse sizes (GPT-4, Claude-3.5, Mixtral 22b, LLaMA-3-70b, Starcoder).
+	Step 5: Reasoner Calibration
+		- Generate counterfactual code-edit and expected behavior pairs given the symbol and package graphs along with relevant code.
+		- Execute code edits and verify correctness to ascertain reasoner confidence/calibration.
+	Step 6: Final tests
+		- Generate unit tests from the bag of reasoners and compile the outputs.
+	Step 7: Code improvement
+		- Use the outputs from the unit tests in the Self-Debug framework to iteratively improve the code.
+
+5. Test Case Examples:
+To comprehensively test our approach, we will run the following baselines and ablations:
+	- Self-Debug without code-analysis artifacts
+	- Self-debug without counterfactual model calibration
+	- Zero-shot program evaluation
+	- Zero-shot program improvement
+
+6. Fallback Plan: If our approach fails, we will explore other static code analysis tools that can generate compact high-level structures of the code repository. We will systematically analyze whether the model is able to understand the static code analysis artifacts, evaluate if the counterfactual tests are challenging and faithful, and determine if the final generated unit tests effectively utilize the symbol table and package graph artifacts. This analysis itself will be incredibly valuable to the community and will provide insights on the appropriate priors for sophisticated code generation tasks.

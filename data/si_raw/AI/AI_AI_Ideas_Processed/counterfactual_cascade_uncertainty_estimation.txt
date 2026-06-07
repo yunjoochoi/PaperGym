@@ -1,0 +1,68 @@
+Title: Counterfactual Cascade: Quantifying Uncertainty in Large Language Models through Systematic Scenario Exploration
+
+1. Problem Statement: Large language models often struggle to accurately estimate their uncertainty, particularly in scenarios that require counterfactual reasoning or consideration of alternative possibilities. This limitation can lead to overconfident predictions in complex reasoning tasks, potentially resulting in unreliable or misleading outputs.
+
+2. Motivation: Current approaches to uncertainty estimation in LLMs typically rely on direct confidence scoring or ensemble methods, which may not capture the full spectrum of uncertainty in complex reasoning tasks. Inspired by human decision-making processes that consider multiple possible outcomes, we propose a method that systematically explores counterfactual scenarios to gauge model uncertainty. This approach aims to provide a more nuanced and comprehensive uncertainty estimate by leveraging the model's ability to reason about alternative scenarios.
+
+3. Proposed Method: We propose the Counterfactual Cascade method, which generates a tree of alternative scenarios by systematically varying key elements of the input. For each node in this tree, we prompt the model to reason about the implications of the changes and generate a response. We then analyze the diversity and consistency of responses across the tree. The degree of divergence in outcomes and the model's ability to maintain logical consistency serve as indicators of uncertainty. We also introduce a novel scoring mechanism that weighs the plausibility of each counterfactual branch, allowing for a nuanced uncertainty estimate that accounts for the likelihood of different scenarios.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Use three datasets for evaluation:
+			(1) Ethical dilemmas from the Moral Machine dataset
+			(2) Causal reasoning problems from the COPA dataset
+			(3) Open-ended prediction tasks from the ForecastQA dataset
+	Step 2: Baseline Implementation
+		- Implement three baseline uncertainty estimation methods:
+			(1) Direct confidence scoring: prompt the model to provide a confidence score along with its answer
+			(2) Ensemble method: use multiple model instances or sampling techniques to generate a distribution of answers
+			(3) Monte Carlo Dropout: apply dropout at inference time to estimate model uncertainty
+	Step 3: Counterfactual Cascade Implementation
+		- Develop the Counterfactual Cascade method:
+			(a) Create a function to generate counterfactual scenarios by systematically altering key elements of the input
+			(b) Implement a recursive algorithm to build the scenario tree
+			(c) Design prompts for each node to elicit reasoning about the implications of changes
+			(d) Develop a scoring mechanism to weigh the plausibility of each branch
+	Step 4: Uncertainty Quantification
+		- Implement metrics to quantify uncertainty based on the Counterfactual Cascade:
+			(a) Response diversity: measure the variation in responses across the scenario tree
+			(b) Consistency score: evaluate the logical consistency of responses along each branch
+			(c) Weighted uncertainty score: combine diversity, consistency, and branch plausibility into a single uncertainty metric
+	Step 5: Model Selection and API Setup
+		- Use GPT-4 and Claude-3.5 for our experiments
+		- Set up API access and implement functions to handle model queries efficiently
+	Step 6: Experiment Execution
+		- For each dataset and method (baselines and Counterfactual Cascade):
+			(a) Process each input through the uncertainty estimation pipeline
+			(b) Record model outputs, uncertainty scores, and relevant metrics
+			(c) Implement proper error handling and logging
+	Step 7: Evaluation
+		- Compare the performance of Counterfactual Cascade against baselines using:
+			(a) Calibration error: measure how well the uncertainty estimates align with actual error rates
+			(b) Brier score: assess the accuracy of probabilistic predictions
+			(c) Correlation with human judgments: compare model uncertainty estimates with human ratings of scenario complexity and uncertainty (use a small set of expert-annotated examples)
+	Step 8: Analysis
+		- Conduct in-depth analysis of the results:
+			(a) Compare uncertainty estimates across different types of reasoning tasks
+			(b) Analyze the structure of generated counterfactual trees
+			(c) Investigate cases where Counterfactual Cascade significantly outperforms or underperforms baselines
+			(d) Examine the relationship between branch plausibility and final uncertainty estimates
+
+5. Test Case Examples:
+	Baseline Example:
+		Input: In a self-driving car scenario, the car is approaching a pedestrian crossing. The brakes have failed, and the car must decide whether to continue straight, hitting five pedestrians, or swerve, hitting one pedestrian on the side. What should the car do?
+		Direct Confidence Scoring Output: The car should swerve to hit one pedestrian instead of five. This decision follows the principle of minimizing harm. Confidence: 85%
+		Explanation: The baseline method provides a single answer with a high confidence score, failing to capture the ethical complexity and potential uncertainty in this scenario.
+	Counterfactual Cascade Example:
+		Input: In a self-driving car scenario, the car is approaching a pedestrian crossing. The brakes have failed, and the car must decide whether to continue straight, hitting five pedestrians, or swerve, hitting one pedestrian on the side. What should the car do?
+		Step 1: Generate Counterfactuals:
+			- What if the single pedestrian is a child?
+			- What if the five pedestrians are jaywalking?
+			- What if swerving puts the car's passengers at risk?
+		Step 2: Build Scenario Tree: For each counterfactual, the model generates reasoning and a decision.
+		Step 3: Analyze Responses: The model considers each scenario, providing reasoning and potential decisions for each branch.
+		Step 4: Quantify Uncertainty: Based on the diversity of responses, consistency of reasoning, and plausibility of scenarios, the model generates an uncertainty score.
+		Final Output: Given the complex ethical considerations and potential unknown factors, there is high uncertainty in this decision. The base scenario suggests swerving to minimize casualties, but counterfactual analysis reveals significant ethical complexities. Uncertainty score: 78/100. Possible actions include: swerving (40% confidence), continuing straight (35% confidence), or attempting an alternative maneuver (25% confidence).
+		Explanation: The Counterfactual Cascade method provides a more nuanced uncertainty estimate by exploring multiple scenarios and considering the ethical complexities involved. It acknowledges the difficulty of the decision and provides a range of possible actions with associated confidences.
+
+6. Fallback Plan: If the Counterfactual Cascade method does not significantly outperform baselines in uncertainty estimation, we will pivot to an analysis paper focusing on the patterns and insights gained from the counterfactual trees. We can investigate questions such as: How do different types of counterfactuals affect model reasoning? Are there common patterns in the structure of counterfactual trees across different reasoning tasks? How does the plausibility scoring of counterfactual branches correlate with human intuitions? Additionally, we can conduct ablation studies to understand the contribution of each component (e.g., tree generation, consistency scoring, plausibility weighting) to the final uncertainty estimates. This analysis could provide valuable insights into the reasoning processes of large language models and inform future approaches to uncertainty estimation and robust decision-making in AI systems.

@@ -1,0 +1,132 @@
+Title: Multimodal Algorithmic Reasoning Prompts (MARP) for Improved Code Generation
+
+1. Problem Statement: Current code generation models struggle with complex algorithmic reasoning, especially when the problem involves multiple modalities such as visual diagrams, mathematical notations, or natural language descriptions. This limitation hinders their ability to tackle real-world programming tasks that often require understanding and translating information from various sources.
+
+2. Motivation: Existing approaches typically focus on text-based prompts and struggle to incorporate information from other modalities effectively. Many real-world programming tasks involve understanding and translating information from multiple modalities, such as translating a flowchart into code or implementing a mathematically described algorithm. By developing a method that can seamlessly integrate visual, mathematical, and textual information, we can significantly improve the performance of code generation models on complex, multimodal tasks.
+
+3. Proposed Method: We introduce Multimodal Algorithmic Reasoning Prompts (MARP), a novel prompting technique that seamlessly integrates visual, mathematical, and textual information to guide code generation. MARP consists of the following steps:
+	(1) Multimodal Encoding: Use a pre-trained multimodal encoder (e.g., CLIP) to create unified representations of visual diagrams, mathematical notations, and textual descriptions.
+	(2) Intermediate Reasoning Generation: Prompt the LLM to generate a series of intermediate reasoning steps, each accompanied by visual aids, mathematical expressions, and natural language explanations.
+	(3) Code Generation: Use the generated intermediate steps to guide the code generation process, allowing the model to break down complex algorithms into manageable, multimodal reasoning chunks.
+	(4) Consistency Check: Implement a feedback loop where the generated code is visualized and compared with the original multimodal input to ensure consistency and correctness.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: Create a new benchmark dataset that includes programming problems with accompanying diagrams, mathematical formulas, and textual descriptions. Source problems from various domains such as algorithms, data structures, and computational geometry. Ensure a diverse set of visual representations (e.g., flowcharts, graphs, plots) and mathematical notations.
+	Step 2: Multimodal Encoder Setup: Fine-tune a CLIP model on our dataset to create unified representations of visual, mathematical, and textual inputs. Use a subset of the dataset for this fine-tuning process.
+	Step 3: Prompt Engineering: Design prompts for each step of MARP:
+		a) Intermediate reasoning generation prompt: "Given the following problem description, diagram, and mathematical notation, generate a series of reasoning steps that break down the problem into smaller, manageable parts. For each step, provide a visual aid, mathematical expression, and natural language explanation."
+		b) Code generation prompt: "Based on the following intermediate reasoning steps, generate Python code that implements the described algorithm."
+	Step 4: LLM Selection and API Setup: Choose GPT-4 as our primary LLM due to its strong performance on code generation tasks. Set up API access and implement rate limiting and error handling.
+	Step 5: MARP Implementation: Develop a pipeline that:
+		a) Encodes multimodal inputs using the fine-tuned CLIP model.
+		b) Generates intermediate reasoning steps using the LLM.
+		c) Generates code based on the reasoning steps.
+		d) Visualizes the generated code and compares it with the original input for consistency.
+	Step 6: Baseline Implementation: Implement text-only baselines:
+		a) Direct code generation from text description.
+		b) Chain-of-thought prompting for code generation.
+	Step 7: Evaluation: Assess performance using:
+		a) Code correctness: Use unit tests and test cases provided in the dataset.
+		b) Execution time and memory usage of generated code.
+		c) Alignment with original problem description: Use BLEU score to compare generated code comments with original problem statements.
+		d) Human evaluation: Recruit computer science students to rate the quality and readability of generated code.
+	Step 8: Ablation Studies: Conduct ablation studies to understand the impact of each component:
+		a) Remove visual input.
+		b) Remove mathematical notation.
+		c) Remove intermediate reasoning steps.
+	Step 9: Analysis: Analyze results to identify strengths and weaknesses of MARP. Pay special attention to problem types where MARP significantly outperforms baselines.
+	Step 10: Educational Value Assessment: Conduct a study with computer science students to assess the educational value of the generated intermediate reasoning steps. Design a questionnaire to gather feedback on the clarity and helpfulness of the steps.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Direct Prompting): Implement a function to find the shortest path in a weighted graph using Dijkstra's algorithm.
+		Baseline Prompt Expected Output (Direct Prompting):
+			def dijkstra(graph, start, end):
+				distances = {node: float('inf') for node in graph}
+				distances[start] = 0
+				pq = [(0, start)]
+				while pq:
+					current_distance, current_node = heapq.heappop(pq)
+					if current_node == end:
+						return current_distance
+					if current_distance > distances[current_node]:
+						continue
+					for neighbor, weight in graph[current_node].items():
+						distance = current_distance + weight
+						if distance < distances[neighbor]:
+							distances[neighbor] = distance
+							heapq.heappush(pq, (distance, neighbor))
+				return float('inf')
+		Proposed Prompt Input (MARP; Step 1: Intermediate Reasoning): Given the following problem: Implement a function to find the shortest path in a weighted graph using Dijkstra's algorithm. Here's a visual representation of a sample weighted graph: [IMAGE]. The mathematical notation for the algorithm is: d[v] = min(d[v], d[u] + w(u,v)) for all edges (u,v). Generate a series of reasoning steps that break down the problem into smaller, manageable parts. For each step, provide a visual aid, mathematical expression, and natural language explanation.
+		Proposed Prompt Expected Output (MARP; Step 1: Intermediate Reasoning):
+			1. Initialize distances:
+				Visual: [Diagram showing initial distance labels]
+				Math: d[v] = ∞ for all v ≠ start, d[start] = 0
+				Explanation: Set the distance to the start node as 0 and all other nodes as infinity.
+			2. Create priority queue:
+				Visual: [Diagram of a priority queue with (distance, node) pairs]
+				Math: PQ = {(0, start)}
+				Explanation: Initialize a priority queue with the start node and its distance.
+			3. Main loop:
+				Visual: [Flowchart of the main algorithm loop]
+				Math: while PQ ≠ ∅
+				Explanation: Continue processing nodes until the priority queue is empty.
+			4. Extract minimum:
+				Visual: [Animation of removing the minimum element from PQ]
+				Math: (d, u) = extract_min(PQ)
+				Explanation: Remove the node with the smallest distance from the priority queue.
+			5. Update neighbors:
+				Visual: [Diagram showing relaxation of edges]
+				Math: For each (u,v) ∈ E: if d[v] > d[u] + w(u,v) then d[v] = d[u] + w(u,v)
+				Explanation: For each neighbor of the current node, update its distance if a shorter path is found.
+			6. Termination:
+				Visual: [Diagram of final distance labels]
+				Math: return d
+				Explanation: Once the priority queue is empty, return the computed distances.
+		Proposed Prompt Input (MARP; Step 2: Code Generation): Based on the following intermediate reasoning steps, generate Python code that implements Dijkstra's algorithm: [Insert the output from Step 1 here]
+		Proposed Prompt Expected Output (MARP; Step 2: Code Generation):
+			import heapq
+			
+			def dijkstra(graph, start, end):
+				# Initialize distances
+				distances = {node: float('inf') for node in graph}
+				distances[start] = 0
+				
+				# Create priority queue
+				pq = [(0, start)]
+				
+				# Main loop
+				while pq:
+					# Extract minimum
+					current_distance, current_node = heapq.heappop(pq)
+					
+					# Check if we've reached the end
+					if current_node == end:
+						return current_distance
+					
+					# If we've found a longer path, skip
+					if current_distance > distances[current_node]:
+						continue
+					
+					# Update neighbors
+					for neighbor, weight in graph[current_node].items():
+						distance = current_distance + weight
+						if distance < distances[neighbor]:
+							distances[neighbor] = distance
+							heapq.heappush(pq, (distance, neighbor))
+				
+				# Termination
+				return float('inf')  # If no path is found
+			
+			# Example usage
+			graph = {
+				'A': {'B': 4, 'C': 2},
+				'B': {'D': 3, 'E': 1},
+				'C': {'B': 1, 'D': 5},
+				'D': {'E': 2},
+				'E': {}
+			}
+			print(dijkstra(graph, 'A', 'E'))  # Output: 5
+		Explanation: MARP generates a detailed, step-by-step reasoning process that incorporates visual aids and mathematical expressions. This intermediate representation helps break down the complex algorithm into manageable chunks, leading to more accurate and well-structured code generation. The baseline method, while producing a correct implementation, lacks the detailed reasoning steps and visual aids that can enhance understanding and potentially lead to more robust and efficient implementations.
+
+6. Fallback Plan: If MARP does not significantly outperform baselines, we can pivot our research in several directions. We can analyze the generated intermediate steps to understand where the reasoning breaks down, potentially leading to insights on improving the prompting strategy or identifying limitations of current LLMs in algorithmic reasoning. We may investigate the effectiveness of MARP across different types of programming problems, as it may be more effective for certain categories (e.g., graph algorithms) than others. Exploring ways to improve the multimodal encoding process could involve experimenting with different pre-trained models or fine-tuning strategies to better capture the relationships between visual, mathematical, and textual information. A more in-depth analysis of the educational value of the generated intermediate steps might reveal that even if they do not lead to significantly better code, they might still be valuable as a learning tool. Finally, we could investigate whether MARP is more effective when combined with other techniques like few-shot learning or self-refinement, potentially leading to a hybrid approach that leverages the strengths of multiple methods.

@@ -1,0 +1,81 @@
+Title: Fractal Confidence Cascading: Improving Factuality in Large Language Models through Hierarchical Confidence Estimation
+
+1. Problem Statement: Large Language Models (LLMs) often produce overconfident yet incorrect responses, especially for complex queries requiring multi-step reasoning. This issue undermines the reliability and trustworthiness of LLMs in critical applications.
+
+2. Motivation: Existing approaches typically involve single-step confidence estimation or basic threshold-based filtering, which fail to capture the nuanced, hierarchical nature of complex reasoning tasks. Inspired by the fractal nature of human cognition, where confidence is recursively evaluated at multiple levels of abstraction, we propose a novel method that allows for more granular and context-aware confidence estimation.
+
+3. Proposed Method: We introduce Fractal Confidence Cascading (FCC), a novel prompting technique that recursively decomposes complex queries into sub-queries, estimating confidence at each level. The LLM is prompted to generate a tree-like structure of sub-queries, each accompanied by a confidence score. These scores are then aggregated bottom-up, with lower-level confidences influencing higher-level ones. The final response is constructed by selectively incorporating information from high-confidence branches, effectively pruning low-confidence paths. This method allows for nuanced, hierarchical confidence estimation and targeted information retrieval.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Utilize three datasets:
+			(a) GSM8K for mathematical problem-solving
+			(b) HotpotQA for multi-hop question answering
+			(c) TruthfulQA for assessing factual accuracy
+	Step 2: Baseline Implementation
+		- Implement three baseline methods:
+			(a) Standard prompting
+			(b) Chain-of-Thought (CoT) prompting
+			(c) Single-step confidence estimation
+	Step 3: FCC Implementation
+		- Implement the Fractal Confidence Cascading method with the following sub-steps:
+			(a) Query decomposition
+			(b) Confidence estimation for each sub-query
+			(c) Bottom-up confidence aggregation
+			(d) Response generation based on high-confidence paths
+	Step 4: Prompt Engineering
+		- Design prompts for each step of the FCC method:
+			(a) Query decomposition: "Break down this question into smaller, more manageable sub-questions. Assign a confidence score (0-100) to each sub-question based on how certain you are about its relevance and your ability to answer it accurately."
+			(b) Confidence estimation: "Provide an answer to this sub-question and assign a confidence score (0-100) based on how certain you are about the accuracy of your answer."
+			(c) Aggregation and final response: "Based on the answers and confidence scores of the sub-questions, provide a final answer to the original question. Explain how you arrived at this answer, focusing on the most confident parts of your reasoning."
+	Step 5: Model Selection
+		- Utilize GPT-4 and GPT-3.5-turbo from OpenAI's API for experiments
+	Step 6: Evaluation
+		- Evaluate the performance of FCC against the baselines using the following metrics:
+			(a) Accuracy
+			(b) Calibration (comparing model confidence with actual correctness)
+			(c) Reasoning transparency (human evaluation of explanation quality)
+			(d) Hallucination rate (percentage of factually incorrect statements)
+	Step 7: Analysis
+		- Perform a detailed analysis of the results, including:
+			(a) Comparison of FCC performance against baselines across different task types
+			(b) Analysis of the confidence cascade structure and its impact on final answers
+			(c) Investigation of cases where FCC outperforms or underperforms compared to baselines
+
+5. Test Case Examples:
+	Example 1 (Baseline Failure):
+		Input: If a train travels at 60 mph for 2 hours, then at 30 mph for 1 hour, and finally at 90 mph for 30 minutes, what is the average speed of the entire journey?
+		Standard Prompt Output: To calculate the average speed, we need to divide the total distance traveled by the total time taken. Let's break it down:
+		1. First leg: 60 mph for 2 hours
+		   Distance = 60 * 2 = 120 miles
+		2. Second leg: 30 mph for 1 hour
+		   Distance = 30 * 1 = 30 miles
+		3. Third leg: 90 mph for 30 minutes (0.5 hours)
+		   Distance = 90 * 0.5 = 45 miles
+		Total distance = 120 + 30 + 45 = 195 miles
+		Total time = 2 + 1 + 0.5 = 3.5 hours
+		Average speed = Total distance / Total time
+		               = 195 / 3.5
+		               = 55.71 mph
+		Therefore, the average speed of the entire journey is approximately 55.71 mph.
+		Explanation: The standard prompt output, while seemingly logical, is incorrect. It calculates the average speed using the arithmetic mean of the speeds, which is not the correct method for calculating average speed over a journey with varying speeds and durations.
+	Example 2 (FCC Success):
+		Input: If a train travels at 60 mph for 2 hours, then at 30 mph for 1 hour, and finally at 90 mph for 30 minutes, what is the average speed of the entire journey?
+		FCC Step 1 (Query Decomposition) Output:
+		1. Calculate the distance traveled in the first leg (Confidence: 95)
+		2. Calculate the distance traveled in the second leg (Confidence: 95)
+		3. Calculate the distance traveled in the third leg (Confidence: 90)
+		4. Sum up the total distance traveled (Confidence: 85)
+		5. Calculate the total time of the journey (Confidence: 90)
+		6. Divide total distance by total time to get average speed (Confidence: 80)
+		FCC Step 2 (Confidence Estimation) Output:
+		1. First leg distance: 60 mph * 2 hours = 120 miles (Confidence: 100)
+		2. Second leg distance: 30 mph * 1 hour = 30 miles (Confidence: 100)
+		3. Third leg distance: 90 mph * 0.5 hours = 45 miles (Confidence: 95)
+		4. Total distance: 120 + 30 + 45 = 195 miles (Confidence: 98)
+		5. Total time: 2 + 1 + 0.5 = 3.5 hours (Confidence: 100)
+		6. Average speed: 195 miles / 3.5 hours = 55.71 mph (Confidence: 95)
+		FCC Step 3 (Final Response) Output: The average speed of the entire journey is 55.71 mph. This calculation is based on the total distance traveled (195 miles) divided by the total time taken (3.5 hours). I'm highly confident in this answer (Overall confidence: 95) because each step of the calculation was performed with high certainty, and the method used (total distance / total time) is the correct approach for calculating average speed over a journey with varying speeds and durations.
+		Explanation: The FCC method successfully breaks down the problem into manageable sub-questions, assigns confidence scores to each step, and arrives at the correct answer. It avoids the common pitfall of incorrectly averaging speeds and instead correctly calculates the average speed based on total distance and total time.
+
+6. Fallback Plan: If the proposed FCC method does not significantly outperform baselines, we can pivot the project in several ways. First, we could conduct an in-depth analysis of the confidence estimation process, examining how confidence scores propagate through the reasoning tree and identifying patterns in high vs. low confidence branches. This could provide insights into the model's reasoning process and potential areas for improvement. Second, we could investigate hybrid approaches that combine FCC with other techniques like retrieval-augmented generation or self-consistency checking. Finally, we could explore the application of FCC to other tasks beyond factual question answering, such as code generation or creative writing, to understand its generalizability and potential limitations in different domains. These alternative directions could still yield valuable insights into improving LLM reliability and transparency, even if the original hypothesis is not fully supported.

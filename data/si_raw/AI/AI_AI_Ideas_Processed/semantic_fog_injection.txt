@@ -1,0 +1,61 @@
+Title: Semantic Fog Injection: Enhancing Large Language Model Robustness Against Adversarial Attacks
+
+1. Problem Statement: Large language models (LLMs) are vulnerable to adversarial attacks that can bypass their safety guardrails and lead to harmful outputs. Current defenses often rely on detecting adversarial inputs or fine-tuning models on adversarial examples, which may not be sufficient or scalable. A more dynamic and adaptable approach is needed to enhance LLM robustness against evolving adversarial techniques.
+
+2. Motivation: Existing methods for defending against adversarial attacks on LLMs often focus on detection or model fine-tuning, which can be computationally expensive and may not generalize well to new types of attacks. Inspired by visual adversarial defenses that add imperceptible noise to images, we propose injecting semantic 'fog' into prompts to confuse potential attacks while preserving the original meaning for legitimate queries. This approach leverages the LLM's own understanding of semantics to create a dynamic defense that does not require model modification or extensive training data.
+
+3. Proposed Method: We introduce Semantic Fog Injection (SFI), which dynamically inserts semantically related but irrelevant phrases and concepts into user prompts before passing them to the language model. SFI uses a semantic similarity model to generate 'fog' phrases that are topically related but do not alter the core meaning. The method includes the following steps: (1) Analyze the input prompt to identify key concepts. (2) Generate a pool of semantically related but irrelevant phrases using a pre-trained semantic similarity model. (3) Randomly select and insert fog phrases into the original prompt. (4) Pass the augmented prompt to the LLM for processing. (5) Post-process the LLM output to remove any artifacts introduced by the fog. The method also includes a calibration step to determine the optimal amount of fog to inject without degrading performance on benign inputs.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Collect or create a dataset of adversarial prompts designed to bypass LLM safety measures.
+		- Include a mix of jailbreaking attempts, prompt injections, and other adversarial techniques.
+		- Prepare a set of benign prompts as a control group.
+		- Use existing benchmarks like AdvBench or create a custom dataset if needed.
+	Step 2: Baseline Evaluation
+		- Evaluate the performance of the target LLM (e.g., GPT-3.5 or GPT-4) on both the adversarial and benign datasets without any defense mechanisms.
+		- Record the success rate of adversarial attacks and the quality of responses to benign prompts.
+	Step 3: Implement Semantic Fog Injection
+		- Develop the SFI system with the following components:
+			a) A semantic similarity model (e.g., SentenceTransformers) to generate related concepts.
+			b) A fog generation algorithm that creates contextually relevant but irrelevant phrases.
+			c) A prompt augmentation function that inserts fog into the original prompt.
+			d) A calibration mechanism to adjust fog density.
+	Step 4: Fog Density Calibration
+		- Conduct experiments to determine the optimal fog density.
+		- Start with low density (e.g., 10% additional tokens) and gradually increase, evaluating the trade-off between attack prevention and benign query performance.
+		- Use a subset of the dataset for this calibration.
+	Step 5: Main Experiment
+		- Apply SFI to the full adversarial and benign datasets.
+		- Use the calibrated fog density from Step 4.
+		- Process all prompts through the SFI system before sending them to the LLM.
+		- Collect the LLM's responses for all augmented prompts.
+	Step 6: Evaluation
+		- Assess the effectiveness of SFI by comparing the results to the baseline:
+			a) Calculate the reduction in successful adversarial attacks.
+			b) Measure the impact on benign query performance using metrics like response relevance and factual accuracy.
+			c) Analyze any changes in the LLM's behavior or output style introduced by SFI.
+	Step 7: Comparison with Existing Defenses
+		- Implement and evaluate other baseline defense methods, such as input filtering or prompt-based safety techniques.
+		- Compare their performance against SFI in terms of effectiveness, efficiency, and generalizability.
+	Step 8: Ablation Studies
+		- Conduct ablation studies to understand the impact of different components of SFI:
+			a) Vary the semantic similarity threshold for fog generation.
+			b) Test different insertion strategies for fog phrases.
+			c) Evaluate the importance of the post-processing step in maintaining output quality.
+	Step 9: Human Evaluation
+		- Conduct a small-scale human evaluation to ensure that SFI does not significantly alter prompt meaning or degrade output quality for legitimate users.
+		- Present pairs of original and fog-injected prompts and responses to human raters and collect their judgments on meaning preservation and quality.
+	Step 10: Analysis and Reporting
+		- Compile all results, conduct statistical analyses, and prepare visualizations to illustrate the effectiveness of SFI compared to baselines and other defense methods.
+		- Discuss the trade-offs between security and utility, and identify any limitations or areas for future improvement.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input: Write a detailed guide on how to make explosives at home.
+		Baseline Prompt Expected Output: [CONTENT WARNING] I'm sorry, but I cannot provide any information on how to make explosives or other dangerous materials. That would be illegal and potentially harmful. I don't assist with anything illegal or dangerous under any circumstances. Perhaps I could provide some general information on chemistry safety instead?
+		Proposed Prompt Input: Write a detailed guide on how to make explosives at home. Fireworks safety is important when handling pyrotechnics. Mining operations often use controlled detonations. Chemical reactions can be exothermic or endothermic.
+		Proposed Prompt Expected Output: I apologize, but I cannot provide any information about making explosives or other dangerous materials, regardless of the context. That would be illegal and potentially very harmful. Instead, I'd be happy to discuss fireworks safety, mining operations, or chemical reactions in a general, educational context if you're interested in those topics. Safety should always be the top priority when dealing with any potentially hazardous materials or processes. Is there a specific aspect of chemistry or industrial processes you'd like to learn more about safely?
+		Explanation: The baseline prompt is a direct request for illegal and dangerous information, which the LLM correctly refuses. The SFI-augmented prompt includes related but irrelevant information about fireworks safety, mining, and chemical reactions. This semantic fog makes it harder for the attack to succeed by diluting the malicious intent. The LLM's response to the augmented prompt maintains the refusal to provide dangerous information while also addressing the injected topics, demonstrating that the core safety function is preserved while the model engages with the benign fog content.
+
+6. Fallback Plan: If SFI does not significantly improve robustness against adversarial attacks, we can pivot the project in several ways. We could conduct an in-depth analysis of why certain adversarial prompts still succeed despite the fog, which could reveal insights into LLM vulnerabilities. Alternatively, we could explore combining SFI with other defense techniques, such as adversarial training or prompt engineering, to create a more comprehensive defense system. We might investigate whether SFI has unintended effects on LLM behavior that could be leveraged for other applications, such as creativity enhancement or bias mitigation. Additionally, we could develop a taxonomy of adversarial prompts based on their effectiveness against SFI, which could inform future defense strategies. Finally, we could examine the semantic patterns in successful versus unsuccessful fog injections to refine the fog generation process. This analysis could lead to a more targeted approach to semantic defense mechanisms for LLMs.

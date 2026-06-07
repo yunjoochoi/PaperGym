@@ -1,0 +1,89 @@
+Title: Hierarchical Multi-Perspective Prompting Improves Factuality in Large Language Models in Specialized Domains
+
+1. Problem Statement: Large language models (LLMs) often generate plausible but factually incorrect information, undermining their reliability and usefulness in real-world applications, especially in specialized domains such as biomedicine and history, where accuracy is crucial.
+
+2. Motivation: Existing methods for reducing hallucinations in LLMs often focus on single-perspective approaches or rely heavily on external knowledge sources. This paper aims to leverage the LLM's own capabilities more effectively by prompting it to consider multiple perspectives and hierarchical levels of factual verification. This approach is inspired by human fact-checking processes, where experts often triangulate information from multiple viewpoints and levels of detail to ensure accuracy.
+
+3. Proposed Method: We introduce Hierarchical Multi-Perspective Prompting (HMP), a novel technique that guides the LLM through a structured process of fact generation and verification. HMP incorporates individual analysis of different aspects (perspectives) before making a final judgment. The method structures the prompting process into distinct steps:
+
+	(1) Initial Response Generation: The LLM generates an initial response to the given query.
+		Example prompt: "Please provide an initial response to the following query: <QUERY>"
+
+	(2) Perspective Generation: The LLM is prompted to generate 3-5 different perspectives or "expert roles" relevant to the query.
+		Example prompt: "Given the query '<QUERY>', generate 3-5 relevant expert perspectives or roles that would be valuable for verifying and enriching the response. List these perspectives."
+
+	(3) Hierarchical Fact Decomposition: For each perspective, the LLM breaks down the initial response into a hierarchy of facts, from high-level claims to specific details.
+		Example prompt: "Assuming the role of <PERSPECTIVE>, break down the initial response into a hierarchy of facts, from high-level claims to specific details. Present this as a numbered list with sub-points."
+
+	(4) Multi-Perspective Verification: The LLM "assumes" each aspect (or role) in turn, verifying and potentially correcting facts at each level of the hierarchy.
+		Example prompt: "As a <PERSPECTIVE>, review the following hierarchical list of facts. For each point and sub-point, verify its accuracy, provide corrections if necessary, and add any missing relevant information. Maintain the hierarchical structure in your response."
+
+	(5) Synthesis and Final Response: The LLM synthesizes the verified information from all perspectives into a final, more factually accurate response.
+		Example prompt: "Based on the verified and enriched information from all perspectives (<LIST OF PERSPECTIVES>), synthesize a comprehensive and factually accurate response to the original query: <QUERY>. Ensure that the response integrates insights from all perspectives while maintaining coherence and relevance."
+
+Despite potential cost in runtime and token usage, we hypothesize the method will show improvements in some setups and is most applicable to specialized domains.
+
+4. Step-by-Step Experiment Plan:
+	(1) Select a diverse set of approximately 200 factual queries from existing benchmarks like TruthfulQA and FactualityPrompt. Ensure queries cover various domains (e.g., history, science). Optionally, categorize queries based on complexity and subject domain for later analysis.
+
+	(2) Baseline Methods:
+		a. Direct prompting (vanilla)
+		b. Chain-of-Thought prompting
+		c. Self-consistency
+
+	(3) HMP Implementation:
+		Develop prompts for each step of the HMP process, and ask prompt experts to fine-tune the wordings of the prompt, possibly through small-scale pilot tests.
+
+	(4) Model Selection:
+		Test on GPT-3.5T, GPT-4, Claude-3.5, Qwen-2-72B, LLaMA-3-8B, and LLaMA-3-70B
+		Use settings: temperature = 0.7, top_p = 1
+
+	(5) Evaluation Metrics:
+		a. Factual Accuracy: Utilize automatic fact-checking or human evaluation on a 5-point Likert scale.
+		b. Consistency: Measure self-consistency of responses across multiple runs.
+
+	(6) Experimental Procedure:
+		a. Generate responses using each baseline method 3 times.
+		b. Generate responses using HMP 3 times. Record intermediate outputs at each step for further analysis.
+		c. Compare HMP against baselines on all metrics, using paired t-tests.
+		d. Investigate the impact of the number of perspectives on accuracy.
+		e. Analyze cases where HMP performs significantly better or worse than baselines.
+
+	(7) Crucial Ablations:
+		a. Test HMP without the hierarchical decomposition step.
+		b. Compare HMP with a version that uses fixed, predefined perspectives instead of generating them dynamically.
+
+	(8) Additional Analyses:
+		a. Conduct error analysis, including error categorization.
+		b. Investigate the trade-off between average runtime and token usage for each method.
+		c. Find an optimal configuration for HMP.
+
+5. Test Case Examples:
+	Test Case: "How does a vaccine work?"
+
+	Baseline Output:
+	A vaccine contains a weakened or inactivated form of a pathogen.
+	When injected, it stimulates the immune system.
+	The body produces antibodies against the pathogen.
+	These antibodies remain in the body, providing immunity.
+	If the real pathogen enters later, the body can quickly recognize and fight it off.
+	Therefore, a vaccine works by training the immune system to recognize and combat specific pathogens, preventing future infections.
+
+	Potential HMP Output:
+	"A vaccine works by training the immune system to recognize and combat specific pathogens.
+
+	Immunologist's view:
+	Antigen: Vaccines contain antigens, which are parts of or modified versions of the target pathogen...
+	Response Activation: Antigens stimulate the production of antibodies and memory B and T cells...
+	Immunological Memory: The immune system retains the ability to recognize the pathogen...
+
+	Microbiologist's perspective:
+	...
+
+	Public Health Expert's insight:
+	Population-Level Effects
+	...
+
+	In summary, vaccines work through an interplay of introducing pathogen-specific components, stimulating various aspects of the immune system, and creating both immediate and long-lasting protection against diseases..."
+
+6. Fallback Plan: If our multi-step, multi-perspective prompting fails to improve factuality, we will convert the project into an analysis of the limitations of current LLMs in self-verification tasks. We will conduct a thorough investigation of why the proposed method did not yield the expected improvements, focusing on the ablation studies mentioned earlier. This analysis will provide valuable insights into the challenges faced by LLMs in complex reasoning tasks and self-verification processes. We will examine the relationship between input complexity, prompt design, and output quality to identify potential areas for improvement in future prompting techniques. Additionally, we will explore alternative approaches to enhancing factuality in specialized domains, such as incorporating external knowledge sources or developing more sophisticated prompt engineering methods.

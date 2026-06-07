@@ -1,0 +1,33 @@
+Title: FairPrompt: Enhancing Fairness in Multilingual Language Models through Culturally-Aware Prompting Techniques
+
+1. Problem Statement: Multilingual language models (MLLMs) often exhibit biases and unfair treatment towards languages with fewer resources, resulting in poorer performance and misrepresentation for speakers of these languages. Most fairness evaluations and mitigations focus on high-resource languages like English, overlooking the needs of others. This research aims to develop new prompting techniques that improve the fairness of MLLMs across diverse languages, ensuring equitable performance and representation.
+
+2. Motivation: Current methods for evaluating and reducing bias in MLLMs are limited because they primarily focus on datasets. This approach does not fully address the cultural and linguistic differences between languages. Inspired by recent research highlighting the importance of cultural and linguistic context in bias, this study proposes a new method, FairPrompt, to enhance the fairness of MLLMs.
+
+3. Proposed Method: FairPrompt involves several steps to ensure culturally-aware and fair responses from MLLMs:
+    (1) Culturally-Aware Prompt Construction: Creating prompts that include cultural and linguistic context to guide the model towards fairer responses.
+    (2) Bias Detection and Correction: Developing prompts that ask the model to evaluate its own outputs for biases and correct them.
+    (3) Comparative Analysis: Using a set of predefined culturally-relevant questions to compare the model's responses across different languages and identify disparities.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Gather Datasets: Collect datasets representing various languages, focusing on both high-resource and low-resource languages. Use datasets like FLORES-200 and XNLI.
+    - Step 2: Construct Culturally-Aware Prompts:
+        (1) Develop prompts that include cultural context. For example, for gender bias, prompts might include culturally-specific roles and terminologies.
+        (2) Example Prompt: "Describe a day in the life of a teacher in [language], ensuring that your response does not reflect any cultural or gender biases."
+        (3) Bias Detection Prompts: Create prompts that instruct the model to analyze its own responses for biases. For instance, "Evaluate the fairness of your previous response regarding [specific context] in [language]."
+        (4) Bias Correction Prompts: Develop prompts that guide the model to correct any detected biases. For example, "Rephrase the response to ensure it aligns with fairness principles regarding gender and cultural norms in [language]."
+        (5) Comparative Analysis: Use a set of predefined questions to compare responses across languages. Example questions might include common scenarios like job descriptions, family roles, and social interactions.
+    - Step 3: Model Selection: Test with multiple MLLMs, such as BLOOM, XGLM and GPT-4, to ensure the generalizability of the method.
+    - Step 4: Get Results: Gather responses from the models using both the baseline and FairPrompt methods. Evaluate the fairness and cultural sensitivity of the responses.
+    - Step 5: Analyze Results: Compare the performance of the FairPrompt method against the baseline using metrics like fairness score, cultural sensitivity, and bias reduction.
+
+5. Test Case Examples:
+    - Test Case 1:
+        - Baseline Prompt Input: "Describe the typical responsibilities of a nurse in [language]."
+        - Baseline Expected Output: The response may contain stereotypes or biased views based on the training data.
+        - FairPrompt Input (Bias Detection): "Evaluate the fairness of your description of a nurse's responsibilities in [language], considering cultural norms."
+        - FairPrompt Expected Output (Bias Detection): A self-evaluation of the response, identifying any potential biases.
+        - FairPrompt Input (Bias Correction): "Rephrase the responsibilities of a nurse in [language] to ensure fairness and cultural sensitivity."
+        - FairPrompt Expected Output (Bias Correction): A revised description that mitigates identified biases and aligns with cultural norms.
+
+6. Fallback Plan: If the FairPrompt method does not significantly improve fairness, the research could pivot to an analysis paper. This would involve a detailed analysis of why the FairPrompt method did not work, conducting ablation studies to understand which components of the method are most effective, and proposing alternative methods based on insights gained from the analysis, such as incorporating more detailed cultural knowledge or using different evaluation metrics.

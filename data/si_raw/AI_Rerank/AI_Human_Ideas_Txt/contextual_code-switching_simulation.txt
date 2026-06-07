@@ -1,0 +1,48 @@
+Title: Enhancing Multilingual Performance through Contextual Code-Switching Simulation (CCSS) Prompting
+
+1. Problem Statement: Large Language Models (LLMs) often struggle with accurately representing code-switching behavior, which is common in multilingual communities but poorly represented in training data, especially for low-resource languages. This limitation hinders the models' ability to understand and generate authentic multilingual discourse, particularly in scenarios involving fluid language mixing.
+
+2. Motivation: Current approaches typically treat languages as discrete entities, failing to capture the nuanced language mixing that occurs in real-world multilingual contexts. By simulating realistic code-switching scenarios, we can enhance the model's ability to understand and generate more authentic multilingual discourse. This approach leverages the LLM's existing knowledge and capabilities without requiring extensive retraining or additional data collection, making it a potentially efficient and scalable solution for improving multilingual performance.
+
+3. Proposed Method: We introduce Contextual Code-Switching Simulation (CCSS) prompting, a multi-step process that guides the model to generate more authentic code-switched content. Given a monolingual or 'clean' multilingual input, CCSS prompting involves the following steps:
+	(1) Identify potential code-switching points based on syntactic and semantic features.
+	(2) Determine appropriate language switches based on a given sociolinguistic context (e.g., formal vs. informal, specific multilingual community).
+	(3) Generate alternative versions of the text with varying degrees and types of code-switching.
+	(4) Refine the output to ensure naturalness and contextual appropriateness.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Dataset Preparation: We will use two datasets:
+		(1) LinCE (Linguistic Code-switching Evaluation) benchmark for evaluation on tasks like named entity recognition and part-of-speech tagging.
+		(2) A custom dataset of monolingual texts in Spanish and English from social media platforms for generation tasks.
+	- Step 2: Baseline Model Selection: We will use GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API as our primary models. We will also include BLOOM, a multilingual open-source model, as a comparison.
+	- Step 3: Implement CCSS Prompting: For each input text, we will implement the following prompting steps:
+		(1) Identification: "Identify potential code-switching points in this [language] text: [input text]"
+		(2) Context Setting: "Given a [specific sociolinguistic context], determine appropriate language switches for the identified points."
+		(3) Generation: "Generate three versions of the text with increasing levels of [language1]-[language2] mixing."
+		(4) Refinement: "Refine the output to sound more natural for a [specific speaker profile]."
+	- Step 4: Evaluation on Understanding Tasks: We will evaluate the models on named entity recognition and part-of-speech tagging tasks from the LinCE benchmark. We will compare the performance of models with and without CCSS prompting.
+	- Step 5: Evaluation on Generation Tasks: For generation tasks, we will use our custom dataset. We will prompt the models to generate code-switched responses to social media posts, both with and without CCSS prompting. We will evaluate the outputs based on:
+		(1) Code-switching points accuracy
+		(2) Contextual appropriateness
+		(3) Overall naturalness
+	- Step 6: Human Evaluation: We will recruit a small panel of bilingual speakers to rate a subset of the generated outputs on a 5-point Likert scale for naturalness and contextual appropriateness.
+	- Step 7: Analysis: We will compare the performance of CCSS prompting against the baselines, analyzing improvements in both understanding and generation tasks. We will also analyze the effectiveness of each step in the CCSS process.
+
+5. Test Case Examples:
+	- Test Case 1:
+		- Baseline Prompt Input: Translate the following text to Spanglish: "I'm going to the store to buy some groceries. Do you need anything?"
+		- Baseline Prompt Expected Output: Voy al store a comprar some groceries. ¿Necesitas algo?
+		- Proposed Prompt Input (Step 1: Identification): Identify potential code-switching points in this English text: "I'm going to the store to buy some groceries. Do you need anything?"
+		- Proposed Prompt Expected Output (Step 1: Identification): Potential code-switching points: 1) "I'm going" 2) "to the store" 3) "to buy" 4) "some groceries" 5) "Do you need anything?"
+		- Proposed Prompt Input (Step 2: Context Setting): Given the context of a young Mexican-American speaker in an informal setting, determine appropriate language switches for the identified points.
+		- Proposed Prompt Expected Output (Step 2: Context Setting): Appropriate switches: 1) Keep "I'm going" in English 2) Switch "to the store" to Spanish 3) Keep "to buy" in English 4) Switch "some groceries" to Spanish 5) Switch "Do you need anything?" to Spanish
+		- Proposed Prompt Input (Step 3: Generation): Generate three versions of the text with increasing levels of English-Spanish mixing based on the determined switches.
+		- Proposed Prompt Expected Output (Step 3: Generation):
+			1. I'm going a la tienda to buy algunas groceries. ¿Necesitas algo?
+			2. I'm going a la tienda to buy algunas provisiones. ¿Necesitas algo?
+			3. I'm going a la tienda para comprar algunas provisiones. ¿Necesitas algo?
+		- Proposed Prompt Input (Step 4: Refinement): Refine the output to sound more natural for a young Mexican-American speaker in an informal setting.
+		- Proposed Prompt Expected Output (Step 4: Refinement): Yo voy al super a buy some groceries. ¿Tú wants algo?
+		- Explanation: The CCSS prompting method allows for a more nuanced and context-aware generation of code-switched text, resulting in output that better reflects natural language use in multilingual communities. The baseline method, while producing some code-switching, lacks the contextual awareness and natural flow achieved by the CCSS method.
+
+6. Fallback Plan: If the CCSS prompting method does not significantly improve performance over baselines, we will conduct a detailed error analysis to understand where the method falls short. This may involve examining each step of the CCSS process to identify which components are not performing as expected. We could also explore variations of the prompting strategy, such as adjusting the order of steps or providing more specific contextual information. Additionally, we might investigate whether certain language pairs or types of code-switching are particularly challenging for the model. This analysis could lead to insights about the limitations of current LLMs in handling code-switching and potentially inform the development of more sophisticated prompting techniques or model architectures for multilingual tasks.

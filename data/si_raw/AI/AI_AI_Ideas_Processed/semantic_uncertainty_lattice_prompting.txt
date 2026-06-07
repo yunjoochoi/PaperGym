@@ -1,0 +1,64 @@
+Title: Semantic Uncertainty Lattice Prompting: Capturing Hierarchical Uncertainty in Large Language Models
+
+1. Problem Statement: Current uncertainty quantification methods for Large Language Models (LLMs) often fail to capture the complex, hierarchical nature of semantic uncertainty across different levels of abstraction. This limitation hinders the accurate assessment of model confidence and reliability, particularly in tasks requiring nuanced understanding and reasoning.
+
+2. Motivation: Existing approaches typically focus on single-level uncertainty estimation or use simple hierarchical decomposition, which may not fully represent the intricate relationships between concepts and their associated uncertainties. Human cognition, on the other hand, often organizes uncertainty in interconnected, multi-level structures. By mimicking this cognitive process, we can potentially capture more nuanced and accurate uncertainty estimates in LLMs. This approach could lead to better calibrated models and more reliable decision-making in various applications of natural language processing.
+
+3. Proposed Method: We introduce Semantic Uncertainty Lattice Prompting (SULP), which constructs a dynamic lattice structure of concepts related to the query. The method works as follows:
+	(1) Given an input query, prompt the LLM to generate a lattice of related concepts at different levels of abstraction.
+	(2) For each node (concept) in the lattice, prompt the LLM to estimate its uncertainty.
+	(3) For each edge (relationship between concepts) in the lattice, prompt the LLM to estimate the relational uncertainty.
+	(4) Use recursive prompting to refine uncertainty estimates by propagating information up and down the lattice.
+	(5) Derive the final uncertainty estimate from the lattice structure using graph-theoretic measures, such as weighted path analysis or centrality metrics.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Select diverse datasets for evaluation:
+			a) Open-domain QA: Natural Questions (NQ) dataset
+			b) Commonsense reasoning: CommonsenseQA dataset
+			c) Scientific fact verification: SciFact dataset
+	Step 2: Baseline Implementation
+		- Implement baseline uncertainty estimation techniques:
+			a) Monte Carlo Dropout
+			b) Deep Ensembles
+			c) Temperature scaling
+			d) Entropy of the output distribution
+	Step 3: SULP Implementation
+		- Implement the Semantic Uncertainty Lattice Prompting method:
+			a) Concept Lattice Generation
+			b) Node Uncertainty Estimation
+			c) Edge Uncertainty Estimation
+			d) Recursive Refinement
+			e) Final Uncertainty Aggregation
+	Step 4: Model Selection
+		- Use GPT-4 from OpenAI API for all experiments, as it represents the current state-of-the-art in language models.
+	Step 5: Evaluation
+		- Compare SULP against baseline methods using the following metrics:
+			a) Calibration error (Expected Calibration Error and Maximum Calibration Error)
+			b) Selective prediction performance (Area Under the Risk-Coverage Curve)
+			c) Spearman's rank correlation between uncertainty estimates and human-annotated difficulty scores
+			d) Qualitative analysis of lattice structures and uncertainty propagation
+	Step 6: Ablation Studies
+		- Conduct ablation studies to understand the contribution of different components:
+			a) Vary the number of levels in the concept lattice
+			b) Compare against a non-hierarchical set of concepts
+			c) Evaluate the impact of recursive refinement by comparing against a single-pass estimation
+	Step 7: Analysis
+		- Perform in-depth analysis of results:
+			a) Identify types of questions where SULP outperforms baselines and vice versa
+			b) Analyze the structure of generated lattices for different question types
+			c) Investigate how uncertainty propagates through the lattice during refinement
+
+5. Test Case Examples:
+	Test Case 1:
+		- Baseline Prompt Input: Q: What is the boiling point of water on Mars?
+		- Baseline Prompt Expected Output: The boiling point of water on Mars is approximately 10°C (50°F) due to its low atmospheric pressure. Uncertainty: 0.3
+		- Proposed Prompt Input (Lattice Generation): Given the question "What is the boiling point of water on Mars?", generate a hierarchical lattice of related concepts. Start with the most abstract concept at the top, and progressively add more specific concepts. Include at least 3 levels and 5-10 concepts per level.
+		- Proposed Prompt Expected Output (Lattice Generation): [Detailed lattice structure omitted for brevity]
+		- Proposed Prompt Input (Node Uncertainty Estimation): For the concept "Water Boiling Point" in the context of the question "What is the boiling point of water on Mars?", estimate your uncertainty on a scale of 0 to 1, where 0 is completely certain and 1 is completely uncertain. Explain your reasoning.
+		- Proposed Prompt Expected Output (Node Uncertainty Estimation): Uncertainty: 0.2 [Reasoning omitted for brevity]
+		- Proposed Prompt Input (Final Uncertainty Aggregation): Based on the generated lattice and individual uncertainty estimates, provide a final uncertainty estimate for the question "What is the boiling point of water on Mars?" on a scale of 0 to 1. Explain how you aggregated the uncertainties from different concepts and levels.
+		- Proposed Prompt Expected Output (Final Uncertainty Aggregation): Final Uncertainty Estimate: 0.25 [Explanation omitted for brevity]
+		- Explanation: The SULP method provides a more nuanced and hierarchical uncertainty estimation compared to the baseline. It captures uncertainties at different levels of abstraction and considers the relationships between concepts, leading to a more comprehensive and explainable uncertainty estimate.
+
+6. Fallback Plan: If the proposed SULP method does not significantly outperform baselines, we can pivot the project in several ways. We could conduct an in-depth analysis of the generated lattices to understand how LLMs represent hierarchical knowledge and uncertainty, potentially providing insights into the model's reasoning process and limitations. Alternatively, we could investigate how different prompting strategies affect the quality and structure of the generated lattices, which could lead to improvements in eliciting structured knowledge from LLMs. We might also explore the use of the lattice structure for other tasks, such as explainable AI or structured knowledge extraction. Additionally, analyzing cases where SULP performs worse than baselines could identify potential weaknesses in hierarchical uncertainty estimation, informing the development of hybrid approaches that combine strengths of different methods. Finally, we could investigate how the lattice structure varies across different types of questions or domains, which could provide insights into the model's domain-specific knowledge organization.

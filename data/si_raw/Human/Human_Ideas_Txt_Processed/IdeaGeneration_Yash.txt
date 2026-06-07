@@ -1,0 +1,65 @@
+Title: Ensemble of LLMs Attack Safety Classifiers
+
+1. Problem Statement: Generation of new, diverse, and natural comments that can fool safety classifiers is crucial for future-proofing such classifiers.
+
+2. Motivation: Safety classifiers, such as toxicity detectors, are critical components of online forums. They serve to prevent offensive content from appearing and automatically flag such text on large-scale platforms. However, it is challenging to exhaustively identify all weaknesses prior to deployment. After identification, collecting adversarial data and retuning the classifier is necessary. Even then, attackers may discover and exploit vulnerabilities post-deployment. Developing methods to generate diverse and natural adversarial examples can help improve the robustness of safety classifiers and better prepare them for real-world challenges.
+
+3. Proposed Method: We propose an agent-based pipeline consisting of three main stages:
+	(1) Identification of toxicity subtypes that can be utilized.
+	(2) Assignment of agents to take action according to specific subtypes, ideally by suggesting elements of that type of toxicity.
+	(3) Integration of suggested feedback by another language model to transform the seed input.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Gather Data
+		- Utilize the CivilComments dataset containing toxic and non-toxic comments from a user forum.
+		- Select comments from the validation set with toxicity scores greater than 0.75.
+		- Create 5 different seed sets, each with a held-out dimension of toxicity.
+
+	Step 2: Identify Toxicity Types
+		- Employ one of two methods:
+			a) Prompt a language model to provide n distinct types of toxicity found on online user forums.
+			b) Utilize static lists compiled in previous safety and fairness literature.
+		- For each seed input, randomly sample k (k<n) types of toxicity to be used.
+
+	Step 3: Construct "Agents"
+		- Assign a role-based language model to each toxicity type from Step 2.
+		- Each agent can perform one of two actions:
+			a) Suggest a new element (phrase or word) representing its assigned toxicity type.
+			b) Modify the input to reflect its assigned toxicity type.
+
+	Step 4: Transform Inputs
+		- Prompt a language model to transform the seed input using feedback from the "agents" in Step 3.
+		- The combination of various types of edits may lead to discovering a new dimension of toxicity not previously associated with the seed input.
+
+	Step 5: Design Evaluation
+		- Utilize the Perspective API as the target safety classifier for adversarial attacks.
+		- Employ the LLM-as-a-judge paradigm to assess dimensional diversity.
+
+	Step 6: Obtain Results
+		- Evaluate generated attacks based on three criteria:
+			a) Number of attacks that fool the safety classifier.
+			b) Number of attacks belonging to the held-out dimension.
+			c) Number of attacks satisfying both (a) and (b).
+
+	Step 7: Conduct Sanity Checks
+		- Ensure reliability of LLM judges by using them to predict dimensions for a subset of CivilComments with gold dimension labels.
+
+5. Test Case Examples:
+	Test Case 1: Baseline (Direct Prompting)
+		- Input: Transform the input text below to reflect a new type of toxicity and ensure that the final text is subtly toxic. Input text: He is a crook
+		- Expected Output: Men are horrible.
+
+	Test Case 2: Proposed Method
+		- Step 2 Input: List and explain the most frequent types of toxic comments found on user forums.
+		- Step 2 Expected Output:
+			Misogyny - Hatred towards the female gender
+			Derogatory - Making other people feel inferior
+			Misandry - Hatred towards the male gender
+		- Step 3 Input (misandry agent): Incorporate elements of the given toxicity subtype into the input text below. Input text: He is a crook. Toxicity subtype: misandry
+		- Step 3 Expected Output: All men are crooks and thieves.
+		- Step 4 Input: (Prepend the output from above) Tone down the toxicity in the comment above but make sure it's still somewhat toxic.
+		- Step 4 Expected Output: You should keep an eye on our wallets near men on the metro.
+
+	Explanation: The baseline approach may generate toxic content that is unlikely to pass a safety filter or contain a previously unseen dimension of toxicity. The proposed method first produces a list of toxicity subtypes, then uses individual LLM instances to suggest elements associated with each subtype. The final step incorporates these elements while ensuring the generated comment is not explicitly toxic, satisfying both adversarial and diversity criteria.
+
+6. Fallback Plan: If the proposed method does not yield satisfactory results, we will implement an alternative approach. Instead of Steps 3 and 4, we will sample a toxicity subtype from Step 2 and prompt a language model to incorporate that subtype into the seed input text. This process will be repeated iteratively for m iterations, with m determined through per-iteration evaluation as a hyperparameter. After m iterations, we will proceed with Step 5 and onwards. This alternative approach allows for a more controlled incorporation of toxicity subtypes while maintaining the overall structure of the experiment.

@@ -1,0 +1,42 @@
+Title: Tree-of-Thought Prompting for Challenging Mathematical Proofs
+
+1. Problem Statement: While Large Language Models (LLMs) have shown promise in complex mathematical proof automation and discoveries, this field remains under-explored.
+
+2. Motivation: Solving complex mathematical problems with LLMs is a challenging task. Given a problem, an expert would attempt multiple possible proofs and ideally arrive at one promising path. Abstractly, this process involves navigating the search space to arrive at a solution. While LLMs may not possess the same level of mathematical intuition as true experts, they are mechanical and can be easily instructed to attempt many paths, thus showing promise in helping automate complex math proofs. Our core motivation in this research is to automate LLMs to mimic the process of expert mathematicians in attempting complex proofs.
+
+3. Proposed Method: In this research, we propose to apply the recently proposed Tree-of-Thought navigation method to navigate the search space and tackle complex mathematical proofs with LLMs. At each step, based on prior observations, it instructs the LLM to form a thought using certain tools. In this context, a tool could be running an external program (e.g., SymPy). We sample with temperature 1 to arrive at many "thoughts" for each observation. This thus expands into a tree, as an attempt to exhaustively navigate the search space. If an LLM believes the result is complete at one point, it could stop the process and output the observations as its proof.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather datasets
+		• Collect relevant datasets for mathematical proof generation, such as those based on IMO problems
+		• Conduct further literature search to identify the most suitable dataset
+	- Step 2: Construct the prompts systems
+		• Develop baseline systems:
+			○ Zero-shot or few-shot simple prompt
+			○ Chain-of-thought approach
+		• Implement tree-of-thought approach:
+			○ Sample "thoughts" from LLM with temperature 1
+			○ Delete repetitive samples and keep unique ones
+			○ Set number of samples d as a hyper-parameter
+			○ Include thought process and next action in each "thought"
+			○ Allow LLM to execute Python code using SymPy library
+			○ Store execution results as "observations"
+			○ Expand tree up to pre-defined depth
+			○ Select completed nodes as final outputs
+	- Step 3: Select models
+		• Test GPT-4 from OpenAI
+		• Test LLaMA-3, the open-sourced model
+	- Step 4: Get Results
+		• Run models with Tree-of-Thought prompting method and baseline methods
+	- Step 5: Analyse results
+		• Compare results to evaluate if the tree-of-thought navigation method improves system performance
+
+5. Test Case Examples:
+	- Test Case 1:
+		• Baseline Prompt Input (Direct Prompting): Does the following Markov Chain converge to a stationary distribution ... ?
+		• Baseline Prompt Expected Output (Direct Prompting): This Markov Chain does not converge because ...
+		• Proposed Prompt Input: Does the following Markov Chain converge to a stationary distribution ...? You have made the following observations {{observation_history}}, and you should now choose between one of the following two actions: (1) write a SymPy program to continue your reasoning, or (2) output "stop" if you believe you have arrived at the conclusion.
+		• Proposed Prompt Expected Output: Based on the history, I should next explore reducing this 3-D Markov chain into 3 independent Markov chains... (a SymPy program here)
+		• Explanation: Given a question, at each depth of the tree, we ask the language model to choose between writing a new SymPy program or stopping its reasoning. At each step we sample d responses with temperature 1 and expand the tree up to a pre-defined depth. In this way, we explicitly search the reasoning space and have a chance of discovering one true final output.
+
+6. Fallback Plan: If this prompting strategy does not lead to improvement in system performance, we will analyze intermediate thoughts to determine if the language model is making any progress. If the language model is advancing but fails to reach the final conclusion due to the large search space, we will introduce an additional action: "stop current thought" to terminate unproductive thinking paths. This modification would enable us to redirect computational resources to more promising avenues of exploration.

@@ -1,0 +1,56 @@
+Title: Neuro-Symbolic Vernacular Parsing: Enhancing Language Models' Performance on Low-Resource Languages and Vernaculars
+
+1. Problem Statement: Low-resource languages and vernaculars often have unique grammatical structures and idiomatic expressions that are challenging for traditional parsing methods. Current approaches typically rely on transfer learning from related languages or limited supervised learning on small datasets, which often fail to capture the nuances of these languages.
+
+2. Motivation: Existing methods struggle with the unique structures of low-resource languages and vernaculars due to limited training data and the inability to generalize across diverse linguistic patterns. By combining neural methods with symbolic reasoning, we can potentially create more robust parsing models that can handle these unique structures. This approach leverages the pattern recognition capabilities of neural networks while incorporating explicit grammatical knowledge through symbolic rules, potentially leading to more accurate and generalizable parsing for low-resource languages and vernaculars.
+
+3. Proposed Method: We propose Neuro-Symbolic Vernacular Parsing, a prompting method that combines neural language understanding with symbolic grammar rules. The method consists of three main steps:
+	(1) Identify key grammatical elements and idiomatic expressions in the input text.
+	(2) Generate potential symbolic grammar rules that could explain these structures.
+	(3) Combine these symbolic rules with the model's neural understanding to parse the text.
+This method allows the model to leverage both learned patterns and explicit grammatical knowledge, potentially improving parsing performance on low-resource languages and vernaculars.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Data Collection
+		- Collect datasets for a range of low-resource languages and vernaculars.
+		- Utilize the Universal Dependencies (UD) treebanks for languages such as Bambara, Erzya, Komi-Zyrian, and Yoruba.
+		- Employ the African Languages Dataset (ALD) for vernaculars like Nigerian Pidgin and Ghanaian Pidgin.
+	Step 2: Baseline Models
+		- Implement and evaluate baseline models:
+			a) Traditional dependency parsing using UDPipe.
+			b) Neural parsing using the Biaffine Attention model.
+			c) Transfer learning approach using mBERT fine-tuned on high-resource languages.
+	Step 3: Implement Neuro-Symbolic Vernacular Parsing
+		- Develop the three-step prompting method:
+			a) Grammatical Element Identification: Prompt GPT-4 to identify key grammatical elements and idiomatic expressions.
+			b) Symbolic Rule Generation: Prompt GPT-4 to generate potential symbolic grammar rules.
+			c) Neuro-Symbolic Parsing: Combine the generated rules with GPT-4's neural understanding for final parsing.
+	Step 4: Prompts Design
+		- Design effective prompts for each step. For example:
+			a) "Identify and list the key grammatical elements and idiomatic expressions in the following text: [INPUT TEXT]"
+			b) "Based on the identified elements, generate potential symbolic grammar rules that could explain the structure of this language: [IDENTIFIED ELEMENTS]"
+			c) "Using both the generated grammar rules and your understanding of language structure, parse the following text: [INPUT TEXT]"
+	Step 5: Evaluation
+		- Evaluate all models using Labeled Attachment Score (LAS) and Unlabeled Attachment Score (UAS).
+		- Utilize paired bootstrap resampling to test for statistical significance of improvements.
+	Step 6: Analysis
+		- Perform error analysis to identify types of structures where Neuro-Symbolic Vernacular Parsing outperforms baselines, and where it struggles.
+		- Analyze the generated symbolic rules for linguistic insights.
+	Step 7: Ablation Studies
+		- Conduct ablation studies to understand the contribution of each component:
+			a) Use only the grammatical element identification step.
+			b) Use only the symbolic rule generation step.
+			c) Vary the number of examples in few-shot prompting.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Input: Mi na go chop for dat restaurant tomorrow.
+		Baseline Output (UDPipe): Mi (PRON) <-nsubj- na (AUX) <-aux- go (VERB) -dobj-> chop (NOUN) -nmod-> for (ADP) -obj-> dat (DET) -det-> restaurant (NOUN) -advmod-> tomorrow (ADV)
+		Proposed Method Input: Parse the following Nigerian Pidgin sentence: 'Mi na go chop for dat restaurant tomorrow.'
+		Proposed Method Output:
+			Step 1 (Identify Elements): Subject pronoun: 'Mi', Future tense marker: 'na go', Verb: 'chop', Preposition: 'for', Demonstrative: 'dat', Noun: 'restaurant', Time adverb: 'tomorrow'
+			Step 2 (Generate Rules): S -> NP VP, NP -> PRON | DET N, VP -> AUX V PP ADV, PP -> P NP
+			Step 3 (Parse): (S (NP (PRON Mi)) (VP (AUX na go) (V chop) (PP (P for) (NP (DET dat) (N restaurant))) (ADV tomorrow)))
+		Explanation: The proposed method correctly identifies the future tense marker 'na go' and provides a more accurate parse of the Nigerian Pidgin sentence structure compared to the baseline UDPipe output, which misidentifies 'go' as the main verb and 'chop' as a noun.
+
+6. Fallback Plan: If the proposed Neuro-Symbolic Vernacular Parsing method does not significantly outperform baselines, we can pivot the project in several ways. We could analyze the generated symbolic rules to gain linguistic insights into the structure of low-resource languages and vernaculars, potentially leading to a descriptive linguistics paper. Alternatively, we could investigate why the method struggles and use this information to inform the development of new parsing approaches for low-resource languages. We might also explore how the performance varies across different language families or typologies, which could provide valuable information about the generalizability of parsing methods. Additionally, we could analyze the errors made by both our method and baselines to create a taxonomy of parsing challenges specific to low-resource languages and vernaculars, which could guide future research in this area.

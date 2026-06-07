@@ -1,0 +1,74 @@
+Title: Chain-of-State Iterative Code Generation via Large Language Models
+
+1. Problem Statement: Code generation remains challenging for complex problems, even when the generated code is executable. Accurate code generation for intricate tasks is still an area requiring improvement.
+
+2. Motivation: Code can be conceptualized as a state machine that transforms an input world state to an output world state. Most existing approaches focus solely on input or output states through test cases or error feedback. However, the critical aspect of code is the step-by-step modification of the input world state (or variable state) to reach the output world state. This process requires the programmer, in this case the Large Language Model (LLM), to comprehend how the generated code alters the state. In competitive programming, developers often dry run their code with test cases, adding breakpoints or printing intermediate states to identify and rectify execution errors. Incorporating a similar thought process of tracking the execution state of the code by dry running on robust example test cases could lead to more accurate code generation.
+
+3. Proposed Method: Our method, Chain-of-State (CoS), consists of the following steps:
+	(1) Generate Baseline response via direct prompting of the problem, as shown in the test case example.
+	(2) Test Case Generation and Execution State tracker: Given the query and baseline response, generate a strong test case as well as the execution state of the code starting from initial state, followed by each line, and running through iterations if there are any loops.
+	(3) Accuracy check, Issue Identification, and Solution Proposal: This step evaluates the generated code by examining the execution state of the test case from the previous step, and determines whether the code is correct and solves the problem. If affirmative, the method terminates; if negative, this step identifies the issue, proposes a correction in natural language, and then suggests revised code. This step both realigns the LLM with the query's objective, preventing hallucination while generating elaborate execution states, and enables it to identify and rectify issues related to the query.
+	(4) Steps 2 and 3 are repeated until the answer in Step 3 is affirmative.
+
+4. Step-by-Step Experiment Plan:
+	(1) Collect all datasets to be used: To ensure comparison with most prior works, we choose to use HumanEval, MBPP, APPS, and CoNaLa.
+	(2) Construct prompts for each step above. Iterate on the prompts until the method can solve some problems by qualitatively evaluating each step. The prompts in each step may or may not require one or more examples for solving each problem. The test case provided below can be used as one of the examples, and a new problem from the above datasets can be used to test out the prompting for each step.
+	(3) LLMs to use: We test GPT-3.5 (Text-Davinci-003) and GPT-4 from the OpenAI API, as well as the open-source LLaMA-3 and Claude-3.5.
+	(4) Obtain quantitative results: Run the finalized method on the above benchmarks to get comparison numbers against existing baselines listed for each of the above datasets.
+	(5) Analyze Results: Compare with baselines quantitatively and qualitatively to assess if the method improves performance, and gain insights into how tracking execution state might be aiding correct code generation.
+	(6) Analyze failure cases: Study failure cases to understand when the method fails and at which step it fails to further improve the method or propose future work.
+
+5. Test Case Examples:
+Example taken from HumanEval dataset:
+Consider this example, where the sum of first k elements with at most 2 digits in an array needs to be returned.
+def add_elements(arr, k):
+"""
+Given a non-empty array of integers arr and an integer k, return the sum of the first k element that has at most two digits.
+Example: 
+Input: arr = [111, 21, 3, 4000, 5, 6, 7, 8, 9], k=4 
+Output: 24 # sum of 21 + 3 
+
+Constraints: 
+1 <= len(arr) <= 100
+1 <= k <= len(arr)
+"""
+	Baseline prompt can be direct prompting - just input the above problem to the LLM with or without examples from the dataset.
+	Baseline Expected output: 
+	sum = 0
+	for i in range(0, k):
+		if len(str(arr[i])) < 3: 
+			sum += arr[i]
+	return sum
+
+In this case, since k is getting reduced in every turn when an eligible element is found, the code will not find k elements.
+
+	Proposed Prompt Input - step 1 is same as baseline 
+	Step 2 Prompt: "Generate a strong example test case for the above prompt function and show the execution state of the above generated code. Try to be adversarial on the test case for generated code."
+
+	Step 2 example expected Output:
+	Test Case: arr = [10, 100, 20, 2000, 4, 7, 10], k = 4
+	initial state: sum = 0, k = 4, arr = [10, 100, 20, 2000, 4, 7, 10]
+	iteration 1: i=0, arr[i] = 10, len(str(arr[i])) < 3: len('10') < 3 = True, sum = 0+10=10, k = 4 
+	iteration 2: i=1, arr[i] = 100, len(str(arr[i])) < 3: len('100') < 3 = False, sum = 10, k = 4
+	iteration 3: i=2, arr[i] = 20, len(str(arr[i])) < 3: len('20') < 3 = True, sum = 10+20=30, k = 4 
+	iteration 4: i=3, arr[i] = 2000, len(str(arr[i])) < 3: len('2000') < 3 = False, sum = 30, k = 4 
+	return sum = 30
+	End
+
+	Step 3 Prompt: "Is the execution correct and is it solving the given coding problem at the end? If not, what is wrong in the generated code and how to correct it? Give the corrected code as well"
+
+	Step 3 Expected Output:
+	"No, the problem expects the output to be sum of k=4 numbers, but this code returns sum of 2 elements only. Looking at the execution state, it seems that iteration ends at i=3, and is not going over the whole loop. To fix the problem, the for loop should go over the whole array until 4 elements are found. Here is the corrected code"
+	sum = 0
+	for i in range(0, len(arr)):
+		if len(str(arr[i])) < 3 and k > 0: 
+			sum += arr[i]
+			k = k - 1
+	return sum
+
+	Repeat with Step 2 Prompt with a new test case, for example the LLM can generate:
+	Test Case: arr = [10, 100, 20, 2000, 4, 7, 10], k = 10
+	This test case will require the program to add an edge case handling when k>len(arr) and a solution can't be found.
+	Explanation: Iteratively prompting the LLM with strong test cases and generating execution state on it will make it reflect on the issues or error points that may not be obvious without dry running these test cases.
+
+6. Fallback Plan: If the method does not yield the expected results, we will analyze each step of the method to identify potential issues. We will start by examining the generated code for correctness, syntax errors, or logical flaws. Next, we will evaluate the quality and validity of the generated test cases. The execution state will be verified for accuracy, potentially automating this process by comparing against a compiler's output. We will then scrutinize step 3 to ensure the solution adheres to the question, correctly identifies errors, and proposes appropriate rectifications. This comprehensive analysis of each step will provide insights into the method's functioning, guiding us in devising improved prompts that enable the LLM to perform more effective execution state dry running and reasoning. These insights will be crucial in refining our approach or developing alternative strategies if necessary.

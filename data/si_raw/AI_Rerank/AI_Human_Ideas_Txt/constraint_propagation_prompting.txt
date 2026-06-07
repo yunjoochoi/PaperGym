@@ -1,0 +1,112 @@
+Title: Constraint Propagation Prompting: Improving Mathematical Problem Solving in Large Language Models
+
+1. Problem Statement: Large language models often fail to maintain consistency across multiple interrelated variables or constraints in complex mathematical problems, leading to incorrect or inconsistent solutions. This issue is particularly prevalent in multi-step problems involving systems of equations, optimization tasks, and logic puzzles.
+
+2. Motivation: Existing methods typically focus on step-by-step reasoning without explicitly tracking and propagating constraints throughout the problem-solving process. By explicitly modeling and propagating constraints, we can guide the model to maintain consistency and reduce errors in multi-variable problems. This approach is inspired by constraint satisfaction techniques in classical AI, adapted for the natural language interface of LLMs.
+
+3. Proposed Method: We propose Constraint Propagation Prompting (CPP), which structures the problem-solving process around identifying, tracking, and propagating constraints. The prompt includes the following steps:
+	(1) Constraint Identification: List all explicit and implicit constraints in the problem.
+	(2) Variable Mapping: Identify all variables and their relationships to the constraints.
+	(3) Constraint Graph Construction: Create a mental graph of how constraints and variables interact.
+	(4) Sequential Constraint Application: Solve the problem by applying constraints in a logical order, updating the constraint graph at each step.
+	(5) Consistency Checking: After each step, verify that no constraints have been violated.
+	(6) Backtracking: If a contradiction is found, backtrack to the last consistent state and explore alternative paths.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: Curate a diverse set of multi-variable mathematical problems from existing datasets:
+		a) Systems of equations from MATH dataset
+		b) Optimization problems from OR-Library
+		c) Logic puzzles from AILO (All-Ireland Linguistics Olympiad)
+		Ensure a mix of problem difficulties.
+	Step 2: Baseline Prompts: Implement three baseline prompting methods:
+		a) Direct prompting: Present the problem statement directly to the LLM.
+		b) Chain-of-thought (CoT) prompting: Append 'Let's approach this step-by-step:' to the problem statement.
+		c) Few-shot CoT: Provide 2-3 examples of solved problems with step-by-step reasoning before the target problem.
+	Step 3: CPP Prompt Construction: Develop a template for Constraint Propagation Prompting that guides the LLM through the six steps outlined in the proposed method. The prompt should include instructions for each step and placeholders for the model to fill in.
+	Step 4: Model Selection: Use GPT-4 and GPT-3.5-turbo from OpenAI's API for the main experiments. Additionally, test the open-source LLaMA-3 model for comparison.
+	Step 5: Experiment Execution: For each problem in the dataset:
+		a) Apply all baseline prompts and the CPP prompt.
+		b) Record the model's responses, including intermediate steps and final answers.
+		c) For CPP, also record the identified constraints, variable mappings, and constraint graph descriptions.
+	Step 6: Evaluation Metrics: Implement the following evaluation metrics:
+		a) Solution Accuracy: Percentage of correctly solved problems.
+		b) Consistency Maintenance: Percentage of steps where all constraints remain satisfied.
+		c) Backtracking Frequency: Number of times the model had to backtrack in CPP.
+		d) Constraint Identification Accuracy: Percentage of correctly identified constraints in CPP.
+	Step 7: Analysis: Perform the following analyses:
+		a) Compare CPP performance against baselines across all metrics.
+		b) Analyze how problem complexity affects the relative performance of CPP vs. baselines.
+		c) Examine the quality and relevance of identified constraints and constructed constraint graphs.
+		d) Investigate cases where CPP leads to significant improvements or failures compared to baselines.
+	Step 8: Ablation Studies: Conduct ablation studies by removing or modifying specific components of the CPP method:
+		a) Remove the constraint graph construction step.
+		b) Eliminate the consistency checking step.
+		c) Disable the backtracking mechanism.
+		Compare these modified versions to the full CPP method.
+	Step 9: Error Analysis: Categorize and analyze the types of errors made by both baseline methods and CPP. Identify patterns in errors and situations where each method tends to fail or excel.
+	Step 10: Reporting Results: Compile all results, analyses, and insights into a comprehensive report. Include quantitative comparisons, qualitative examples, and discussions of the strengths and limitations of the CPP method.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Direct Prompting): Solve the system of equations: 2x + y = 7, 3x - 2y = 1
+		Baseline Prompt Expected Output (Direct Prompting): The solution to the system of equations is x = 2 and y = 3.
+		Baseline Prompt Input (Chain-of-Thought Prompting): Solve the system of equations: 2x + y = 7, 3x - 2y = 1. Let's approach this step-by-step:
+		Baseline Prompt Expected Output (Chain-of-Thought Prompting): Let's approach this step-by-step:
+			1) We have two equations:
+			   2x + y = 7  (Equation 1)
+			   3x - 2y = 1 (Equation 2)
+			2) Let's multiply Equation 1 by 2:
+			   4x + 2y = 14 (Equation 3)
+			3) Now, add Equation 2 to Equation 3:
+			   7x = 15
+			4) Solve for x:
+			   x = 15/7 ≈ 2.14
+			5) Substitute this value of x into Equation 1:
+			   2(2.14) + y = 7
+			   4.28 + y = 7
+			   y = 7 - 4.28 = 2.72
+			6) Therefore, the solution is approximately:
+			   x ≈ 2.14
+			   y ≈ 2.72
+		Proposed Prompt Input (Constraint Propagation Prompting): Solve the system of equations: 2x + y = 7, 3x - 2y = 1
+			1. Identify Constraints: List all constraints in the problem.
+			2. Map Variables: Identify all variables and their relationships to the constraints.
+			3. Construct Constraint Graph: Describe how the constraints and variables interact.
+			4. Apply Constraints: Solve the problem step-by-step, updating the constraint graph.
+			5. Check Consistency: After each step, verify that no constraints are violated.
+			6. Backtrack if Needed: If a contradiction is found, go back to the last consistent state and try a different approach.
+			Final Answer: Provide the solution to the problem.
+		Proposed Prompt Expected Output (Constraint Propagation Prompting): 
+			1. Identify Constraints:
+			   - Constraint 1: 2x + y = 7
+			   - Constraint 2: 3x - 2y = 1
+			2. Map Variables:
+			   - x: appears in both equations
+			   - y: appears in both equations
+			3. Construct Constraint Graph:
+			   - x and y are connected through Constraint 1 (2x + y = 7)
+			   - x and y are also connected through Constraint 2 (3x - 2y = 1)
+			   - The two constraints form a system that uniquely determines x and y
+			4. Apply Constraints:
+			   Step 1: Multiply Constraint 1 by 2
+			     4x + 2y = 14 (Constraint 3)
+			   Step 2: Add Constraint 2 to Constraint 3
+			     7x = 15
+			   Step 3: Solve for x
+			     x = 15/7
+			5. Check Consistency:
+			   - x = 15/7 satisfies both original constraints (partial check)
+			6. Continue Applying Constraints:
+			   Step 4: Substitute x = 15/7 into Constraint 1
+			     2(15/7) + y = 7
+			     30/7 + y = 7
+			     y = 7 - 30/7 = 19/7
+			7. Final Consistency Check:
+			   - x = 15/7 and y = 19/7 satisfy Constraint 1:
+			     2(15/7) + 19/7 = 30/7 + 19/7 = 49/7 = 7 ✓
+			   - x = 15/7 and y = 19/7 satisfy Constraint 2:
+			     3(15/7) - 2(19/7) = 45/7 - 38/7 = 7/7 = 1 ✓
+			Final Answer: The solution to the system of equations is x = 15/7 and y = 19/7.
+		Explanation: The Constraint Propagation Prompting method provides a more structured approach to solving the system of equations. It explicitly identifies the constraints, maps the variables, and constructs a constraint graph. This allows for a systematic application of constraints and consistency checking at each step. The final answer is exact (15/7 and 19/7) rather than approximate, and the method verifies that the solution satisfies both original equations.
+
+6. Fallback Plan: If the Constraint Propagation Prompting method does not significantly outperform the baselines, we can pivot the project in several ways. First, we could conduct a detailed error analysis to understand why CPP is not as effective as expected. This could involve categorizing the types of problems where CPP fails and examining the intermediate steps (constraint identification, variable mapping, etc.) to identify weak points in the method. We could then use these insights to refine the CPP approach, perhaps by developing problem-specific variations of the method. Alternatively, we could explore combining CPP with other prompting techniques, such as few-shot learning or self-consistency checks, to create a hybrid approach that leverages the strengths of multiple methods. Another direction could be to focus on the interpretability aspects of CPP, analyzing how the explicit constraint representation and propagation provide insights into the model's reasoning process, even if it doesn't always lead to more accurate solutions. This could turn the project into a study on LLM reasoning transparency in mathematical problem-solving. Finally, we could expand the scope to include human evaluation of the CPP outputs, assessing whether the structured approach leads to more understandable or pedagogically useful explanations, even if the final answers are not always more accurate.

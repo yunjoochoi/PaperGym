@@ -1684,8 +1684,9 @@ Run:
 ```bash
 uv run python scripts/fetch_si_ideas.py --ai-researcher ../AI-Researcher
 uv run python scripts/check_executability.py
+uv run python scripts/prefetch_datasets.py        # pull HF (GSM8K) download forward — fail-fast, warms cache
 ```
-Expected: `data/si_ideas/*.json` written; `executability.jsonl` reports the executable count (the full-43 extension of ①).
+Expected: `data/si_ideas/*.json` written; `executability.jsonl` reports the executable count (the full-43 extension of ①); `prefetched gsm8k_accuracy: N examples` confirms the HF cache is warm before any LLM spend.
 
 - [ ] **Step 2: Execute one Math idea end-to-end**
 

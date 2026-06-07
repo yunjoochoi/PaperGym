@@ -1,0 +1,77 @@
+Title: Multimodal Factual Grounding Prompting: Enhancing Factuality in Large Language Models through Cross-Modal Corroboration
+
+1. Problem Statement: Large language models often struggle with grounding their responses in factual information, especially when dealing with concepts that have visual or auditory components. This leads to inaccurate or hallucinated information in their outputs, particularly for topics that benefit from multimodal understanding.
+
+2. Motivation: Current approaches primarily focus on text-based fact-checking or simple image captioning, but lack sophisticated mechanisms for integrating multimodal information into factual reasoning. By leveraging multimodal inputs and prompting the model to ground its responses in various forms of sensory information, we can improve the model's ability to generate more accurate and richly detailed factual responses. This approach is inspired by human cognition, where we often rely on multiple senses to verify and enrich our understanding of facts.
+
+3. Proposed Method: We introduce Multimodal Factual Grounding Prompting (MFGP), a technique that integrates textual, visual, and potentially auditory inputs to guide the model in generating factually grounded responses. The prompt structure includes:
+	(1) Multimodal Input Presentation: "Consider the following information about [Topic]: [Text description], [Image], [Audio clip]"
+	(2) Modal-specific Analysis: "Describe the key factual information provided by each mode (text, image, audio):"
+	(3) Cross-modal Corroboration: "Identify facts that are supported by multiple modes:"
+	(4) Multimodal Synthesis: "Using the corroborated information, provide a comprehensive factual description of [Topic]:"
+	(5) Source Attribution: "For each key fact in your description, indicate which mode(s) of input support it:"
+	(6) Uncertainty Acknowledgment: "Identify any aspects of [Topic] that lack clear support from the provided multimodal inputs."
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Create a multimodal dataset covering various topics with text, image, and audio components.
+		- Utilize existing datasets like MS-COCO for images, AudioSet for audio, and Wikipedia for text.
+		- Ensure a diverse range of topics that benefit from multimodal understanding (e.g., musical instruments, wildlife, historical events).
+		- Create 1000 test examples, each containing a text description, an image, and an audio clip related to a specific topic.
+	Step 2: Baseline Methods Implementation
+		- Implement two baseline methods:
+			1) Text-only prompting: Use only the text description to generate a response.
+			2) Simple multimodal concatenation: Concatenate text description with image captions and audio transcriptions, then prompt for a response.
+	Step 3: MFGP Implementation
+		- Implement the MFGP method as described in the 'Proposed Method' section.
+		- Utilize Claude-3.5 with vision capabilities for processing both text and images.
+		- For audio processing, use a separate audio-to-text model (e.g., Whisper) to transcribe audio clips before feeding them to Claude-3.5.
+	Step 4: Evaluation Metrics
+		- Implement the following evaluation metrics:
+			1) Factual Accuracy: Use a combination of automated fact-checking against a knowledge base and human evaluation.
+			2) Information Richness: Count the number of unique, relevant facts in the generated response.
+			3) Cross-modal Consistency: Measure the consistency of facts across different modalities.
+			4) Source Attribution Accuracy: Evaluate the correctness of source attributions for each fact.
+	Step 5: Experiment Execution
+		- For each test example in the dataset:
+			1) Apply the baseline methods and MFGP.
+			2) Generate responses using Claude-3.5.
+			3) Evaluate the responses using the defined metrics.
+			4) Compare the performance of MFGP against the baselines.
+	Step 6: Analysis
+		- Calculate average scores for each metric across all test examples.
+		- Perform statistical significance tests to compare MFGP with baselines.
+		- Analyze performance across different topic categories.
+		- Examine cases where MFGP significantly outperforms or underperforms compared to baselines.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Text-only): Describe the humpback whale, including its physical characteristics, behavior, and habitat.
+		Baseline Prompt Expected Output (Text-only): The humpback whale is a large marine mammal known for its distinctive body shape and long pectoral fins. They typically grow to lengths of 40-50 feet and can weigh up to 40 tons. Humpbacks are known for their complex vocalizations, often referred to as whale songs, which can last for hours. They are found in oceans worldwide and undertake long migrations between feeding and breeding grounds. Humpbacks are baleen whales, feeding primarily on krill and small fish by filter feeding.
+		Proposed Prompt Input (MFGP): Consider the following information about humpback whales: [Text description of humpback whales], [Image of a humpback whale breaching], [Audio clip of humpback whale vocalizations]. Describe the key factual information provided by each mode (text, image, audio): Identify facts that are supported by multiple modes: Using the corroborated information, provide a comprehensive factual description of humpback whales: For each key fact in your description, indicate which mode(s) of input support it: Identify any aspects of humpback whales that lack clear support from the provided multimodal inputs:
+		Proposed Prompt Expected Output (MFGP): Key factual information:
+		Text: Humpback whales are large marine mammals, 40-50 feet long, weighing up to 40 tons. They have long pectoral fins and are known for complex vocalizations. They migrate between feeding and breeding grounds and are filter feeders.
+		Image: The whale has a dark upper body with a white underbelly. It's breaching, showing its large, barnacle-covered body emerging from the water. The image confirms the whale's size and distinctive body shape.
+		Audio: The clip contains a series of varied vocalizations, including moans, cries, and complex melodic sequences, confirming the whale's ability to produce intricate songs.
+		Cross-modal corroboration:
+		1. Large size (text and image)
+		2. Distinctive body shape (text and image)
+		3. Complex vocalizations (text and audio)
+		Comprehensive description:
+		Humpback whales are massive marine mammals, typically measuring 40-50 feet in length and weighing up to 40 tons (text, image). They have a distinctive body shape with long pectoral fins and a dark upper body contrasting with a white underbelly (text, image). One of their most remarkable features is their complex vocalization ability, producing intricate songs that can include moans, cries, and melodic sequences (text, audio). These vocalizations can last for hours and are believed to play a role in communication and mating behaviors (text). Humpbacks are known for their acrobatic displays, such as breaching, where they launch their enormous bodies out of the water (image). Their skin often hosts barnacles, as visible in breaching individuals (image). Humpback whales are found in oceans worldwide and undertake long migrations between feeding and breeding grounds (text). They are baleen whales, feeding primarily on krill and small fish by filter feeding (text).
+		Source attribution:
+		1. Size and weight (text, image)
+		2. Body shape and coloration (text, image)
+		3. Complex vocalizations (text, audio)
+		4. Breaching behavior (image)
+		5. Presence of barnacles (image)
+		6. Global distribution and migration (text)
+		7. Feeding method (text)
+		Aspects lacking clear support:
+		1. Specific details about breeding behaviors
+		2. Exact migration routes
+		3. Lifespan
+		4. Conservation status
+		Explanation: The MFGP method provides a more comprehensive and factually grounded description by integrating information from multiple modalities. It corroborates facts across different sources, provides specific examples (like the breaching behavior seen in the image), and acknowledges aspects that lack clear support from the given inputs. This approach reduces the likelihood of hallucination and increases the richness and accuracy of the information provided.
+
+6. Fallback Plan: If the proposed MFGP method does not significantly outperform the baselines, we will conduct a detailed error analysis to understand why. This may involve examining which types of facts are most challenging for MFGP to corroborate across modalities, analyzing whether certain modalities (text, image, or audio) are more prone to errors or inconsistencies, and investigating if the model struggles with specific types of topics or information. Based on these findings, we could refine the MFGP method, perhaps by adjusting the prompting structure or introducing additional steps for conflict resolution when information from different modalities disagrees. Alternatively, we could explore combining MFGP with other techniques like retrieval-augmented generation or self-consistency checking to further enhance factual accuracy. If the multimodal approach proves challenging, we could pivot to focus on improving factual grounding within a single modality, such as developing more sophisticated text-based fact-checking prompts that encourage the model to reason about the reliability and consistency of its own outputs.

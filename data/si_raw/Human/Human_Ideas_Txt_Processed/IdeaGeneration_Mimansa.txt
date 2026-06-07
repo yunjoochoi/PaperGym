@@ -1,0 +1,89 @@
+Title: Prompt Evolution for Reducing Negation-Related Errors in Large Language Models
+
+1. Problem Statement: Large language models struggle with understanding and correctly implementing negation in instructions, particularly in "do not" type sentences. This issue affects both general-purpose and specialized language models, and the process of understanding negation in such models is not well understood. The problem is exacerbated when dealing with complex queries that involve multiple negations or when the negation interacts with other linguistic phenomena such as quantifiers, conditionals, or temporal expressions.
+
+2. Motivation: Current methods for improving negation handling in language models primarily fall into two categories: suggestions for prompt writing and negation clamping. However, these methods often require expert prompting techniques or internal access to model weights, which is not feasible for many research experiments or general-purpose use cases. We aim to develop a method that can evolve a prompt provided by a layperson into one that effectively handles negation without inducing factual errors or non-instruction following errors. As a consequence of trying to mitigate this problem, we hope to understand the underlying mechanisms of negation processing in language models and how they can be improved without extensive retraining or architectural changes.
+
+3. Proposed Method: Query Expansion for Control of Negation Outputs
+Our method consists of the following core steps:
+	a. Negation Classification: Identify the type of negation in the prompt and classify it into three categories:
+		• Closed negation: Limited set of possibilities (e.g., "do not include a female character")
+		• Open negation: Specific word or phrase exclusion (e.g., "do not include the word 'therefore'")
+		• Limiting negation: Broader set of possibilities (e.g., "do not suggest food items")
+	b. Prompt Expansion: Based on the negation type, apply one of the following expansion methods:
+		• Closed form replacement: Replace the negated instruction with a positive one
+		• Open form replacement: Generate alternative propositions or instructions
+		• Propositioning: Generate a response, create propositions, ask LLM to match the required negation instruction, remove negated elements, and rewrite the answer
+	c. Response Generation: Use the expanded prompt to generate a response that adheres to the original negation instruction
+	d. Verification: Implement a self-verification step where the model checks its own output against the original negation constraints
+	e. Confidence Scoring: Assign a score to the final output based on the number of negation violations, i.e., the degree of adherence to the negation constraints
+
+4. Step-by-Step Experiment Plan:
+	a. Data Collection:
+		• Gather datasets from sources like wikidata, where you have paragraphs with some information about an entity and an object, creating negation-related questions based on the available information and the pre-annotated relation between them.
+		• Develop a synthetic dataset with carefully crafted negation scenarios to test specific aspects of negation handling
+		• Collect real-world examples of negation-related errors from user interactions with existing language models from Chatbot Arena or Wildchat
+	b. Prompt Construction:
+		• Baseline: Direct prompting with negation (e.g., "Answer this question. Do not mention X.")
+		• Closed form replacement
+		• Open form replacement
+		• Propositioning
+	c. Model Selection: Test both open-source and closed-source models, including GPT-3.5, GPT-4, LLaMA-3 70B, and other relevant models. Additionally, include smaller models and synthetic data trained models (such as phi) to investigate the relationship between model size and negation handling capabilities.
+	d. Result Generation: Obtain answers from the models using both baseline and proposed methods.
+	e. Analysis:
+		• Compare the effectiveness of direct negation inclusion versus the various expansion methods.
+		• Evaluate the impact of model size on negation handling capabilities.
+		• Analyze the relationship between negation type and the most effective expansion method.
+		• Assess the correlation between confidence scores and actual adherence to negation constraints
+	f. Human Evaluation: Conduct a human evaluation study to assess the naturalness and coherence of the generated responses, as well as their adherence to the original negation instructions.
+
+5. Test Case Examples:
+	a. Thanksgiving Food Items
+		Baseline Prompt: "Name some food items traditionally eaten on Thanksgiving. Do not include items that are non-vegetarian."
+		Baseline Output: Turkey, Mashed potatoes, Green bean casserole, Cranberry sauce, Pumpkin pie, Stuffing
+		Explanation: The baseline method fails by including turkey, which is non-vegetarian.
+		Proposed Method:
+		Step 1: "Tell me all the foods that can be eaten on Thanksgiving."
+		Output: Turkey, ham, mashed potatoes, green bean casserole, cranberry sauce, pumpkin pie, stuffing, sweet potato casserole, rolls, gravy, corn, Brussels sprouts.
+		Step 2: Prepositionize the answer into a list of foods.
+		Step 3: Compare each food item to determine if it contains meat.
+		Step 4: "List vegetarian food items traditionally eaten on Thanksgiving."
+		Final Output: Mashed potatoes, Green bean casserole, Cranberry sauce, Pumpkin pie, Sweet potato casserole, Rolls, Corn, Brussels sprouts
+		Explanation: The proposed method successfully excludes non-vegetarian items like turkey and ham, providing a more accurate list of vegetarian Thanksgiving foods.
+	b. Safari Story
+		Baseline Prompt: "Write me a story about going on a safari in South Africa. I did not meet any elephants, so do not include them."
+		Baseline Output: "As we drove through Kruger National Park, the excitement was palpable. Suddenly, our guide pointed out a herd of elephants in the distance. Their massive gray bodies and swaying trunks were a breathtaking sight. We watched in awe as they..."
+		Explanation: The baseline method fails by including elephants despite the instruction not to.
+		Proposed Method:
+		Step 1: "What are the animals usually found on an African safari?"
+		Output: Lions, leopards, rhinos, buffalo, giraffes, zebras, hippos, cheetahs, hyenas, wildebeest.
+		Step 2: Identify animals that are not elephants
+		Step 3: "Write me a story about going on a safari in South Africa. I met lions, leopards, rhinos, and giraffes."
+		Final Output (example from a real LLM call): "Our journey through Kruger National Park was unforgettable. We spotted a pride of lions lounging in the shade, their golden coats gleaming in the sun. Later, we were lucky enough to see a leopard stealthily moving through the brush. The highlight was encountering a group of rhinos, their prehistoric appearance leaving us in awe. As the day ended, we watched a family of giraffes gracefully moving across the savanna, their long necks silhouetted against the setting sun."
+		Explanation: The proposed method successfully avoids mentioning elephants while still providing an engaging safari story with other animals.
+	c. Healthy Lifestyle Routine
+		Baseline Prompt: "Describe a healthy lifestyle routine that does not include early morning exercises and does not involve strict dieting."
+		Baseline Output: "A healthy lifestyle routine starts with waking up early for a 6 AM jog. After that, follow a strict meal plan consisting of..."
+		Explanation: The baseline method fails by including early morning exercises and mentioning strict dieting, both of which were explicitly excluded in the prompt.
+		Proposed Method:
+		Step 1: "List components of a healthy lifestyle routine."
+		Output: Regular exercise, balanced diet, adequate sleep, stress management, hydration, social connections, regular health check-ups, mindfulness practices.
+		Step 2: Remove early morning exercises and strict dieting from the list.
+		Step 3: "Describe a healthy lifestyle routine that focuses on balanced meals, adequate sleep, stress management, hydration, social connections, regular health check-ups, and mindfulness practices."
+		Final Output (example from a real LLM call): "A healthy lifestyle routine focuses on balance and flexibility. Start your day with a nutritious breakfast, then engage in light stretching or yoga to energize your body. Throughout the day, stay hydrated and choose balanced meals that you enjoy. In the afternoon or evening, incorporate moderate exercise like a brisk walk or swim. Practice stress management through meditation or deep breathing exercises. Prioritize 7-9 hours of sleep each night. Maintain social connections by spending time with friends and family. Regularly attend health check-ups and practice mindfulness to stay connected with your body and mind."
+		Explanation: The proposed method successfully creates a healthy lifestyle routine without mentioning early morning exercises or strict dieting, adhering to the original instructions while providing a comprehensive plan.
+	d. Other possible test samples:
+		• Negation with Quantifiers:
+			Baseline Prompt: "Explain the process of photosynthesis without using any technical terms."
+			Expansion Prompt: "List the technical terms commonly used to explain photosynthesis." Step 2: "Explain the process of photosynthesis using everyday language. For each [technical term from step 1], use a simple analogy or description."
+		• Temporal Negation:
+			Baseline Prompt: "Write a brief history of space exploration, but do not mention any events that occurred after the year 2000."
+			Expansion Prompt: Step 1: "Create a timeline of major space exploration events up to the year 2000." Step 2: "Write a brief history of space exploration focusing on the events from the timeline in step 1."
+		• Conditional Negation:
+			Baseline Prompt: "Create a character persona for a person looking to invest who is in their 20s. Provide investment advice for this person, but do not suggest any high-risk options if the person has a family to support."
+			Expansion Prompt: Step 1: "List investment options categorized by risk level." Step 2: "Provide investment advice for a young professional. If the person has a family to support, only include options from [low and medium risk categories from step 1]."
+		• Creative Writing with common co-occurrence Negation:
+			Baseline Prompt: "Write a short mystery story set in a small town, but do not include any murders or professional detectives."
+			Expansion Prompt: Step 1: "List common elements of mystery stories that do not involve murders or professional detectives." Step 2: "Write a short mystery story set in a small town, focusing on [elements from step 1]."
+
+6. Fallback Plan: If the proposed method does not yield satisfactory results, we will pursue two alternative approaches. First, we will conduct error analysis and categorization to understand the effectiveness of different expansion methods for various negation types. This will involve identifying categories where negation can be successfully handled and those where it remains challenging. Second, we will investigate the impact of instruction quantity and context length on negation handling. For instance, we will examine how negation constraints are processed in story generation tasks with varying amounts of pre-existing context. Additionally, we will conduct a benchmarking study to analyze how different models, including smaller models like phi that are trained on synthetic data for negation handling, perform in these scenarios. This analysis will provide insights into the relationship between model characteristics and negation processing abilities, as well as the potential benefits of synthetic training data for improving negation handling capabilities.

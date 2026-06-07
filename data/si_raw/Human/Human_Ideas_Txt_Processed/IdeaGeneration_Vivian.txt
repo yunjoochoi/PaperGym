@@ -1,0 +1,82 @@
+Title: Context-Aware Code Generation: Enhancing Contextual Understanding in Large Language Models for Improved Code Generation
+
+1. Problem Statement: Current large language models (LLMs) often produce code that lacks context awareness, leading to issues such as incorrect assumptions about variable states, inappropriate use of libraries, and non-optimized logic flows. Enhancing the contextual understanding of code during generation can significantly improve the quality and accuracy of generated code.
+
+2. Motivation: Most code generation improvements focus on fine-tuning models on specific codebases or leveraging extensive examples. However, these methods often overlook the context in which the code will be executed. By introducing a context-aware prompting technique, we can ensure the LLMs generate more relevant and efficient code that aligns better with the intended use case. Adapting prompts to the specific characteristics of each input can help LLMs generate more accurate and consistent responses, guiding them to focus on the most important aspects of the problem and reduce the risk of errors.
+
+3. Proposed Method: We propose Context-Aware Code Generation (CACG), a dynamic prompting approach that enhances the contextual understanding of code by LLMs. The key steps include:
+	(1) Context Extraction: Extract relevant context from the user's environment or previous code snippets. This context includes variable definitions, imported libraries, existing functions, and comments that provide insight into the code's purpose.
+	(2) Baseline Code Generation: Generate an initial code snippet using the LLM based on the user's query and the extracted context.
+	(3) Contextual Adjustment: Review the generated code in the context of the initial environment. Identify discrepancies or areas where the context was not adequately considered. Prompt the LLM to adjust the code, emphasizing the importance of specific contextual elements that were initially overlooked.
+	(4) Final Code Synthesis: Combine the adjustments to produce a final code snippet that is contextually aware and optimized for the intended use case.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Gather Datasets: Select datasets that include diverse coding tasks and environments, such as the MBPP and HumanEval.
+	Step 2: Construct Prompts:
+		(1) Context Extraction: Extract relevant elements from the user's environment to provide a comprehensive context for code generation.
+		(2) Baseline Code Generation: Generate initial code based on the user query and the extracted context to ensure relevance and accuracy.
+		(3) Contextual Adjustment: Identify and correct discrepancies in the initial code, ensuring alignment with the provided context.
+		(4) Final Code Synthesis: Combine the adjusted code elements to produce a final, contextually aware, and optimized code snippet.
+	Step 3: Select Models: Test GPT-3.5 (Text-Davinci-003), GPT-4 from the OpenAI API, and the open-source LLaMA-3.
+	Step 4: Get Results: Obtain answer predictions from the models on these datasets with both the baselines and proposed method.
+	Step 5: Analyze Results: Compare the performance of CACG against baseline methods in terms of code accuracy, efficiency, and context awareness.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Direct Prompting):
+		User query: "Write a function to sort a list of integers."
+		Baseline Prompt Expected Output:
+		def sort_list(numbers):
+			return sorted(numbers)
+		Proposed Prompt Input (CACG; Step 1: Context Extraction):
+		Extract context from previous code snippets and environment.
+		Example Context:
+		context = {
+			'imports': ['import numpy as np'],
+			'variables': ['data_list = [5, 2, 9, 1, 5, 6]'],
+			'functions': ['def process_data(data):']
+		}
+		Proposed Prompt Input (CACG; Step 2: Baseline Code Generation):
+		Generate initial code with context.
+		def sort_list(numbers):
+			return np.sort(numbers)
+		Proposed Prompt Input (CACG; Step 3: Contextual Adjustment):
+		Adjust code based on context discrepancies.
+		def sort_list(data_list):
+			return np.sort(data_list)
+		Proposed Prompt Input (CACG; Step 4: Final Code Synthesis):
+		Combine adjustments to create final code.
+		def sort_list(data_list):
+			return np.sort(data_list)
+	Test Case 2:
+		Prompts:
+		Using the following context, write a function to sort a list of integers.
+		Context:
+		- Imports: import numpy as np
+		- Variables: data_list = [5, 2, 9, 1, 5, 6]
+		- Functions: def process_data(data):
+		- Comments: # This function processes the data
+		User Query: Write a function to sort a list of integers.
+		Review the generated code and adjust it to ensure it aligns with the provided context.
+		Context:
+		Imports: import numpy as np
+		Variables: data_list = [5, 2, 9, 1, 5, 6]
+		Functions: def process_data(data):
+		Comments: # This function processes the data
+		Generated Code:
+		def sort_list(numbers):
+		return sorted(numbers)
+		Adjusted Code:
+		Combine the adjustments to generate the final code snippet that is contextually aware and optimized.
+		Context:
+		- Imports: import numpy as np
+		- Variables: data_list = [5, 2, 9, 1, 5, 6]
+		- Functions: def process_data(data):
+		- Comments: # This function processes the data
+		Adjusted Code:
+		def sort_list(data_list):
+			return np.sort(data_list)
+		User Query: Write a function to sort a list of integers.
+		Final Code:
+
+6. Fallback Plan: If the proposed CACG method does not outperform the baseline, we will analyze each step to identify potential weaknesses. Specifically, we will assess whether the context extraction accurately captures relevant elements, if the adjustments address the context discrepancies effectively, and if the final synthesized code is indeed more contextually aware and optimized. This analysis can provide insights into improving the model's contextual understanding or refining the prompting strategy. We will explore alternative input features or feature extraction methods to better capture relevant characteristics. Additionally, we will conduct a detailed error analysis to identify problematic inputs or prompts, guiding further improvements in the CACG approach.

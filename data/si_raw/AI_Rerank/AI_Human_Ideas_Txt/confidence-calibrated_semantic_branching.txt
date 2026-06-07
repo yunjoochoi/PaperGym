@@ -1,0 +1,78 @@
+Title: Confidence-Calibrated Semantic Branching: Improving Uncertainty Quantification in Large Language Models
+
+1. Problem Statement: Current Large Language Models (LLMs) often struggle to accurately quantify their uncertainty across diverse domains and tasks, frequently displaying overconfidence in incorrect answers. This issue limits their reliability and applicability in critical decision-making scenarios where understanding model uncertainty is crucial.
+
+2. Motivation: Existing approaches like temperature scaling and ensemble methods often provide coarse-grained uncertainty estimates that fail to capture the nuanced semantic structure of complex queries. Inspired by decision trees in machine learning, we propose a method that recursively branches the semantic space to refine uncertainty estimates. This approach leverages the LLM's ability to decompose problems and reason about its own confidence, potentially leading to more fine-grained and accurate uncertainty quantification.
+
+3. Proposed Method: We introduce Confidence-Calibrated Semantic Branching (CCSB), a novel prompting technique that iteratively divides the solution space into increasingly specific sub-problems. The process involves four main steps:
+	(1) Initial branching: The LLM identifies key decision points or ambiguities in the query.
+	(2) Sub-query generation: For each branch, it generates sub-queries that explore different semantic interpretations or solution paths.
+	(3) Confidence estimation: The LLM estimates its confidence for each branch.
+	(4) Recursive application: This process is recursively applied to low-confidence branches until a confidence threshold is met or a maximum depth is reached.
+Finally, the method aggregates branch-level confidences into an overall uncertainty estimate, considering the hierarchical structure of the explored semantic space.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• Utilize three diverse datasets:
+			- TruthfulQA for open-ended question answering
+			- GSM8K for mathematical reasoning
+			- CommonsenseQA for common sense inference
+		• These datasets cover a range of task types and difficulty levels.
+	Step 2: Baseline Implementation
+		• Implement three baseline methods:
+			a) Direct prompting: Simply ask the LLM the question.
+			b) Temperature scaling: Use different temperature settings (0.5, 1.0, 2.0) for sampling.
+			c) Chain-of-thought (CoT) prompting: Use the standard CoT prompt "Let's approach this step by step:"
+	Step 3: CCSB Implementation
+		• Implement the CCSB method with the following steps:
+			a) Initial branching prompt: "Identify the key decision points or ambiguities in this query:"
+			b) Sub-query generation prompt: "For each decision point, generate a specific sub-query:"
+			c) Confidence estimation prompt: "Estimate your confidence (0-100%) in answering each sub-query:"
+			d) Recursive application: Apply steps b and c to sub-queries with confidence below 70% up to a maximum depth of 3.
+			e) Aggregation: Implement a weighted average of confidences based on the hierarchical structure.
+	Step 4: Model Selection
+		• Utilize GPT-4 as the primary model, accessed through the OpenAI API.
+		• For comparison, test GPT-3.5-turbo and Claude-3.5 from Anthropic.
+	Step 5: Evaluation Metrics
+		• Employ the following metrics:
+			a) Accuracy: Percentage of correct answers.
+			b) Expected Calibration Error (ECE): Measure of calibration quality.
+			c) Brier Score: Combined measure of calibration and resolution.
+			d) Area Under the Confidence-Accuracy Curve: Measure of the relationship between confidence and accuracy.
+	Step 6: Experiment Execution
+		• For each dataset and model combination:
+			a) Run the baseline methods and CCSB.
+			b) Collect model outputs, including intermediate steps for CCSB.
+			c) Calculate evaluation metrics.
+			d) Repeat each experiment 5 times to account for variability.
+	Step 7: Analysis
+		• Compare CCSB performance against baselines across all metrics.
+		• Analyze the relationship between branching depth and performance.
+		• Investigate cases where CCSB significantly outperforms or underperforms baselines.
+		• Examine the generated semantic branches and sub-queries for insights into the model's reasoning process.
+
+5. Test Case Examples:
+	Test Case 1: Direct Prompting (Baseline)
+		• Input: Q: What is the capital of France? Provide your answer and your confidence level (0-100%).
+		• Output: A: The capital of France is Paris. Confidence level: 95%
+	Test Case 2: CCSB (Proposed Method)
+		• Input (Step 1: Initial Branching): Q: What is the capital of France? Identify the key decision points or ambiguities in this query:
+		• Output (Step 1: Initial Branching):
+			1. Definition of 'capital': Political capital or largest city?
+			2. Time period: Current capital or historical capital?
+			3. Recognition: Internationally recognized capital or disputed capital?
+		• Input (Step 2: Sub-query Generation): Generate a specific sub-query for each decision point:
+		• Output (Step 2: Sub-query Generation):
+			1. Is the current political capital of France different from its largest city?
+			2. Has the capital of France changed in recent history (last 100 years)?
+			3. Is there any dispute or lack of international recognition regarding France's capital?
+		• Input (Step 3: Confidence Estimation): Estimate your confidence (0-100%) in answering each sub-query:
+		• Output (Step 3: Confidence Estimation):
+			1. Confidence: 98% - I'm very confident that Paris is both the political capital and largest city of France.
+			2. Confidence: 95% - I'm quite certain the capital hasn't changed in the last 100 years, but there's a small chance I might be missing a brief change.
+			3. Confidence: 99% - I'm almost entirely sure there's no dispute about Paris being the capital of France.
+		• Input (Final Step: Aggregation): Based on the sub-queries and confidence levels, what is the capital of France? Provide your final answer and overall confidence level (0-100%).
+		• Output (Final Step: Aggregation): A: The capital of France is Paris. Overall confidence level: 97% (This is a weighted average of the confidence levels from the sub-queries, considering that all sub-queries support the same conclusion).
+	Explanation: CCSB provides a more nuanced and justified confidence estimate by breaking down the question into potential ambiguities and assessing confidence for each aspect. This process allows for a more robust overall confidence estimate compared to the baseline method.
+
+6. Fallback Plan: If CCSB does not significantly outperform baselines, we will pivot to an analysis paper focusing on why uncertainty quantification remains challenging for LLMs. We will conduct a detailed error analysis, categorizing the types of questions where CCSB fails to improve uncertainty estimates. This will involve examining the semantic branching process to identify patterns in ineffective decompositions or misleading confidence estimates. We will also investigate how different models (GPT-4, GPT-3.5, Claude-3.5) vary in their ability to perform semantic branching and confidence estimation, potentially revealing insights about their underlying architectures or training processes. Additionally, we will explore how the performance of CCSB varies across different task types (e.g., factual recall vs. reasoning tasks) to understand the method's strengths and limitations. These analyses could provide valuable insights into the nature of uncertainty in LLMs and guide future research directions in improving their calibration.

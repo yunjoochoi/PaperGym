@@ -1,0 +1,146 @@
+Title: Enhancing Code Generation through Property-Based Reasoning
+
+1. Problem Statement: Current approaches to improving code generation by Large Language Models (LLMs) often rely on unit test generation, which primarily verifies input-output pairs and represents only a surface-level aspect of computational thinking. This method fails to leverage the full potential of property-based reasoning, a key intermediate scaffolding in computational thinking between code intent and the final code.
+
+2. Motivation: Property-based testing (PBT) serves as a crucial intermediate step in computational thinking, bridging the gap between code intent and implementation. By explicitly articulating and reasoning about the properties inherent in the code's intended behavior, LLMs can gain a deeper understanding of the problem at hand, plan more effectively around essential code structures, and anticipate and address potential corner cases. Leveraging property-based reasoning can enhance LLMs' understanding of code intent and improve the quality of generated code.
+
+3. Proposed Method: We propose a method to enhance code generation through property-based reasoning, consisting of four key steps:
+	(1) Prompt LLMs to derive key properties from the given code intent.
+	(2) Generate code based on the requirements and the derived properties.
+	(3) Use natural language to trace and verify if the generated code satisfies the identified properties, or generate property-based tests and run the tests in the code interpreter.
+	(4) Identify and fix any discrepancies or bugs found during the tracing process.
+
+We will explore and compare several variants of property-based testing (PBT) generation and verification methods:
+	a) PBT in Code:
+		- Use the "hypothesis" library in Python to generate PBT test cases.
+		- Automatically generate thousands of input-output pairs targeting each derived property.
+		- Execute verification using the "hypothesis" library.
+	b) PBT in Natural Language:
+		- Mimic how human programmers mentally trace code execution to verify properties.
+		- Prompt LLMs to describe the code's behavior and verify properties in natural language.
+	c) Unit Tests (Baseline):
+		- Generate unit tests without explicitly mentioning properties.
+		- Compare our property-based methods against traditional LLM-unit testing approaches.
+
+Additionally, we will evaluate our proposed Property-Based Reasoning in the program repair scenario, comparing the program repair capability between unit-test based and property-based approaches.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Datasets:
+		• Popular code generation datasets that evaluate pass@k, including MBPP and HumanEval.
+		• CodeCentests dataset to evaluate models with more comprehensive test cases.
+		• Program repair dataset, including QuixBugs-python.
+	- Step 2: Construct Pipelines:
+		• Natural language property generation
+		• Property-based testing with three variants: PBT in Code, PBT in Natural Language, and Unit Tests
+		• Test execution
+		• Feedback and response revision
+	- Step 3: Select Models: Test GPT-4, LLaMA-3, and Mistral-7B.
+	- Step 4: Get Results: Obtain answer predictions from the models on these datasets with both the baselines and proposed method.
+	- Step 5: Evaluation:
+		• Evaluate compared prompt strategies on:
+			(1) pass@k
+			(2) test coverage
+			(3) novel property rate
+			(4) correct patch rate for automatic program repair
+	- Step 6: Analyze Results: Compare whether the new method improves the performance of LLMs in these tasks compared to the baselines.
+
+5. Test Case Examples:
+	Test Case 1:
+		Input: Context & Property Generation:
+		237. Delete Node in a Linked List. There is a singly-linked list head and we want to delete a node node in it. You are given the node to be deleted node. You will not be given access to the first node of head. All the values of the linked list are unique, and it is guaranteed that the given node node is not the last node in the linked list. Delete the given node. Note that by deleting the node, we do not mean removing it from memory. We mean: The value of the given node should not exist in the linked list. The number of nodes in the linked list should decrease by one. All the values before node should be in the same order. All the values after node should be in the same order. — I'll need your help on property-based testing. Please first write key properties in bullet points according to the requirements.
+
+		Expected output: Properties:
+		• Node Removal Property: After the deletion, the linked list should not contain the value of the deleted node.
+		• Node Count Property: The size of the linked list should be exactly one less than the original size.
+		• Order Property:
+			- All nodes before the given node should remain unchanged.
+			- All nodes after the given node should follow immediately after the node that precedes the given node.
+		• Value Property: All values in the modified list should be unique.
+
+	Test Case 2:
+		Input: Property-based testing generation for hypothesis
+		For each property. Generating property-based tests using the library "hypothesis"
+
+		Expected Output: Initial code & Property-based testing generation for hypothesis
+		from hypothesis import given, strategies as st
+		def delete_node(node): 
+			node.val = node.next.val 
+			node.next = node.next.next
+		def create_linked_list(values): ...
+		def linked_list_to_list(head): ...
+		unique_lists = st.lists(st.integers(min_value=0, max_value=100), min_size=2, unique=True)
+		@given(unique_lists) 
+		def test_node_removal_property(values): ...
+		@given(unique_lists)
+		def test_node_count_property(values): ...
+		@given(unique_lists) 
+		def test_order_property(values): ...
+		@given(unique_lists) 
+		def test_value_property(values):
+
+	Test Case 3:
+		Input: Property-based testing generation by natural language
+		Write a possible solution for this problem. For each property, come up with some test inputs and use your reasoning skill to verify if the solution satisfy the property. For each property verification, please provide your rationale.
+
+		Expected output: initial code & Property-based testing generation by natural language
+		def deleteNode(node): 
+			""" This function deletes the given node (except the tail) in the linked list. It does so by copying the value of the next node into the given node, then unlinking the next node. """ 
+
+			if node is None or node.next is None: return
+			node.val = node.next.val 
+			node.next = node.next.next
+
+		Property Verifications
+		Node Removal Property
+		Test Input:
+		Linked List: [1 -> 2 -> 3 -> 4]
+		Node to delete: Node with value 3
+		Execution:
+		deleteNode(node with value 3):
+		node.val is set to 4 (value of the next node).
+		node.next is set to the next node's next (null in this case).
+		Resulting Linked List: [1 -> 2 -> 4]
+		Verification:
+		The value 3 is no longer in the list.
+
+		Node Count Property
+		Test Input:
+		Linked List: [1 -> 2 -> 3 -> 4 -> 5]
+		Node to delete: Node with value 3
+		Execution:
+		deleteNode(node with value 3):
+		node.val is set to 4.
+		node.next is set to the next node's next.
+		Resulting Linked List: [1 -> 2 -> 4 -> 5]
+		Verification:
+		Original size: 5
+		Modified size: 4
+
+		Order Property
+		Test Input:
+		Linked List: [1 -> 2 -> 3 -> 4 -> 5]
+		Node to delete: Node with value 3
+		Execution:
+		deleteNode(node with value 3):
+		node.val is set to 4.
+		node.next is set to the next node's next.
+		Resulting Linked List: [1 -> 2 -> 4 -> 5]
+		Verification:
+		Values before 3 (1, 2) are unchanged.
+		Values after 3 (4, 5) follow immediately after 2.
+
+		Value Property
+		Test Input:
+		Linked List: [1 -> 2 -> 3 -> 4 -> 5]
+		Node to delete: Node with value 3
+		Execution:
+		deleteNode(node with value 3):
+		node.val is set to 4.
+		node.next is set to the next node's next.
+		Resulting Linked List: [1 -> 2 -> 4 -> 5]
+		Verification:
+		All values are unique: [1, 2, 4, 5]
+
+		This solution successfully meets all the required properties for deleting a node in a singly-linked list. By copying the value of the next node to the current node and adjusting the next pointer, we ensure the given node is effectively deleted while maintaining the integrity and order of the list. Each property verification demonstrates that the solution satisfies the conditions laid out in the problem statement.
+
+6. Fallback Plan: If all PBT passed but the solution is still incorrect, we will conduct error analysis on the automatic program repair dataset to optimize prompts for more helpful PBTs. If the unit test-based strategy outperforms PBT, we will implement few-shot prompting for all baselines to provide LLMs with more background information. In case of unsatisfactory results, we will analyze the generated PBT in terms of validity, diversity, reasoning complexity, and generality to gain insights for improving the approach. This analysis will help us understand the limitations of the current method and guide the development of more effective prompting strategies for property-based reasoning in code generation.

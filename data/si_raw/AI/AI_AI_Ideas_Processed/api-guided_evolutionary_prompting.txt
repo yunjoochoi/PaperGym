@@ -1,0 +1,106 @@
+Title: API-Guided Evolutionary Prompting (AGEP) for Improved Code Generation with Complex APIs
+
+1. Problem Statement: Current code generation models often struggle to effectively utilize complex APIs or libraries, as they lack deep understanding of the API's structure and best practices. This leads to generated code that may be inefficient, incorrect, or fail to leverage the full capabilities of the API.
+
+2. Motivation: Existing methods for improving API usage in generated code, such as fine-tuning on API-specific datasets or including API documentation in prompts, have limited effectiveness and scalability. APIs are designed with specific structures and patterns to support efficient and correct usage. By mimicking the evolutionary process of API design in our prompting technique, we can potentially guide language models to generate code that better aligns with API best practices and structures.
+
+3. Proposed Method: We propose API-Guided Evolutionary Prompting (AGEP), an iterative prompting technique that evolves prompts based on API structure and usage patterns. AGEP starts with a base prompt including the coding task and basic API information. It then iteratively refines the prompt by incorporating API-specific elements:
+	(1) API hierarchy prompts guide the model to respect the API's structural relationships
+	(2) Design pattern prompts encourage adherence to API-specific best practices
+	(3) Constraint prompts enforce API-specific rules and limitations
+Each iteration evaluates the generated code's API usage and evolves the prompt to address observed issues or inefficiencies. This process continues until the generated code demonstrates optimal API utilization.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• Select three diverse APIs for evaluation: 1) A web framework (e.g., Flask), 2) A data processing library (e.g., Pandas), and 3) A graphics API (e.g., OpenGL)
+		• Create a dataset of 50 coding tasks that require complex API usage for each API
+	Step 2: Baseline Implementation
+		• Implement two baseline methods:
+			a) Standard prompting: directly prompt the model with the coding task and basic API information
+			b) API documentation prompting: include relevant API documentation in the prompt along with the coding task
+	Step 3: AGEP Implementation
+		• Implement the AGEP method with the following sub-steps:
+			a) Create a base prompt template that includes the coding task and basic API information
+			b) Implement functions to generate API hierarchy prompts, design pattern prompts, and constraint prompts based on the specific API
+			c) Implement an evaluation function that assesses the quality of API usage in the generated code
+			d) Implement the iterative prompt evolution process
+	Step 4: Model Selection
+		• Use GPT-4 as the primary model for evaluation
+		• Test with GPT-3.5-turbo for comparison
+	Step 5: Experiment Execution
+		• For each API and each coding task:
+			a) Generate code using both baseline methods
+			b) Generate code using AGEP, allowing up to 5 iterations of prompt evolution
+			c) Record the final generated code and the number of iterations for AGEP
+	Step 6: Evaluation
+		• Recruit 3 expert programmers familiar with each API to evaluate the generated code
+		• Create an evaluation rubric that covers correct API usage, adherence to best practices, and overall code quality
+		• Have the experts rate each generated solution on a scale of 1-5 for each criterion
+		• Calculate inter-rater reliability to ensure consistency among evaluators
+	Step 7: Analysis
+		• Compare the average scores of AGEP-generated code against the baselines for each API
+		• Analyze the number of iterations required for AGEP to converge
+		• Identify common patterns in how the prompts evolved across different tasks and APIs
+		• Perform error analysis on cases where AGEP did not outperform baselines
+
+5. Test Case Examples:
+	Test Case 1:
+		• Baseline Prompt Input (Standard Prompting): Write a Python function using the Pandas library to read a CSV file, filter rows based on a condition, group by a column, and calculate the mean of another column for each group.
+		• Baseline Prompt Expected Output (Standard Prompting):
+			import pandas as pd
+
+			def process_csv(file_path, filter_column, filter_value, group_column, mean_column):
+				df = pd.read_csv(file_path)
+				filtered_df = df[df[filter_column] == filter_value]
+				result = filtered_df.groupby(group_column)[mean_column].mean()
+				return result
+		• Proposed Prompt Input (AGEP; Initial): Task: Write a Python function using the Pandas library to read a CSV file, filter rows based on a condition, group by a column, and calculate the mean of another column for each group.
+
+			API Context: Pandas is a powerful data manipulation library. It provides DataFrame objects for handling tabular data efficiently.
+
+			Generate the code to accomplish this task using Pandas:
+		• Proposed Prompt Expected Output (AGEP; Initial):
+			import pandas as pd
+
+			def process_csv(file_path, filter_column, filter_value, group_column, mean_column):
+				# Read the CSV file
+				df = pd.read_csv(file_path)
+				
+				# Filter rows based on the condition
+				filtered_df = df[df[filter_column] == filter_value]
+				
+				# Group by the specified column and calculate the mean
+				result = filtered_df.groupby(group_column)[mean_column].mean()
+				
+				return result
+		• Proposed Prompt Input (AGEP; Iteration 1):
+			Previous code:
+			[Insert the code from the initial output]
+
+			API Hierarchy: In Pandas, operations typically follow a chain: data loading (pd.read_csv) -> data filtering (DataFrame indexing) -> data transformation (groupby, aggregation)
+
+			Design Pattern: Use method chaining to make the code more concise and readable.
+
+			Constraint: Ensure proper error handling for file reading and column existence.
+
+			Refine the code based on these API-specific guidelines:
+		• Proposed Prompt Expected Output (AGEP; Iteration 1):
+			import pandas as pd
+
+			def process_csv(file_path, filter_column, filter_value, group_column, mean_column):
+				try:
+					# Use method chaining for a more concise operation flow
+					result = (pd.read_csv(file_path)
+							  .query(f"{filter_column} == @filter_value")
+							  .groupby(group_column)[mean_column]
+							  .mean())
+					return result
+				except FileNotFoundError:
+					print(f"Error: File '{file_path}' not found.")
+					return None
+				except KeyError as e:
+					print(f"Error: Column {str(e)} not found in the CSV file.")
+					return None
+		• Explanation: The AGEP method iteratively refines the prompt to incorporate API-specific knowledge, resulting in more efficient and robust code. The refined version uses method chaining for better readability, employs the more efficient 'query' method for filtering, and includes proper error handling as per Pandas best practices.
+
+6. Fallback Plan: If AGEP does not significantly outperform the baselines, we can pivot the project to an in-depth analysis of why API-guided prompting may not be effective for certain types of tasks or APIs. This could involve analyzing the evolution of prompts across iterations to identify patterns in how the model interprets and applies API-specific guidance, comparing the effectiveness of different types of API-specific prompts (hierarchy, design patterns, constraints) to understand which aspects of API knowledge are most useful for code generation, investigating whether the effectiveness of AGEP varies based on the complexity of the API or the specific task, which could provide insights into when API-guided prompting is most beneficial, and exploring alternative prompt structures or evolution strategies that might better leverage API knowledge. This analysis could lead to valuable insights about the limitations of current language models in understanding and applying API-specific knowledge, potentially informing future research directions in code generation and API utilization.

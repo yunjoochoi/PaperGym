@@ -1,21 +1,21 @@
-"""
-uv run python scripts/fetch_si_ideas.py --ai-researcher ../AI-Researcher
-uv run python scripts/check_executability.py       
-docker build -f docker/Dockerfile.exec -t papergym-exec:latest .
-uv run python scripts/run_execution_gym.py --limit 1 --n-examples 20   # 아이디어 1개 end-to-end
+"""Orchestrate one idea: baseline -> agent execution -> score -> faithfulness.
 
-Orchestrate one idea: baseline -> agent execution -> score -> faithfulness."""
-
-
-
+The agent's in-sandbox LLM calls go through a host-side metering proxy that
+wraps gen_llm, so their tokens are captured in gen_llm's cumulative counters
+(and therefore in cost_summary's gen delta). meter.usage() is attached as a
+BREAKDOWN of how much of that was sandbox-side; it is NOT re-added to the
+total (that would double-count)."""
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
 from eval.common import CostSnapshot, cost_summary
 from papergym.execution.agent import ExecutionAgent
 from papergym.execution.faithfulness import judge_faithfulness
+from papergym.execution.llm_proxy import run_proxy
+from papergym.execution.metering import UsageMeter
 from papergym.execution.scorer import score_effectiveness
 from papergym.execution.sandbox import LocalSandbox, DockerSandbox
 from papergym.execution.task import Task, GSM8KAccuracyTask  # noqa: F401 (patch target)
@@ -26,20 +26,32 @@ from papergym.llm import LLMClient
 def run_one_idea(*, idea: IdeaSpec, task: Task, gen_llm: LLMClient,
                  judge_llm: LLMClient, work_root: Path,
                  use_docker: bool = False, image: str = "papergym-exec:latest",
-                 max_steps: int = 40) -> ExecResult:
+                 max_steps: int = 40, budget_usd: float = 5.0) -> ExecResult:
     t0 = time.time()
     gen_before = CostSnapshot.of(gen_llm)
     judge_before = CostSnapshot.of(judge_llm)
 
-    baseline_metric = task.run_baseline(gen_llm)
+    baseline_metric = task.run_baseline(gen_llm, split="test")
 
-    sb = (DockerSandbox(work_root=work_root, image=image) if use_docker
-          else LocalSandbox(work_root=work_root))
-    with sb:
-        run = ExecutionAgent(llm=gen_llm, max_steps=max_steps).run(
-            idea=idea, task=task, sandbox=sb)
+    meter = UsageMeter(gen_llm, budget_usd=budget_usd)
+    server, url, _ = run_proxy(meter)
+    prev_url = os.environ.get("GYM_LLM_URL")
+    os.environ["GYM_LLM_URL"] = url
+    try:
+        sb = (DockerSandbox(work_root=work_root, image=image) if use_docker
+              else LocalSandbox(work_root=work_root))
+        with sb:
+            run = ExecutionAgent(llm=gen_llm, max_steps=max_steps).run(
+                idea=idea, task=task, sandbox=sb)
+    finally:
+        server.shutdown()
+        if prev_url is None:
+            os.environ.pop("GYM_LLM_URL", None)
+        else:
+            os.environ["GYM_LLM_URL"] = prev_url
 
-    method_metric, effectiveness = score_effectiveness(task, run, baseline_metric)
+    method_metric, effectiveness, leakage_flags = score_effectiveness(
+        task, run, baseline_metric, split="test")
     faith = judge_faithfulness(proposal=idea.proposal_text, code=run.code,
                                judge_llm=judge_llm)
 
@@ -47,8 +59,12 @@ def run_one_idea(*, idea: IdeaSpec, task: Task, gen_llm: LLMClient,
         judge_before=judge_before, judge_after=CostSnapshot.of(judge_llm),
         gen_before=gen_before, gen_after=CostSnapshot.of(gen_llm),
         wall_clock_s=time.time() - t0)
+    cost["sandbox_llm"] = meter.usage()   # breakdown only; already in gen delta
 
+    kind = "docker" if use_docker else "local"
     return ExecResult(idea_id=idea.idea_id, task_id=task.task_id,
                       baseline_metric=baseline_metric,
                       method_metric=method_metric, effectiveness=effectiveness,
-                      faithfulness_score=faith.score, run=run, cost=cost)
+                      faithfulness_score=faith.score, run=run, cost=cost,
+                      leakage_flags=leakage_flags,
+                      sandbox=kind, trustworthy=use_docker)

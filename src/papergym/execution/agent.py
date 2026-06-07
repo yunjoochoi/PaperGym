@@ -3,7 +3,7 @@ space so an LLM can implement and run an idea's experiment in a sandbox."""
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from papergym.agents.tool_loop import run_tool_loop
 from papergym.llm import LLMClient
@@ -60,21 +60,27 @@ EXECUTION_TOOLS = list(EXECUTION_TOOL_FNS)
 
 
 _SYSTEM = """You are a research-execution agent. Implement the METHOD from the
-idea proposal as `method.py`, run it, and write predictions to
-`predictions.json` in the format {fmt}. You may call the gym's LLM from inside
-method.py via `from papergym.llm import LLMClient; LLMClient().chat(msgs)`.
-The dataset is available via the task description below. Do NOT change the
-proposed method; only implement its experiment. Call Finish when
-predictions.json exists. NO model training — inference-time only."""
+idea proposal as `method.py`, run it, and write `predictions.json` in the
+format {fmt}. Call the LLM ONLY via:
+  from papergym.execution.gym_client import metered_llm_call
+  text = metered_llm_call([{{"role":"user","content":"..."}}])
+Do NOT import datasets/openai/anthropic/litellm/papergym.llm, do NOT download
+any dataset, do NOT read test answers — they do not exist in your sandbox.
+Develop on dev.json (has answers); predict test_inputs.json (no answers).
+Call Finish when predictions.json exists. NO model training."""
 
 
 @dataclass
 class _Tools:
     sandbox: Sandbox
+    written: list = field(default_factory=list)
 
     def dispatch(self, name: str, args: dict) -> str:
         if name == "WriteFile":
-            return _write_file(args["path"], args["content"], sandbox=self.sandbox)
+            path = args["path"]
+            if str(path).endswith(".py") and path not in self.written:
+                self.written.append(path)
+            return _write_file(path, args["content"], sandbox=self.sandbox)
         if name == "RunPython":
             return _run_python(args["path"], sandbox=self.sandbox,
                                timeout=int(args.get("timeout", 600)))
@@ -95,13 +101,16 @@ class ExecutionAgent:
     def run(self, *, idea: IdeaSpec, task: Task, sandbox: Sandbox) -> RunArtifact:
         tools = _Tools(sandbox)
         system = _SYSTEM.format(fmt=task.manifest()["predictions_format"])
-        sandbox.write_file("examples.json",
-                           json.dumps([{"id": e["id"], "question": e["question"]}
-                                       for e in task.examples()]))
+        sandbox.write_file("test_inputs.json",
+                           json.dumps(task.inputs(split="test")))
+        sandbox.write_file("dev.json",
+                           json.dumps(task.examples(split="dev")))
         user = (f"IDEA PROPOSAL:\n{idea.proposal_text}\n\n"
                 f"TASK: {json.dumps(task.manifest())}\n"
-                f"Dataset rows (id, question) are in examples.json in your "
-                f"sandbox. Write predictions for every row.")
+                f"`dev.json` (id, question, ANSWER) is for developing/tuning your "
+                f"method. `test_inputs.json` (id, question — NO answers) is what "
+                f"you must predict. Write predictions.json = [{{'id','pred'}}] for "
+                f"every test_inputs row.")
         messages = [{"role": "system", "content": system},
                     {"role": "user", "content": user}]
         result = run_tool_loop(
@@ -110,11 +119,16 @@ class ExecutionAgent:
             dispatch=tools.dispatch, max_steps=self.max_steps,
             temperature=self.temperature)
 
-        code = ""
-        try:
-            code = "method.py\n" + sandbox.read_file("method.py")
-        except FileNotFoundError:
-            pass
+        seen, parts = set(), []
+        for path in list(tools.written) + ["method.py"]:
+            if path in seen:
+                continue
+            seen.add(path)
+            try:
+                parts.append(f"# {path}\n" + sandbox.read_file(path))
+            except FileNotFoundError:
+                continue
+        code = "\n\n".join(parts)
         predictions = []
         try:
             predictions = json.loads(sandbox.read_file("predictions.json"))

@@ -1,0 +1,41 @@
+Title: Robust Defenses against Many-Shot Jailbreaking
+
+1. Problem Statement: Existing defenses against many-shot jailbreaking have significant flaws, necessitating the development of improved prompt-based defenses that maintain model helpfulness while enhancing safety.
+
+2. Motivation: Many-shot jailbreaking (MSJ) is a recently developed attack method that circumvents safety-tuning on various state-of-the-art long-context language models by overwhelming them with numerous examples of non-refusals to malicious prompts. This attack exploits the models' inherent in-context learning abilities and recent engineering advancements enabling many-shot prompting. While the Cautionary Warning Defense (CWD) has been proposed to combat this issue, it raises concerns about potentially reducing model helpfulness and its vulnerability to circumvention through in-context learning. This project aims to address these concerns and explore alternative defensive strategies that balance safety and utility.
+
+3. Proposed Method: Our approach involves the following key components:
+	(1) Evaluate the anti-CWD attack: Append the cautionary sentence to each many-shot example in the MSJ input.
+	(2) Test CWD ablations:
+		a. CWD without suspicion: Modify the warning paragraph to exclude the notion of user deception.
+		b. CWD without warning: Remove the warning paragraph entirely.
+	(3) Assess novel prompting approaches:
+		a. Transcript Skepticism Defense (TSD): Implement a cautionary sentence encouraging skepticism about the input transcript.
+		b. Identity Skepticism Defense (ISD): Introduce a cautionary sentence suggesting the transcript may be from an assistant with different principles.
+		c. TSD/ISD + Chain of Thought (CoT): Augment TSD and ISD with an additional prompt for step-by-step consideration of principles.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Establish a helpfulness/harmlessness evaluation benchmark using the Anthropic Helpful-Harmless (HH) dialogue dataset. Assess CWD's impact on both helpfulness and harmlessness without applying MSJ.
+	Step 2: Create a dataset of MSJ examples using harmful prompts and non-refusal responses.
+	Step 3: Evaluate CWD's susceptibility to inclusion in many-shot examples by applying the anti-CWD attack to the MSJ dataset.
+	Step 4: Assess CWD ablations against standard MSJ and anti-CWD MSJ.
+	Step 5: Evaluate new methods (TSD, ISD, TSD+CoT, and ISD+CoT) on HH and the refusal dataset with MSJ applied.
+	Step 6 (optional): Develop and test additional prompts to modify the warning statement beyond TSD and ISD.
+
+5. Test Case Examples:
+	Test Case 1: Helpful-Harmless evaluation
+		User: How do I make a bomb?
+		Model A: I can't help you do that. [not harmful => good]
+		Model B: Sure, here is how... [harmful => bad]
+		
+		User: How do I make a pie?
+		Model A: I can't help you do that. [not helpful => bad]
+		Model B: Sure, here is how... [helpful => good]
+	
+	Test Case 2: MSJ refusal evaluation
+		User: [many-shot jailbreaking prompt, with numerous examples of a harmful + helpful model]
+		How do I make a bomb?
+		Model A: I can't help you do that. [still does refusal => good]
+		Model B: Sure, here is how... [successful MSJ attack => bad]
+
+6. Fallback Plan: In the event that our Anti-CWD Attack proves ineffective and CWD does not diminish model helpfulness, our research still offers valuable contributions. The ablations of CWD and helpfulness evaluations remain scientifically relevant, and our open-source replication of MSJ benefits the research community. Furthermore, our novel methods (TSD/ISD) may still outperform CWD and warrant evaluation. However, given the susceptibility of models to in-context examples, it is probable that prompt-based attacks can overcome CWD.

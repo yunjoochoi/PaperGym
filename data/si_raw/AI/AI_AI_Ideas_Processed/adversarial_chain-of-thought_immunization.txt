@@ -1,0 +1,67 @@
+Title: Adversarial Chain-of-Thought Immunization: Enhancing LLM Robustness through Self-Critical Reasoning
+
+1. Problem Statement: Chain-of-thought (CoT) prompting has demonstrated remarkable success in improving complex reasoning tasks for large language models (LLMs). However, these reasoning chains are vulnerable to adversarial attacks that exploit flaws in the intermediate steps, potentially leading to incorrect conclusions. This vulnerability undermines the reliability of LLMs in critical reasoning tasks and poses significant challenges for their deployment in high-stakes applications.
+
+2. Motivation: Current defenses against adversarial attacks on LLMs often rely on detecting adversarial inputs or fine-tuning models on adversarial examples. While valuable, these approaches do not fully leverage the inherent reasoning capabilities of LLMs. By encouraging models to critically examine their own reasoning process, we may be able to catch and correct flawed logic induced by adversarial inputs without the need for extensive additional training or external detection mechanisms. This approach is inspired by human critical thinking processes, where we often review and revise our own arguments to identify potential weaknesses.
+
+3. Proposed Method: We introduce Adversarial Chain-of-Thought Immunization (ACTI), a prompting technique designed to make CoT reasoning more robust against adversarial attacks. ACTI involves the following steps:
+	(1) Initial CoT: Generate an initial chain-of-thought for the given problem.
+	(2) Self-Critique: Prompt the model to critically examine each step of its reasoning, identifying potential flaws or assumptions.
+	(3) Adversarial Imagination: Ask the model to imagine potential adversarial modifications to the input that could exploit the identified flaws.
+	(4) Robust Reformulation: Instruct the model to reformulate its reasoning to address the potential vulnerabilities.
+	(5) Verification: Finally, prompt the model to verify that its new reasoning holds for both the original and imagined adversarial inputs.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Utilize two datasets for experiments: GSM8K for mathematical reasoning and CLUTRR for logical reasoning.
+		- Create an adversarial test set by manually crafting adversarial examples that target common reasoning flaws.
+	Step 2: Baseline Implementation
+		- Implement standard CoT prompting as the primary baseline.
+		- Implement zero-shot prompting (direct question answering) as a secondary baseline.
+	Step 3: ACTI Implementation
+		- Implement the ACTI method with the following sub-steps for each query:
+			a) Initial CoT generation
+			b) Self-critique prompting
+			c) Adversarial input imagination
+			d) Robust reformulation
+			e) Verification
+	Step 4: Model Selection
+		- Utilize GPT-4 as the primary model for all experiments.
+		- Test GPT-3.5-turbo as a secondary model to assess the generalizability of the method.
+	Step 5: Evaluation
+		- For each dataset and model combination, evaluate:
+			1) Accuracy on the original test set
+			2) Accuracy on the adversarial test set
+			3) Robustness score (ratio of adversarial to original accuracy)
+			4) Average response length
+			5) Inference time
+	Step 6: Ablation Studies
+		- Conduct ablation studies by removing each step of ACTI to understand the contribution of each component.
+		- Vary the number of self-critique and reformulation iterations to find the optimal balance between performance and computational cost.
+	Step 7: Qualitative Analysis
+		- Manually review a subset of examples to analyze:
+			1) The types of flaws identified in the self-critique step
+			2) The creativity and relevance of imagined adversarial inputs
+			3) The effectiveness of the robust reformulations
+	Step 8: Results Compilation and Analysis
+		- Compile all quantitative results into tables and graphs.
+		- Perform statistical significance tests to validate the improvements of ACTI over the baselines.
+		- Summarize qualitative findings and insights.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Standard CoT): Q: A store is offering a 20% discount on all items. If an item originally costs $80, what is the final price after the discount? Let's approach this step-by-step.
+		Baseline Prompt Expected Output (Standard CoT): 1) First, let's calculate the discount amount: 20% of $80 = 0.20 * $80 = $16 2) Now, we subtract the discount from the original price: $80 - $16 = $64 Therefore, the final price after the 20% discount is $64.
+		Proposed Prompt Input (ACTI; Step 1: Initial CoT): Q: A store is offering a 20% discount on all items. If an item originally costs $80, what is the final price after the discount? Provide a step-by-step solution.
+		Proposed Prompt Expected Output (ACTI; Step 1: Initial CoT): 1) Calculate the discount amount: 20% of $80 = 0.20 * $80 = $16 2) Subtract the discount from the original price: $80 - $16 = $64 The final price after the 20% discount is $64.
+		Proposed Prompt Input (ACTI; Step 2: Self-Critique): Examine each step of the reasoning above. Identify any potential flaws, assumptions, or areas where an adversarial input could lead to incorrect conclusions.
+		Proposed Prompt Expected Output (ACTI; Step 2: Self-Critique): Potential flaws or assumptions in the reasoning: 1) We assumed the discount is applied to the pre-tax price. If tax is involved, the calculation could be different. 2) We didn't round the final price, which might be necessary in real-world scenarios. 3) We assumed the discount is applied directly as a percentage. Some stores might have maximum discount limits or other conditions.
+		Proposed Prompt Input (ACTI; Step 3: Adversarial Imagination): Based on the identified potential flaws, imagine possible adversarial modifications to the original question that could lead to incorrect answers if we use the same reasoning approach.
+		Proposed Prompt Expected Output (ACTI; Step 3: Adversarial Imagination): Possible adversarial modifications: 1) "A store is offering a 20% discount on all items, up to a maximum discount of $10. If an item originally costs $80, what is the final price after the discount?" 2) "A store is offering a 20% discount on all items. If an item originally costs $80 and there's a 5% sales tax applied after the discount, what is the final price?" 3) "A store is offering a 20% discount on all items, but prices are always rounded to the nearest dollar. If an item originally costs $80, what is the final price after the discount?"
+		Proposed Prompt Input (ACTI; Step 4: Robust Reformulation): Now, reformulate your reasoning to address the potential vulnerabilities identified. Provide a more robust step-by-step solution that would work for the original question and the imagined adversarial variations.
+		Proposed Prompt Expected Output (ACTI; Step 4: Robust Reformulation): Robust step-by-step solution: 1) Identify given information: - Original price: $80 - Discount rate: 20% - Check for any maximum discount limits (none mentioned in original question) - Check for any tax applications (none mentioned in original question) - Check for any rounding rules (none mentioned in original question) 2) Calculate the potential discount amount: 20% of $80 = 0.20 * $80 = $16 3) Check if the calculated discount exceeds any maximum limit: No limit mentioned, so use the full $16 discount 4) Calculate the discounted price: $80 - $16 = $64 5) Apply any taxes if mentioned: No taxes mentioned in the original question 6) Apply any rounding rules if mentioned: No rounding rules mentioned, so keep the result as $64 Therefore, the final price after the 20% discount is $64. Note: If the question included additional information about discount limits, taxes, or rounding rules, we would adjust steps 3, 5, and 6 accordingly.
+		Proposed Prompt Input (ACTI; Step 5: Verification): Verify that your reformulated reasoning works for both the original question and the imagined adversarial variations. Provide brief explanations for each case.
+		Proposed Prompt Expected Output (ACTI; Step 5: Verification): Verification: 1) Original question: The reformulated reasoning works correctly, yielding $64 as the final price. 2) Adversarial variation with maximum discount: If the question specified a $10 maximum discount, we would compare the calculated $16 discount to the $10 limit in step 3, and use the smaller value. The final price would be $80 - $10 = $70. 3) Adversarial variation with tax: If a 5% tax was mentioned, we would add step 5: Apply 5% tax to the discounted price. $64 * 1.05 = $67.20 final price. 4) Adversarial variation with rounding: If rounding to the nearest dollar was required, we would add this in step 6, rounding $64 to $64. The reformulated reasoning is robust against these variations, as it includes steps to check for and apply additional conditions when present.
+		Explanation: The ACTI method improves upon standard CoT by encouraging the model to critically examine its own reasoning, anticipate potential adversarial inputs, and reformulate its approach to be more robust. This process helps the model avoid common pitfalls and produce more reliable answers across a range of potential question variations.
+
+6. Fallback Plan: If the ACTI method does not show significant improvements over the baseline, we will conduct a thorough analysis to understand why. This may involve examining the quality of self-critiques to see if the model is identifying relevant and significant flaws, analyzing the adversarial inputs generated by the model to assess their diversity and relevance, and evaluating the robustness of the reformulations to see if they genuinely address the identified vulnerabilities. Based on these analyses, we might modify our approach by experimenting with different prompting strategies for each step of ACTI, possibly using few-shot examples to guide the model. We might introduce a 'meta-learning' step where we fine-tune the model on a small set of examples demonstrating effective self-critique and reformulation. We could explore combining ACTI with other robustness techniques, such as ensemble methods or uncertainty quantification. If these modifications still don't yield significant improvements, we could pivot the project towards an in-depth analysis of why LLMs struggle with self-critique and adversarial robustness in reasoning tasks. This could involve probing experiments to understand what types of flaws models are able to identify and correct, and what types they consistently miss. Such an analysis could provide valuable insights for future work on improving LLM robustness.

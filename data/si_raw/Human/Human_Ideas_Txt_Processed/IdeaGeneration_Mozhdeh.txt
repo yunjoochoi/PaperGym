@@ -1,0 +1,60 @@
+Title: Dialect-Aware Machine Translation with Prompted Lexicon Entries as Examples
+
+1. Problem Statement: Machine translation systems often default to translating into the dominant dialect of a language, neglecting the nuances of regional variants. This approach negatively impacts user experience and potentially marginalizes minority dialects.
+
+2. Motivation: Adapting translation models to generate specific regional dialects typically relies on fine-tuning, which is challenging for less-used dialects due to data scarcity. Generative approaches using dialect-specific prompting or in-context examples are often unreliable, frequently resulting in translations that still favor the dominant dialect. A more effective method is needed to accurately capture dialect-specific nuances while minimizing data requirements.
+
+3. Proposed Method: We propose a novel approach utilizing Large Language Models (LLMs) to generate dialect-specific translations with minimal data requirements. The key steps include:
+    (1) Prompting the LLM to generate a list of n words that differ between dialect A and dialect B of the target language.
+    (2) Using these words and their translations in the desired dialect as in-context examples.
+    (3) Instructing the model to translate the input text into the specified dialect of the target language.
+
+This method aims to better condition the language model to generate translations in the desired dialect by focusing on dialect-specific lexicon entries rather than full sentences.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Dataset Selection
+        • Utilize the FRMT dataset (Riley et al., 2023), which contains professional translations from English into two dialects of Portuguese and two dialects of Mandarin.
+    - Step 2: Baseline Establishment
+        • Implement two baselines:
+            (a) Simple dialect-specific prompt: "Translate xe into the dialect of l1"
+            (b) In-context examples from the 'exemplar' split of FRMT
+    - Step 3: Model Selection
+        • Evaluate the method using the following models:
+            - GPT-3.5
+            - Claude-3.5
+            - LLaMA-3-8B-Instruct
+            - Mixtral-8x7b
+    - Step 4: Experiment Execution
+        • Generate results using the baselines and the proposed method
+    - Step 5: Evaluation
+        • Employ the following metrics:
+            - BLEU and BLEURT for reference-based evaluation
+            - CometKiwi for reference-free evaluation
+        • Analyze whether the proposed method improves translation accuracy for the intended dialect
+
+5. Test Case Examples:
+    - Test Case 1:
+        • Source: The song dates back as early as February 1969.
+        • Brazilian Portuguese Reference: A música é de fevereiro de 1969.
+        • European Portuguese Reference: A canção data de Fevereiro de 1969.
+        • Baseline 1:
+            - Input: Translate this into European Portuguese: The song dates back as early as February 1969.
+            - Output: A música remonta pelo menos a fevereiro de 1969.
+        • Baseline 2:
+            - Input: "Primary level education is only compulsory." translates to "Apenas o ensino de nível primário é obrigatório." in European Portuguese. Translate this into European Portuguese: The song dates back as early as February 1969.
+            - Output: A música remonta ao início de fevereiro de 1969.
+        • Proposed Method:
+            - First step:
+                Input: List 5 words in English that have different translations in European Portuguese and Brazilian Portuguese.
+                Output: Sure, here are five words that have different translations in European Portuguese (PT) and Brazilian Portuguese (BR):
+                Car: In PT, "carro"; in BR, "carro" or "automóvel".
+                Train: In PT, "comboio"; in BR, "trem".
+                Computer: In PT, "computador"; in BR, "computador" or "computadora".
+                Cell phone: In PT, "telemóvel"; in BR, "celular".
+                Ice cream: In PT, "gelado"; in BR, "sorvete".
+            - Second step:
+                Input: "car" translates to "carro" in European Portuguese. "train" translates to "comboio" in European Portuguese. "computer" translates to "computador" in European Portuguese. "cell phone" translates to "telemóvel" in European Portuguese. "ice cream" translates to "gelado" in European Portuguese. Translate this into European Portuguese: The song dates back as early as February 1969.
+                Output: A canção remonta a pelo menos fevereiro de 1969.
+        • Explanation: The proposed method generates "canção" for "song" instead of "música," which may be more appropriate for European Portuguese usage.
+
+6. Fallback Plan: If the proposed method does not yield improvements in dialect-specific translations, we will conduct a thorough analysis of the generated lexicon entries from the first step. We will verify if the translations are indeed different between dialects and eliminate any entries with identical translations. Additionally, we will manually check a sample of the generated entries to ensure they are genuinely in use in the claimed dialects. This investigation may lead to a study on the most critical or prominent differences between dialects, identifying which aspects are essential for maintaining dialect loyalty and which can be compromised without significant impact.

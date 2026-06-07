@@ -1,0 +1,111 @@
+Title: Ethical Constraint Propagation: Enhancing Code Generation with Embedded Ethical Reasoning
+
+1. Problem Statement: Current code generation models lack built-in mechanisms to consistently enforce ethical constraints across complex codebases. This limitation poses significant risks as AI-generated code becomes more prevalent, potentially leading to the creation of software that inadvertently causes harm or violates ethical principles.
+
+2. Motivation: Existing approaches often rely on post-generation filtering or simple keyword-based constraints, which can be easily circumvented and do not address the deeper ethical implications of code. By incorporating ethical reasoning directly into the prompting process, we can guide the model to generate code that is not only functional but also ethically sound. This approach is inspired by the need for a more nuanced understanding of potential consequences in code generation, going beyond simple rule-following.
+
+3. Proposed Method: We propose Ethical Constraint Propagation (ECP), a prompting technique that integrates ethical considerations throughout the code generation process. The method consists of the following steps:
+	(1) Establish a set of ethical principles relevant to the coding task.
+	(2) Generate specific code-level constraints for each principle.
+	(3) As code is generated, prompt the model to explain how each section adheres to these constraints.
+	(4) Propagate the constraints to dependent code sections.
+	(5) If conflicts arise, prompt the model to propose alternative implementations that satisfy both functional requirements and ethical constraints.
+	(6) Document the ethical reasoning alongside the code, creating an auditable trail of ethical decision-making.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• Curate a diverse set of coding tasks with clear ethical implications, focusing on areas such as data handling, algorithm fairness, and user privacy.
+		• Create 50-100 task descriptions, each with specific functional requirements and potential ethical concerns.
+	Step 2: Ethical Principles Definition
+		• Develop a comprehensive set of ethical principles relevant to software development.
+		• Include principles such as data privacy, fairness, transparency, security, and user safety.
+		• For each principle, create a clear definition and examples of how it applies to code.
+	Step 3: Baseline Implementation
+		• Implement two baseline methods:
+			1) Standard code generation without ethical considerations.
+			2) Simple keyword-based ethical filtering post-generation.
+		• Use GPT-4 API for both baselines.
+	Step 4: ECP Prompt Design
+		• Design a series of prompts for each step of the ECP process:
+			a) Ethical principle application: "Given the task [X] and the ethical principle [Y], generate specific code-level constraints that should be applied."
+			b) Constraint explanation: "Explain how the following code section adheres to the ethical constraints [Z]."
+			c) Constraint propagation: "Identify dependent code sections and explain how the ethical constraints [Z] should be applied to them."
+			d) Conflict resolution: "The following code sections [A] and [B] have conflicting ethical constraints. Propose an alternative implementation that satisfies both functional requirements and ethical constraints."
+	Step 5: ECP Implementation
+		• Implement the ECP method using GPT-4 API.
+		• For each coding task:
+			1) Apply relevant ethical principles.
+			2) Generate initial code with constraints.
+			3) Explain adherence to constraints.
+			4) Propagate constraints to dependent sections.
+			5) Resolve conflicts if any.
+			6) Document ethical reasoning.
+	Step 6: Evaluation
+		• Evaluate the generated code from both baselines and ECP method on:
+			1) Functional correctness: Use automated test cases to verify if the code meets the specified requirements.
+			2) Ethical adherence: Conduct a blind review with a panel of 3-5 ethics experts to assess the ethical soundness of the generated code and the quality of ethical reasoning provided. Use a Likert scale (1-5) for quantitative assessment and collect qualitative feedback.
+			3) Code quality: Use static analysis tools to measure code complexity, maintainability, and potential vulnerabilities.
+	Step 7: Analysis
+		• Compare the performance of ECP against the baselines across all evaluation metrics.
+		• Conduct statistical tests to determine the significance of any improvements.
+		• Analyze the ethical reasoning trails to identify patterns in how the model applies ethical constraints and resolves conflicts.
+	Step 8: Ablation Study
+		• Perform an ablation study by removing different components of the ECP method (e.g., constraint propagation, conflict resolution) to understand the contribution of each step to the overall performance.
+
+5. Test Case Examples:
+	Test Case 1:
+		• Baseline Prompt Input: Write a Python function to recommend products to users based on their browsing history.
+		• Baseline Prompt Expected Output:
+			def recommend_products(user_id, browsing_history):
+				# Fetch all products from database
+				all_products = fetch_all_products()
+				
+				# Calculate similarity scores
+				scores = {}
+				for product in all_products:
+					score = calculate_similarity(product, browsing_history)
+					scores[product.id] = score
+				
+				# Sort products by score and return top 5
+				recommended = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:5]
+				return [get_product_details(prod_id) for prod_id, _ in recommended]
+		• Proposed Prompt Input: Write a Python function to recommend products to users based on their browsing history. Apply the ethical principles of user privacy and fairness in your implementation.
+		• Proposed Prompt Expected Output:
+			def recommend_products(user_id, browsing_history):
+				# Ethical Constraint: Ensure user privacy by anonymizing data
+				anonymized_history = anonymize_data(browsing_history)
+				
+				# Ethical Constraint: Use a diverse set of products to ensure fairness
+				diverse_products = fetch_diverse_products()
+				
+				# Calculate similarity scores
+				scores = {}
+				for product in diverse_products:
+					score = calculate_similarity(product, anonymized_history)
+					scores[product.id] = score
+				
+				# Ethical Constraint: Apply fairness adjustment to scores
+				adjusted_scores = apply_fairness_adjustment(scores)
+				
+				# Sort products by adjusted score and return top 5
+				recommended = sorted(adjusted_scores.items(), key=lambda x: x[1], reverse=True)[:5]
+				
+				# Ethical Constraint: Provide explanation for recommendations
+				recommendations_with_explanations = [
+					(get_product_details(prod_id), generate_explanation(prod_id, score))
+					for prod_id, score in recommended
+				]
+				
+				# Ethical Constraint: Log the recommendation process for auditing
+				log_recommendation_process(user_id, anonymized_history, recommendations_with_explanations)
+				
+				return recommendations_with_explanations
+
+			# Ethical reasoning:
+			# 1. User privacy is protected by anonymizing browsing history before processing.
+			# 2. Fairness is ensured by using a diverse set of products and applying a fairness adjustment to scores.
+			# 3. Transparency is provided through explanations for each recommendation.
+			# 4. Auditability is maintained by logging the recommendation process.
+		• Explanation: The ECP method generates code that not only fulfills the functional requirements but also incorporates ethical considerations. It anonymizes user data, ensures diversity in product selection, applies fairness adjustments, provides explanations for recommendations, and logs the process for auditing. This demonstrates a more comprehensive approach to ethical code generation compared to the baseline.
+
+6. Fallback Plan: If the proposed ECP method does not significantly improve ethical adherence or leads to a decrease in functional correctness, we will pivot to an analysis of the ethical reasoning process. We will examine the generated ethical constraints, their propagation, and the model's attempts at conflict resolution to identify patterns and potential shortcomings. This analysis could provide valuable insights into how language models interpret and apply ethical principles in code generation. Additionally, we will investigate whether certain types of coding tasks or ethical principles are more challenging for the model to incorporate. This could lead to the development of a taxonomy of ethical challenges in AI-generated code, which would be a valuable contribution to the field. Finally, we will explore whether a hybrid approach, combining ECP with post-generation ethical analysis, could yield better results, potentially leading to a new method that leverages the strengths of both approaches.

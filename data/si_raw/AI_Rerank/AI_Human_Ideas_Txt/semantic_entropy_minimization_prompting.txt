@@ -1,0 +1,61 @@
+Title: Semantic Entropy Minimization Prompting for Improved Factuality in Large Language Models
+
+1. Problem Statement: Large language models often generate plausible-sounding but factually incorrect information, especially when dealing with complex or ambiguous queries. This hallucination problem undermines the reliability and trustworthiness of these models in real-world applications.
+
+2. Motivation: Current approaches like retrieval-augmented generation and fact-checking prompts have shown limited success in consistently reducing hallucinations. Information theory suggests that minimizing semantic entropy can lead to more precise and factual outputs. By encouraging the model to generate responses with lower semantic ambiguity, we can potentially reduce the likelihood of hallucinations and improve the overall factuality of the model's outputs.
+
+3. Proposed Method: We introduce Semantic Entropy Minimization (SEM) prompting, a novel technique that guides the language model to generate responses with minimal semantic ambiguity. The process involves three steps:
+	(1) Initial response generation: We prompt the model to generate an initial response to the given query.
+	(2) Semantic entropy calculation: We use the same model to estimate the semantic entropy of the generated text by asking it to paraphrase the response in multiple ways and calculating the diversity of these paraphrases.
+	(3) Iterative refinement: We prompt the model to refine its response by explicitly instructing it to minimize semantic entropy, providing examples of low-entropy (highly specific and unambiguous) statements. This process is repeated iteratively until the semantic entropy falls below a predetermined threshold or a maximum number of iterations is reached.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• We will use the TruthfulQA dataset for factual question-answering and the FActScore dataset for evaluating factual consistency in generated text.
+		• Both datasets provide a diverse range of questions and statements that require factual knowledge.
+	Step 2: Baseline Implementation
+		• Implement three baseline methods:
+			a) Standard prompting: directly asking the model to answer the question or generate the text.
+			b) Chain-of-thought prompting: asking the model to show its reasoning process.
+			c) Retrieval-augmented generation: using an external knowledge base to supplement the model's knowledge.
+	Step 3: SEM Prompting Implementation
+		• Implement the Semantic Entropy Minimization prompting method as follows:
+			a) Initial response generation: Prompt the model with the question or task.
+			b) Semantic entropy calculation: Ask the model to generate 5 paraphrases of its response. Calculate the semantic entropy using BERT-based sentence embeddings and cosine similarity.
+			c) Iterative refinement: Prompt the model to refine its response, explicitly instructing it to minimize semantic entropy. Provide examples of low-entropy statements.
+	Step 4: Model Selection
+		• We will use GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API for our experiments.
+	Step 5: Experiment Execution
+		• For each dataset and model combination:
+			a) Generate responses using each baseline method.
+			b) Generate responses using SEM prompting, with a maximum of 3 refinement iterations.
+			c) Record the final responses and the number of iterations for SEM prompting.
+	Step 6: Evaluation
+		• Evaluate the responses using the following metrics:
+			a) Factual accuracy: Use the ground truth provided in TruthfulQA and FActScore.
+			b) Semantic similarity to ground truth: Calculate using BERT-based sentence embeddings.
+			c) Perplexity: Measure using a separate language model (e.g., GPT-2) to assess fluency and coherence.
+			d) Human evaluation: Conduct a small-scale human evaluation for a subset of responses, focusing on factual accuracy and specificity.
+	Step 7: Analysis
+		• Compare the performance of SEM prompting against the baselines across all metrics.
+		• Analyze the relationship between semantic entropy and factual accuracy.
+		• Examine how the number of refinement iterations affects the results.
+
+5. Test Case Examples:
+	Test Case 1:
+		• Baseline Prompt Input: Q: What is the capital of France?
+		• Baseline Prompt Expected Output: The capital of France is Paris.
+		• Proposed Prompt Input (Step 1: Initial Response): Q: What is the capital of France? Please provide a detailed and specific answer.
+		• Proposed Prompt Expected Output (Step 1: Initial Response): The capital of France is Paris. It is located in the northern part of the country.
+		• Proposed Prompt Input (Step 2: Semantic Entropy Calculation): Please provide 5 different paraphrases of the following statement: 'The capital of France is Paris. It is located in the northern part of the country.'
+		• Proposed Prompt Expected Output (Step 2: Semantic Entropy Calculation):
+			1. Paris, situated in northern France, serves as the nation's capital.
+			2. France's capital city, Paris, can be found in the country's northern region.
+			3. The French capital, Paris, is positioned in the north of France.
+			4. Located in northern France, Paris is the country's capital city.
+			5. The city of Paris, found in the northern part of France, is the capital.
+		• Proposed Prompt Input (Step 3: Refinement): Your previous response was: 'The capital of France is Paris. It is located in the northern part of the country.' Please refine this response to be more specific and reduce semantic ambiguity. Provide additional factual details to make the statement more precise and less open to interpretation.
+		• Proposed Prompt Expected Output (Step 3: Refinement): The capital of France is Paris, a city located in the north-central part of the country, specifically in the Île-de-France region. Paris sits on the River Seine, approximately 310 km (190 miles) southeast of London, England. As the capital, it serves as the political, economic, and cultural center of France, housing key government institutions such as the National Assembly and the official residence of the French President, the Élysée Palace.
+		• Explanation: The SEM prompting method encourages the model to provide more specific and factual information, reducing the likelihood of hallucination. The refined response includes precise geographical details and additional relevant facts about Paris's role as the capital, making it more informative and less ambiguous than the initial response or the baseline output.
+
+6. Fallback Plan: If the proposed SEM prompting method does not significantly improve factual accuracy or reduce hallucinations compared to the baselines, we will conduct a detailed error analysis to understand the limitations of our approach. This analysis will include examining cases where SEM prompting fails to improve or even worsens the output. We will categorize these failure cases and investigate potential causes, such as inherent model limitations, issues with semantic entropy calculation, or problems with the refinement process. Based on these findings, we may explore alternative approaches to measuring semantic ambiguity, such as using different embedding models or entropy calculations. Additionally, we could investigate combining SEM prompting with other techniques like retrieval-augmented generation or fact-checking prompts to create a hybrid approach that leverages the strengths of multiple methods. Finally, we could shift the focus of the project to an in-depth analysis of the relationship between semantic entropy and factual accuracy in language model outputs, which could provide valuable insights for future research in this area.

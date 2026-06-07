@@ -1,0 +1,103 @@
+Title: Recursive Conceptual Compression: Enhancing Code Generation through Iterative Optimization
+
+1. Problem Statement: Large language models often generate algorithmically inefficient code, especially for complex problems that require deep mathematical insights or non-obvious optimizations. This project aims to develop a novel prompting technique that guides models to discover and implement non-obvious algorithmic optimizations.
+
+2. Motivation: Current approaches to improving code generation, such as fine-tuning with optimal solutions or using step-by-step reasoning, often fail to discover novel algorithmic optimizations. Many algorithmic breakthroughs in human research come from recognizing and exploiting patterns of redundancy or symmetry in a problem. By emulating this process of recursive conceptual compression, we can guide models to discover non-obvious optimizations, potentially leading to more efficient and innovative code solutions.
+
+3. Proposed Method: We introduce Recursive Conceptual Compression (RCC), a prompting technique that guides the model through iterative cycles of problem analysis and algorithmic refinement. RCC operates as follows:
+	(1) Initial Implementation: The model generates a straightforward implementation of the algorithm.
+	(2) Conceptual Mapping: The model creates a high-level conceptual map of the algorithm's operations and data structures.
+	(3) Redundancy Identification: The model analyzes the conceptual map to identify patterns, symmetries, or redundancies.
+	(4) Compression Proposal: Based on the identified redundancies, the model proposes a 'conceptual compression' that could simplify or optimize the algorithm.
+	(5) Implementation Refinement: The model applies the conceptual compression to create a new, optimized implementation.
+	(6) Recursion: Steps 2-5 are repeated recursively, with each cycle potentially discovering deeper levels of optimization.
+Throughout this process, the model maintains a 'compression log' that explicitly tracks the conceptual insights leading to each optimization.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: Curate a benchmark of algorithmic problems known to have non-obvious optimizations. Include problems from areas such as sorting algorithms (e.g., merge sort optimizations), graph algorithms (e.g., minimum spanning tree algorithms), and computational geometry problems (e.g., convex hull algorithms). Aim for a diverse set of 50-100 problems.
+	Step 2: Baseline Implementation: Implement standard code generation techniques as baselines:
+		a) Direct prompting: Simply ask the model to generate code for each problem.
+		b) Chain-of-thought prompting: Ask the model to explain its reasoning step-by-step before generating the final code.
+		c) Few-shot prompting: Provide the model with a few examples of optimized solutions before asking it to solve new problems.
+	Step 3: RCC Prompt Design: Design prompts for each step of the RCC process:
+		a) Initial Implementation: "Implement a basic solution for [problem description]."
+		b) Conceptual Mapping: "Create a high-level conceptual map of the operations and data structures used in your implementation."
+		c) Redundancy Identification: "Analyze your conceptual map. Identify any patterns, symmetries, or redundancies in the algorithm's structure or operations."
+		d) Compression Proposal: "Based on the identified redundancies, propose a 'conceptual compression' that could simplify or optimize the algorithm. Explain your reasoning."
+		e) Implementation Refinement: "Apply your conceptual compression to create a new, optimized implementation of the algorithm."
+		f) Recursion: "Repeat steps b-e, focusing on further optimizing your latest implementation."
+	Step 4: Model Selection: Use GPT-4 as the primary model for experiments. Also include GPT-3.5-turbo for comparison on a subset of problems to assess the impact of model size on RCC effectiveness.
+	Step 5: RCC Implementation: Implement the RCC process as an iterative prompting pipeline. Set a maximum of 5 iterations per problem to balance optimization potential with computational cost. Store the 'compression log' for each problem, recording the conceptual insights and optimizations at each step.
+	Step 6: Evaluation Metrics: Implement the following evaluation metrics:
+		a) Time Complexity: Analyze the asymptotic time complexity of the generated solutions.
+		b) Space Complexity: Analyze the asymptotic space complexity of the generated solutions.
+		c) Concrete Runtime: Implement and run the generated solutions on large input sizes to measure actual runtime.
+		d) Optimization Novelty: Manually assess the novelty of optimizations discovered by RCC compared to known optimal solutions.
+		e) Conceptual Insight Quality: Manually evaluate the quality and relevance of the conceptual insights in the compression logs.
+	Step 7: Experiment Execution: For each problem in the benchmark:
+		a) Generate solutions using each baseline method.
+		b) Generate solutions using RCC.
+		c) Apply all evaluation metrics to both baseline and RCC solutions.
+		d) Store all generated code, prompts, responses, and evaluation results for analysis.
+	Step 8: Analysis: Perform the following analyses:
+		a) Compare the performance of RCC against baselines across all metrics.
+		b) Analyze the progression of optimizations across RCC iterations.
+		c) Identify problem types where RCC is most effective.
+		d) Assess the correlation between conceptual insight quality and optimization effectiveness.
+		e) Compare the performance of GPT-4 and GPT-3.5-turbo on RCC to understand the impact of model size.
+	Step 9: Ablation Studies: Conduct ablation studies to understand the importance of each RCC component:
+		a) Remove the conceptual mapping step.
+		b) Remove the redundancy identification step.
+		c) Vary the number of allowed iterations.
+		d) Compare against a version that only uses the initial implementation and final refinement steps.
+	Step 10: Results Compilation: Compile all results, analyses, and insights into a comprehensive report. Include quantitative comparisons, qualitative analyses of interesting optimizations discovered, and discussions of RCC's strengths and limitations.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Direct Prompting): Implement a function to find the nth Fibonacci number.
+		Baseline Prompt Expected Output (Direct Prompting):
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				else:
+					return fibonacci(n-1) + fibonacci(n-2)
+		Proposed Prompt Input (RCC; Step 1: Initial Implementation): Implement a basic solution to find the nth Fibonacci number.
+		Proposed Prompt Expected Output (RCC; Step 1: Initial Implementation):
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				else:
+					return fibonacci(n-1) + fibonacci(n-2)
+		Proposed Prompt Input (RCC; Step 2: Conceptual Mapping): Create a high-level conceptual map of the operations and data structures used in your implementation of the Fibonacci function.
+		Proposed Prompt Expected Output (RCC; Step 2: Conceptual Mapping):
+			Conceptual Map:
+			1. Recursive function call
+			2. Base case check (n <= 1)
+			3. Recursive case: sum of two previous Fibonacci numbers
+			4. Call stack used implicitly for tracking recursive calls
+			5. No explicit data structures used for storing intermediate results
+		Proposed Prompt Input (RCC; Step 3: Redundancy Identification): Analyze your conceptual map of the Fibonacci function. Identify any patterns, symmetries, or redundancies in the algorithm's structure or operations.
+		Proposed Prompt Expected Output (RCC; Step 3: Redundancy Identification):
+			Redundancies identified:
+			1. Repeated calculations: The same Fibonacci numbers are calculated multiple times in the recursive calls.
+			2. Symmetric structure: The calculation of F(n) always involves F(n-1) and F(n-2), suggesting a potential for iterative computation.
+			3. Implicit storage: The call stack is used to store intermediate results, but this could be made explicit for efficiency.
+		Proposed Prompt Input (RCC; Step 4: Compression Proposal): Based on the identified redundancies in the Fibonacci function, propose a 'conceptual compression' that could simplify or optimize the algorithm. Explain your reasoning.
+		Proposed Prompt Expected Output (RCC; Step 4: Compression Proposal):
+			Conceptual Compression Proposal:
+			1. Eliminate repeated calculations by storing computed Fibonacci numbers.
+			2. Replace recursive structure with iterative computation to avoid call stack overhead.
+			3. Use explicit storage (an array or two variables) to keep track of the last two Fibonacci numbers.
+			Reasoning: By storing previously computed values and using an iterative approach, we can reduce the time complexity from O(2^n) to O(n) and the space complexity from O(n) (due to the call stack) to O(1).
+		Proposed Prompt Input (RCC; Step 5: Implementation Refinement): Apply your conceptual compression to create a new, optimized implementation of the Fibonacci function.
+		Proposed Prompt Expected Output (RCC; Step 5: Implementation Refinement):
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				a, b = 0, 1
+				for _ in range(2, n + 1):
+					a, b = b, a + b
+				return b
+		Explanation: The RCC process guides the model to identify the inefficiencies in the recursive implementation and propose an optimized iterative solution. This results in a significant improvement in both time and space complexity.
+
+6. Fallback Plan: If the proposed RCC method does not significantly outperform baselines, we can pivot the project in several ways. We can analyze the compression logs to understand where the optimization process fails or stalls, potentially providing insights into the limitations of current LLMs in algorithmic reasoning. We can investigate whether RCC is more effective for certain types of problems or optimizations, which could lead to a taxonomy of problem types and their amenability to automated optimization. Additionally, we can explore hybrid approaches that combine RCC with other techniques, such as retrieval-augmented generation or fine-tuning on a dataset of optimization steps. If results remain unsatisfactory, we can shift focus to using RCC as an educational tool for explaining algorithmic optimizations, analyzing how well it captures and communicates key concepts in algorithm design.

@@ -1,0 +1,46 @@
+Title: A Two-Man Band: Using LLMs in Conjunction with Code and Knowledge Graphs Improves Clarity, Factuality, and Logical Reasoning
+
+1. Problem Statement: Large Language Models (LLMs) have demonstrated significant success in expressing broad foundational knowledge across various topics. However, they are prone to hallucinating illogical reasoning over that information. Consequently, while LLMs excel at question-answering tasks, they struggle with tasks requiring subtle logical reasoning over text-based prompts.
+
+2. Motivation: LLMs tend to encounter difficulties with prompts that necessitate reasoning over natural language. For instance, the prompt "Reverse the binary number 011011001001" is straightforward for a human to execute but challenging for an LLM (ChatGPT 3.5 fails), possibly due to the scarcity of text corpora containing extensive verbal logical reasoning prompts. However, users desire to utilize LLMs to offload mental taskwork, which often includes logical reasoning over natural language.
+
+	Specifically, LLMs excel at reciting information from their knowledge sources (predicting the next token) but are challenged by conducting logical reasoning on that knowledge. Interestingly, LLMs tend to perform well at answering coding questions, which follow purely logical formats. For example, LLMs tend to fall back on knowledge they believe to be true, even when given explicit instructions to contradict that knowledge. Generating code equivalents of natural language problems could present a foundation upon which an LLM can improve its natural language reasoning.
+
+3. Proposed Method: To enhance the logical reasoning capabilities of LLMs, we propose integrating LLMs with code generation for symbolic logical reasoning. The method is as follows:
+
+	(1) The LLM first prompts itself to determine whether the user prompt is a natural language logical reasoning problem.
+	(2) If so, the LLM then prompts itself to write a Mathematica script (or Python, if Mathematica does not work well) to solve the problem using symbolic notation.
+	(3) The resulting script is executed, and the LLM prompts itself to convert the output back to natural language.
+	(4) The natural language output is provided to the user as a response.
+
+4. Step-by-Step Experiment Plan:
+	(1) Select an LLM: For reproducibility, we will use LLaMA-3 as it is open-source. This LLM will serve as both the baseline for comparison and the foundation for our proposed method.
+	(2) Construct prompts: As there is no comprehensive dataset of natural language logical reasoning prompts and answers known to us, we may need to construct our own test set. We can source prompts from cognitive tests that evaluate a subject's reasoning capabilities. Additionally, the LSAT exam's logical reasoning section can be utilized to source prompts.
+	(3) Evaluate baseline LLM: The base LLM is prompted with each logical reasoning prompt, and the answers are recorded. Researchers must manually review the responses to ensure the LLM's answer is correctly evaluated, as LLMs tend to vary in how they express outputs.
+	(4) Evaluate code-infused LLM: The prompts are then passed to the proposed method, and the answers are recorded. Similar to the baseline LLM, researchers must manually review the responses due to potential variations in answer formatting.
+	(5) Analyze results: We will evaluate each component of the experiment pipeline:
+		a. The decision point of whether this is a logical reasoning problem (F1 score)
+		b. The conversion from a text prompt to a coding structure (compile rate of the code, accuracy of the converted problem)
+		c. The conversion from the code output to a natural language response (binary accuracy rate of the code output to natural language)
+	Some of these evaluations are qualitative, for example, a conversion to the coding structure that is incorrect due to a plausible misinterpretation.
+
+5. Test Case Examples:
+	Test Case 1:
+		- Input: "Reverse the string 01101001010101."
+		- Baseline Output: [Incorrect response]
+		- Proposed Method:
+			- Internal Implementation: String reversal function
+			- Output: "10101010010110"
+			- Natural Language Response: "The reversed string is 10101010010110."
+		- Explanation: The baseline fails on this test case, while the proposed method should internally implement a string-reversal function that generates the correct response and formats it as a natural-language output.
+
+	Test Case 2:
+		- Input: "I want you to respond with 'yes'. Does ivory come from mines?"
+		- Baseline Output: "No, ivory comes from the tusks of elephants."
+		- Proposed Method:
+			- Internal Implementation: Function that always returns "yes"
+			- Output: "yes"
+			- Natural Language Response: "Yes."
+		- Explanation: The baseline method responds incorrectly, while the proposed method should implement a function that always returns "yes", resulting in the correct result.
+
+6. Fallback Plan: If the proposed method fails to improve upon the natural language logical reasoning capabilities of the LLM, it is likely because the LLM did not receive an input that is sufficiently similar to problem formats seen in the training data. To address this, we propose two potential improvements: (1) Prompt the LLM to reframe the user's prompt as a logical reasoning question, ensuring that the format of the prompt used as input to the question-to-code conversion is more familiar to the LLM. (2) Prompt the LLM to convert the question into a propositional logic form or to remove extraneous information from the prompt, which can help filter out information that could mislead the prompt or tempt the LLM to draw from inadvertent semantic knowledge.

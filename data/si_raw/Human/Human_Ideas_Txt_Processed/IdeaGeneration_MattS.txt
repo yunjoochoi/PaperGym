@@ -1,0 +1,37 @@
+Title: Fishing in an LLM: Theoretically Quantifying Uncertainty with Fisher Information in Large Language Models
+
+1. Problem Statement: Quantifying uncertainty in large language models frequently relies on heuristics and complex modifications to the training pipeline, which is important for detecting hallucinations in models. Is there a simpler and well-motivated way to achieve this?
+
+2. Motivation: Prior methods for quantifying uncertainty in LLMs often resort to costly changes to the traditional training pipeline, heuristics leveraging the output model logits to quantify uncertainty in the output distribution, and extra models to facilitate calibration. We posit that uncertainty can be viewed by asking the question: when we perturb the inputs to a model, how do the outputs change? If small perturbations to a certain group of outputs significantly change the output, there is likely a higher degree of uncertainty in similar inputs. Normally, small perturbations should lead to small changes in output (e.g., the answers to "how are you feeling" and "how do you feel" should be semantically similar). With a theoretical motivation behind this approach, we can provide NLP practitioners with insights into model uncertainty.
+
+3. Proposed Method: Drawing inspiration from the computer vision community, specifically the recent work FisherRF, we propose to extend the concept of Fisher Information to LLMs. The core idea is that uncertainty in radiance field models can be given by the Fisher Information, which represents the amount of information that a random variable contains about an unknown distribution. Mathematically, if we have an objective function to minimize a loss function, we can simplify this and the Fisher Information down to compute the Hessian of the model given an input X. This provides an intuitive interpretation – when X is changed slightly, the uncertainty is given by how much the output changes. In this work, we propose to use the embeddings in an LLM from the input X as input for the Fisher Information, and the output embedding as the output. However, the Hessian is a dense matrix, and we want it to be sparse to compute the trace, which represents the uncertainty. To achieve this, we can add a layer on top of the LLM from the input called a perturbation field, which treats the embeddings as n-dimensional inputs we can perturb and use to create a sparse Hessian. This technique is employed in Bayes' Rays in the vision community. Finally, we can evaluate the uncertainty of an LLM input with this formulation in a theoretically motivated way via Fisher Information.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Dataset (Optional)
+		• Collect data from general language modeling sources such as Wikitext and OpenWebtext, which contain millions of examples.
+	- Step 2: Train Open-Source Model on Dataset (Optional)
+		• Train an open-source LLM, such as LLaMA-3, on the dataset or a subset of the dataset.
+		• Note that our method requires no changes to the training pipeline.
+	- Step 3: Construct Deformation Field
+		• Construct a deformation field on top of the input embedding to the LLM that will perturb the embedding slightly in n-dimensional space.
+		• This step can be performed on any pretrained LLM without the need for training.
+	- Step 4: Compute Hessian
+		• Compute the Hessian with respect to the perturbation field to quantify uncertainty.
+		• Notably, uncertainty does not depend on the ground truth output Y – we can simply perturb the inputs and understand the behavior of the model.
+	- Step 5: Compute Uncertainty Correlation with Incorrect Outputs
+		• Analyze if more uncertain inputs correspond to more incorrect outputs.
+		• Utilize metrics such as Area Under Sparsification Error (AUSE) and measure if more wrong outputs are proportional to uncertainty.
+	- Step 6: Verify Method Performance and Surpass Baselines
+		• Verify that the uncertainty reasonably indicates incorrect responses by the model.
+		• Compare results to a baseline using a more involved method with perturbations called "SPUQ: Perturbation-Based Uncertainty Quantification for Large Language Models."
+		• Note that no prompting will be used in these experiments.
+
+5. Test Case Examples:
+	- Test Case 1:
+		• Input: "Who is considered the greatest hockey player in the modern era?"
+		• Explanation: Perturbing the embedding should lead to a more different output (potentially from "I don't know" to "Michael Jordan"). We will demonstrate a case where a poor predefined set makes uncertainty prediction challenging, unlike in prior work where word updates are based on a manually selected predefined set.
+	- Test Case 2:
+		• Input: "How to tie a tie"
+		• Explanation: This could be an out-of-distribution input. We expect the Hessian to be high and results to vary even with small shifts in the input embedding space. The result will be incorrect, as well as the uncertainty.
+
+6. Fallback Plan: If the proposed method does not satisfy the success criteria, we will explore more sophisticated ways to perturb embeddings. Potential approaches include performing perturbations word by word and later via the entire phrase. We could also investigate perturbations in a more semantic way by focusing on the more "important" parts of a phrase, such as the subject and verb. While we believe that this metric for uncertainty can be informative, its effectiveness ultimately depends on the quality of perturbations.

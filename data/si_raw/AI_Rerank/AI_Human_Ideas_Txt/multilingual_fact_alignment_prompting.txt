@@ -1,0 +1,61 @@
+Title: Multilingual Fact Alignment Prompting: Improving Cross-Lingual Factual Consistency in Large Language Models
+
+1. Problem Statement: Large language models often exhibit inconsistent factual knowledge across different languages, leading to contradictions and reduced reliability in multilingual settings. This inconsistency hampers the models' ability to provide accurate and coherent information across languages, which is crucial for global applications and multilingual user bases.
+
+2. Motivation: Existing approaches typically focus on improving multilingual capabilities through training or translation, but do not specifically address cross-lingual factual consistency. By aligning factual knowledge across languages during the prompting phase, we can potentially improve the model's consistency and reduce hallucinations in multilingual contexts without the need for expensive retraining or fine-tuning. This method leverages the model's existing multilingual capabilities to cross-reference and validate information across languages, potentially leading to more reliable and consistent outputs.
+
+3. Proposed Method: We propose Multilingual Fact Alignment Prompting (MFAP), a novel prompting technique that consists of the following steps:
+	(1) Given an input in language A, identify key factual claims.
+	(2) Prompt the model to translate these claims into a set of target languages.
+	(3) For each translated claim, prompt the model to provide supporting evidence in that language.
+	(4) Cross-reference the evidence across languages, identifying any inconsistencies.
+	(5) Construct a unified, multilingual prompt that incorporates the most consistent facts across languages.
+	(6) Use this prompt to guide the final response generation in the original language.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use the XQuAD dataset, which contains question-answer pairs in multiple languages. We will focus on a subset of languages, such as English, Spanish, German, and Chinese, to keep the experiment manageable.
+	Step 2: Baseline Methods: Implement two baseline methods:
+		(1) Direct translation: Translate the question to English, get the answer, then translate back.
+		(2) Monolingual querying: Directly query the model in each language.
+	Step 3: MFAP Implementation: Implement the MFAP method as follows:
+		a) Extract key facts from the question.
+		b) Translate facts to target languages.
+		c) Gather evidence for each fact in each language.
+		d) Cross-reference and resolve inconsistencies.
+		e) Construct a unified prompt.
+		f) Generate the final answer.
+	Step 4: Model Selection: We will use GPT-4 for our experiments, as it has strong multilingual capabilities.
+	Step 5: Evaluation Metrics: We will use the following metrics:
+		(1) Answer Accuracy: Compare generated answers with ground truth.
+		(2) Cross-lingual Consistency: Measure agreement of answers across languages.
+		(3) Factual Correctness: Human evaluation of a subset of answers.
+	Step 6: Experiment Execution: Run experiments for each method (baselines and MFAP) on the XQuAD dataset. For each question, we will generate answers in all four languages.
+	Step 7: Analysis: Compare the performance of MFAP against the baselines. Analyze cases where MFAP improves or fails to improve cross-lingual consistency and factual correctness.
+
+5. Test Case Examples:
+	Baseline Example:
+		Input: Who was the first president of the United States?
+		Direct Translation Output:
+			English: George Washington was the first president of the United States.
+			Spanish: George Washington fue el primer presidente de los Estados Unidos.
+			German: George Washington war der erste Präsident der Vereinigten Staaten.
+			Chinese: 乔治·华盛顿是美国第一任总统。
+		Explanation: The direct translation method provides consistent answers across languages, but it does not leverage language-specific knowledge or cross-validate facts.
+	MFAP Example:
+		Input: Who was the first president of the United States?
+		Step 1 - Extract Key Facts: 1. The question is about the first president of the United States.
+		Step 2 - Translate Facts:
+			Spanish: ¿Quién fue el primer presidente de los Estados Unidos?
+			German: Wer war der erste Präsident der Vereinigten Staaten?
+			Chinese: 谁是美国第一任总统？
+		Step 3 - Gather Evidence:
+			English: George Washington served as the first President of the United States from 1789 to 1797.
+			Spanish: George Washington fue el primer Presidente de los Estados Unidos, sirviendo desde 1789 hasta 1797.
+			German: George Washington war der erste Präsident der Vereinigten Staaten und regierte von 1789 bis 1797.
+			Chinese: 乔治·华盛顿是美国第一任总统，任期从1789年到1797年。
+		Step 4 - Cross-reference: All languages agree that George Washington was the first president, serving from 1789 to 1797.
+		Step 5 - Unified Prompt: Based on consistent information across English, Spanish, German, and Chinese sources, provide a comprehensive answer about the first president of the United States.
+		Step 6 - Final Answer: George Washington was the first President of the United States. He served in this role from 1789 to 1797, establishing many of the precedents and traditions that would shape the American presidency. This information is consistently reported across multiple languages, including English, Spanish, German, and Chinese, indicating a high degree of factual reliability.
+		Explanation: MFAP leverages cross-lingual information to provide a more comprehensive and verified answer, potentially reducing hallucinations and inconsistencies.
+
+6. Fallback Plan: If MFAP does not significantly improve cross-lingual consistency or factual correctness, we can pivot to an analysis paper. We will investigate why the method failed to improve results, focusing on: the quality of fact extraction and translation, the reliability of evidence gathering in different languages, the effectiveness of the cross-referencing process, and the impact of cultural and linguistic differences on fact representation across languages. This analysis could provide valuable insights into the challenges of multilingual knowledge alignment in LLMs and inform future research directions. Additionally, we could explore variations of the MFAP method, such as using different prompting strategies for evidence gathering or experimenting with different ways of resolving cross-lingual inconsistencies.

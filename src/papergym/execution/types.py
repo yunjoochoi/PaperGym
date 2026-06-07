@@ -57,6 +57,9 @@ class ExecResult:
     faithfulness_score: int
     run: RunArtifact
     cost: dict
+    leakage_flags: list = field(default_factory=list)
+    sandbox: str = "local"
+    trustworthy: bool = False
 
     def to_dict(self) -> dict:
         d = asdict(self)

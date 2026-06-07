@@ -1,0 +1,61 @@
+Title: Semantic Constellation Diffraction: A Novel Prompting Technique for Privacy-Preserving Language Model Outputs
+
+1. Problem Statement: Large language models can inadvertently leak sensitive information through their outputs, posing significant privacy risks, especially in domains handling personal or confidential data. Current privacy-preserving methods often rely on differential privacy or information filtering, which can significantly degrade model performance or require careful manual curation.
+
+2. Motivation: Optical diffraction patterns can scatter light while preserving overall information content. Applying a similar concept to semantic information could potentially preserve privacy while maintaining high-quality outputs. Our proposed Semantic Constellation Diffraction (SCD) method aims to 'diffract' sensitive information across a semantic space, preserving overall meaning while obscuring specific sensitive details.
+
+3. Proposed Method: We propose Semantic Constellation Diffraction (SCD), which involves five main steps:
+	(1) Semantic Mapping: Create a high-dimensional semantic space where each concept is represented as a point.
+	(2) Sensitivity Analysis: Identify potentially sensitive information in the input and output.
+	(3) Diffraction Pattern Generation: Create a unique diffraction pattern for each piece of sensitive information, scattering it across the semantic space.
+	(4) Constellation Formation: Combine the diffracted patterns into a 'semantic constellation' that preserves overall meaning while obscuring specific sensitive details.
+	(5) Inverse Diffraction: During output generation, apply an inverse diffraction process to reconstruct meaningful, privacy-preserving responses.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• We will use two datasets:
+			- A subset of the MIMIC-III dataset for medical question answering, focusing on patient diagnoses and treatments.
+			- A curated dataset of personal information queries based on the Enron Email Dataset.
+		• We'll create a test set of 1000 questions for each dataset, ensuring they contain sensitive information.
+	Step 2: Baseline Model Setup
+		• We'll use GPT-3.5 (text-davinci-003) and GPT-4 as our baseline models.
+		• We'll also implement two privacy-preserving baselines:
+			- Differential Privacy (DP) using the IBM Differential Privacy Library
+			- Information Filtering using a keyword-based approach
+	Step 3: Implement SCD
+		• We'll implement the SCD method using the following sub-steps:
+			a) Semantic Mapping: Use sentence-transformers to create embeddings for concepts.
+			b) Sensitivity Analysis: Train a binary classifier on labeled sensitive/non-sensitive data.
+			c) Diffraction Pattern Generation: Implement a function that takes a sensitive concept embedding and generates a set of related concept embeddings.
+			d) Constellation Formation: Combine the diffracted patterns using a weighted sum approach.
+			e) Inverse Diffraction: Implement a reconstruction algorithm that maps the constellation back to coherent text.
+	Step 4: Prompting Strategy
+		• For each query in our test sets, we'll use the following prompting strategy:
+			- Baseline: "Answer the following question: [QUERY]"
+			- SCD: "Using the following semantic constellation, answer the question while preserving privacy: [CONSTELLATION] Question: [QUERY]"
+	Step 5: Evaluation
+		• We'll evaluate the methods using the following metrics:
+			- Privacy Preservation: k-anonymity and l-diversity scores
+			- Output Quality: BLEU and ROUGE scores against non-private ground truth answers
+			- Task Performance: F1 score for medical diagnosis accuracy and personal information retrieval accuracy
+			- Human Evaluation: We'll have three domain experts rate a subset of 100 outputs for each method on a 1-5 scale for coherence, relevance, and perceived privacy protection.
+	Step 6: Adversarial Testing
+		• We'll conduct adversarial attacks by:
+			- Attempting to reconstruct sensitive information from the SCD outputs
+			- Using a trained model to identify individuals from the anonymized outputs
+		• We'll compare the success rates of these attacks across all methods.
+	Step 7: Analysis
+		• We'll perform an in-depth analysis of the results, focusing on:
+			- The trade-off between privacy preservation and output quality
+			- The types of information that are most effectively protected by SCD
+			- The impact of different semantic space dimensionalities on SCD performance
+
+5. Test Case Examples:
+	Test Case 1:
+		• Baseline Prompt Input: What medications is patient X taking for their heart condition?
+		• Baseline Prompt Expected Output: Patient X is taking Lisinopril 10mg daily and Metoprolol 25mg twice daily for their heart condition.
+		• SCD Prompt Input: Using the following semantic constellation, answer the question while preserving privacy: [CONSTELLATION: {cardiovascular_medication: 0.8, ACE_inhibitor: 0.6, beta_blocker: 0.7, daily_regimen: 0.9}] Question: What medications is patient X taking for their heart condition?
+		• SCD Prompt Expected Output: The patient is on a daily regimen of two common cardiovascular medications. One is an ACE inhibitor, and the other is a beta-blocker. Both are standard treatments for managing heart conditions.
+		• Explanation: The SCD method preserves the essential information about the medication types and regimen while obscuring specific drug names and dosages, thus maintaining patient privacy.
+
+6. Fallback Plan: If SCD does not meet our success criteria, we will explore several alternatives. First, we will analyze the semantic space to identify which dimensions are most prone to privacy leaks and refine our diffraction patterns accordingly. We will also experiment with hierarchical diffraction patterns that preserve more high-level information while diffracting low-level details. Additionally, we will investigate the combination of SCD with other privacy-preserving techniques, such as federated learning or homomorphic encryption, to create a hybrid approach. If the privacy-utility trade-off remains unsatisfactory, we could pivot to an analysis paper comparing various privacy-preserving techniques for language models, offering insights into their strengths, weaknesses, and potential future directions.

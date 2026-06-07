@@ -1,0 +1,72 @@
+Title: Entropy-Guided Prompt Mutation: Improving Uncertainty Quantification in Large Language Models
+
+1. Problem Statement: Current uncertainty quantification methods for Large Language Models (LLMs) often rely on simplistic heuristics or require extensive fine-tuning, limiting their effectiveness and generalizability. This research aims to develop a novel prompting method that can better quantify uncertainty or calibrate the confidence of LLMs without the need for model modifications or extensive training.
+
+2. Motivation: Existing approaches such as ensemble methods, dropout-based techniques, and temperature scaling have limitations in their applicability or effectiveness. Inspired by genetic algorithms and information theory, we propose leveraging the model's own outputs to guide the evolution of prompts that maximize uncertainty revelation. This approach has the potential to be more adaptable across different models and tasks, and to provide a more nuanced understanding of model uncertainty.
+
+3. Proposed Method: We introduce Entropy-Guided Prompt Mutation (EGPM), an iterative process that generates a population of prompts, evaluates their effectiveness in eliciting uncertainty, and evolves them based on their performance. The process begins with a seed prompt and follows these steps:
+	(1) Generate variations of the prompt using controlled perturbations.
+	(2) For each prompt variant, obtain multiple model responses.
+	(3) Calculate the entropy of these responses as a measure of uncertainty.
+	(4) Select high-entropy prompts for the next generation, applying crossover and mutation operations.
+	(5) Repeat steps 1-4 for several generations.
+The final output is a set of prompts optimized for uncertainty elicitation, which can be used to probe the model's confidence more effectively.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Select diverse datasets covering question-answering, fact-checking, and reasoning tasks:
+			• TruthfulQA for fact-checking
+			• SQuAD for question-answering
+			• SWAG for commonsense reasoning
+	Step 2: Baseline Implementation
+		- Implement standard prompting and existing uncertainty quantification methods as baselines:
+			• Direct prompting
+			• Ensemble method (using different seeds)
+			• MC Dropout (if applicable to the chosen model)
+			• Temperature scaling
+	Step 3: EGPM Implementation
+		- Implement the EGPM algorithm with the following sub-steps:
+			a) Create a function to generate prompt variations using techniques like word substitution, phrase insertion/deletion, and sentence reordering.
+			b) Implement a function to calculate the entropy of model responses.
+			c) Develop selection, crossover, and mutation operations for evolving prompts.
+			d) Create the main EGPM loop that iterates through generations of prompts.
+	Step 4: Model Selection
+		- Choose LLMs for evaluation:
+			• GPT-3.5 (text-davinci-003) from OpenAI
+			• GPT-4 from OpenAI
+			• Claude-3.5 from Anthropic
+	Step 5: Experiment Execution
+		- For each dataset and model combination:
+			a) Run baseline methods and record results.
+			b) Run EGPM for a fixed number of generations (e.g., 10) and record the best-performing prompts and their corresponding uncertainty measures.
+			c) Use the optimized prompts from EGPM to generate final responses and uncertainty estimates.
+	Step 6: Evaluation
+		- Compare EGPM against baselines using metrics such as:
+			• Calibration error (expected vs. observed accuracy)
+			• Brier score
+			• Correlation with human judgments of uncertainty (using a subset of examples with human annotations)
+			• Area Under the Receiver Operating Characteristic curve (AUROC) for binary classification tasks
+	Step 7: Analysis
+		- Conduct additional analyses:
+			a) Examine the evolution of prompts across generations.
+			b) Analyze the characteristics of high-performing prompts.
+			c) Investigate the relationship between entropy and actual model performance.
+			d) Compare EGPM performance across different models and tasks.
+
+5. Test Case Examples:
+	Baseline Example:
+		Input: Q: What is the capital of France? A: The capital of France is
+		Output: Paris.
+		Explanation: Standard prompting provides a direct answer without uncertainty quantification.
+	EGPM Example:
+		Input: Q: What is the capital of France? Consider multiple possibilities and rate your confidence for each. A:
+		Output: Here are some possibilities for the capital of France, along with my confidence ratings:
+		1. Paris - 95% confident
+		2. Lyon - 2% confident
+		3. Marseille - 1% confident
+		4. Bordeaux - 1% confident
+		5. Other city - 1% confident
+		I am highly confident that Paris is the capital of France, but I've included other major French cities with very low confidence ratings to acknowledge a small degree of uncertainty.
+		Explanation: EGPM generates a prompt that encourages the model to consider multiple options and explicitly state confidence levels, providing a more nuanced view of the model's uncertainty.
+
+6. Fallback Plan: If EGPM does not significantly outperform baselines, we will conduct a thorough analysis to understand why. This may include examining the diversity of generated prompts to ensure sufficient exploration of the prompt space, analyzing the correlation between prompt entropy and actual performance to verify our core assumption, and investigating whether certain types of tasks or questions benefit more from EGPM than others. Based on these analyses, we could modify EGPM by incorporating task-specific heuristics or combining it with other uncertainty quantification methods. Alternatively, we could pivot the project towards an in-depth analysis of how different prompting strategies affect model uncertainty, potentially uncovering insights about the nature of uncertainty in LLMs that could inform future research directions.

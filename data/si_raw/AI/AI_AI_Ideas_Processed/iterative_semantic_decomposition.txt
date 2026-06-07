@@ -1,0 +1,78 @@
+Title: Iterative Semantic Decomposition: Enhancing Factuality and Reducing Hallucination in Large Language Models
+
+1. Problem Statement: Large language models often struggle with complex queries that require breaking down information into smaller, verifiable units, leading to errors in multi-step reasoning and potential hallucinations.
+
+2. Motivation: While existing methods like chain-of-thought prompting encourage step-by-step reasoning, they do not explicitly focus on semantic decomposition and verification. By iteratively breaking down complex concepts and verifying each component, we can build up to more accurate and reliable complex reasoning, potentially reducing hallucinations and improving factuality.
+
+3. Proposed Method: We introduce Iterative Semantic Decomposition (ISD), a prompting technique that guides the model to:
+	(1) Break down the input query into atomic semantic units.
+	(2) Verify each unit independently, assigning a confidence score.
+	(3) For low-confidence units, further decompose or rephrase to simpler concepts.
+	(4) Iteratively build up verified knowledge, combining atomic units into more complex statements.
+	(5) Generate the final response by composing verified complex statements, explicitly tracking the confidence of each component.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use three datasets:
+		- HotpotQA for multi-hop question answering
+		- LogiQA for logical reasoning
+		- ScienceQA for scientific explanation generation
+	These datasets cover a range of complex reasoning tasks that can benefit from semantic decomposition.
+
+	Step 2: Baseline Implementation: Implement three baseline methods:
+		- Standard prompting (direct question answering)
+		- Chain-of-thought prompting
+		- Self-consistency prompting
+	Use GPT-3.5 and GPT-4 for all experiments.
+
+	Step 3: ISD Prompt Design: Design prompts for each step of the ISD process:
+		- Decomposition prompt: "Break down the following question into atomic semantic units:"
+		- Verification prompt: "For each semantic unit, provide a confidence score (0-100) and explain your reasoning:"
+		- Refinement prompt: "For any unit with confidence below 70, further decompose or rephrase it:"
+		- Composition prompt: "Combine the verified units to form a complete answer to the original question:"
+
+	Step 4: ISD Implementation: Implement the ISD method using the designed prompts. Use GPT-3.5 and GPT-4 for all steps. Set a maximum of 3 iterations for the decomposition-verification-refinement loop.
+
+	Step 5: Evaluation:
+		- For each dataset and model combination:
+			a) Generate answers using all methods (baselines and ISD).
+			b) Evaluate accuracy using dataset-specific metrics (e.g., F1 score for HotpotQA, accuracy for LogiQA and ScienceQA).
+			c) Conduct a small-scale human evaluation (100 samples per dataset) to assess factuality and hallucination reduction.
+
+	Step 6: Analysis:
+		a) Compare performance of ISD against baselines across datasets and models.
+		b) Analyze the correlation between confidence scores and answer correctness.
+		c) Examine the number of decomposition iterations required for different question types.
+		d) Investigate cases where ISD performs significantly better or worse than baselines.
+
+5. Test Case Examples:
+	Example 1 (Baseline Failure):
+		Input: Who was the director of the movie that won the Academy Award for Best Picture in the same year that Barack Obama was first inaugurated as President of the United States?
+		Baseline (Chain-of-Thought) Output: Let's approach this step-by-step:
+		1. Barack Obama was first inaugurated as President in 2009.
+		2. The Academy Awards in 2009 would have been for movies released in 2008.
+		3. The movie 'Slumdog Millionaire' won Best Picture at the 2009 Academy Awards.
+		4. 'Slumdog Millionaire' was directed by Danny Boyle.
+		Therefore, the answer is Danny Boyle.
+		Explanation: The baseline method provides a seemingly logical chain of thought, but it contains a factual error. 'Slumdog Millionaire' did win Best Picture, but it was at the 2009 ceremony for films released in 2008, the year before Obama's inauguration.
+
+	Example 2 (ISD Success):
+		Input: Who was the director of the movie that won the Academy Award for Best Picture in the same year that Barack Obama was first inaugurated as President of the United States?
+		ISD Output:
+		Step 1: Decomposition:
+			1. When was Barack Obama first inaugurated as President of the United States?
+			2. Which movie won the Academy Award for Best Picture in that year?
+			3. Who directed that movie?
+		Step 2: Verification:
+			1. Confidence: 95 - Barack Obama was first inaugurated on January 20, 2009.
+			2. Confidence: 60 - I'm not certain about the Best Picture winner for 2009 without further verification.
+			3. Confidence: N/A - Cannot be determined without knowing the movie.
+		Step 3: Refinement:
+			2. Which movie won the Academy Award for Best Picture at the ceremony held in 2010 (awarding movies from 2009)?
+		Step 4: Verification of Refined Unit:
+			2. Confidence: 90 - The movie 'The Hurt Locker' won Best Picture at the 2010 Academy Awards, honoring films from 2009.
+		Step 5: Composition: Barack Obama was first inaugurated as President of the United States on January 20, 2009. The movie that won the Academy Award for Best Picture at the ceremony held in 2010 (awarding movies from 2009) was 'The Hurt Locker'. The director of 'The Hurt Locker' was Kathryn Bigelow.
+		Therefore, the answer is Kathryn Bigelow.
+		Final Answer: Kathryn Bigelow
+		Explanation: The ISD method successfully decomposes the question, identifies uncertainties, refines the problematic unit, and arrives at the correct answer. It demonstrates how the iterative process can lead to more accurate and factual responses.
+
+6. Fallback Plan: If the proposed ISD method does not significantly outperform baselines, we can pivot to an analysis paper focusing on the decomposition and verification process. We will investigate the types of questions where decomposition is most/least effective, the relationship between model confidence and factual accuracy, common patterns in semantic unit decomposition across different question types, the impact of the number of decomposition iterations on answer quality, and conduct a detailed error analysis comparing ISD failures to baseline failures. This analysis could inform future improvements to the method or suggest hybrid approaches combining ISD with other techniques.

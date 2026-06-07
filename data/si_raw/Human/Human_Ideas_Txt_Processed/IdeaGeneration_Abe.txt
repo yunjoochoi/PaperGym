@@ -1,0 +1,35 @@
+Title: Retrieval-Augmented Deductive Reasoning (RADR) Via Structural Decomposition of Legal Analysis
+
+1. Problem Statement: Natural language understanding, particularly in the domain of legal case precedents, presents significant challenges that impact downstream applications such as legal analysis generation and legal retrieval.
+
+2. Motivation: Recent research by Hou et al. (2024) has formulated legal case retrieval and retrieval-augmented analysis generation tasks, revealing that state-of-the-art models struggle with these challenges. Given the highly logical nature of legal text and its requirement for specialized reasoning, there is potential to enhance model performance by incorporating explicit understandings of the reasoning structure inherent in legal cases. Legal case precedents typically adhere to a specific structure, beginning with a summary, followed by an introduction of facts, identification of the core dispute, breakdown of the dispute into subclaims for reasoning, and thorough analysis of each reasoning step until a logical conclusion is reached. This hierarchical and recursive process allows for the extraction of an explicit deductive reasoning structure, which can be leveraged to improve downstream applications.
+
+3. Proposed Method: We propose a method that utilizes few-shot prompting of large language models (LLMs) to extract a summary of the legal case (which is typically provided at the beginning of the case text) and identify the core dispute. Subsequently, we prompt the LLM to elucidate the necessary reasoning steps involved in proving the core dispute. Once these reasoning steps are identified, we retrieve relevant portions of the text for each step, recursively applying this process if a step can be further decomposed into more atomic steps. This approach ultimately yields a reasoning graph (or tree) that logically and deductively explains how a legal conclusion is reached.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Dataset Selection
+		• Utilize the CLERC dataset (Hou et al., 2024)
+	- Step 2: Method Implementation
+		• Apply the prompting method as described in the proposed method section
+	- Step 3: Evaluation
+		• Assess performance gains on two downstream tasks:
+			(1) Case retrieval
+			(2) Retrieval-augmented case analysis generation
+	- Step 4: Metrics
+		• Employ the following evaluation metrics:
+			(1) ROUGE
+			(2) BARTScore
+			(3) Citation Precision
+			(4) Citation Recall
+			(5) CFP (Hou et al., 2024)
+			(6) L-FRESco (Hou et al., 2024)
+
+5. Test Case Examples:
+	- Test Case 1:
+		• Input: Summary of Beamon v. Assurant Employee Benefits case
+		• System Prompt: You are a renowned lawyer experienced in U.S. law.
+		• User Prompt: [Summary of the case]
+		What are the key reasoning steps and assumptions to prove that Beamon's claim of benefits can be denied based on the fact that he did not exhaust his administrative remedies prior to filing action? (Core Dispute)
+		• Output: [Detailed reasoning steps provided by the system, including understanding the exhaustion requirement under ERISA, reviewing plan terms and administrative procedures, assessing notification and awareness, evaluating compliance with plan requirements, citing judicial precedents, addressing exceptions to the exhaustion requirement, and examining the administrative record and fair process]
+
+6. Fallback Plan: If the primary method does not yield satisfactory results, we propose two alternative approaches. First, instead of utilizing GPT-4 for zero-shot extraction, we could train an open-source model specifically for the extraction task. Second, we could incorporate template generation to normalize output, as detailed in Weir et al. (2022). These alternatives provide additional avenues for improving the performance and consistency of our proposed method.

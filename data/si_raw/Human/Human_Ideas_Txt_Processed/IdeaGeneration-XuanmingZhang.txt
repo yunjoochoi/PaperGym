@@ -1,0 +1,81 @@
+Title: Incorporating Chain-of-Context in Self-planning Enhances Interactive Code Generation from Natural Language
+
+1. Problem Statement: Generating code implementation that aligns with natural language intents is a challenging task, especially in interactive code generation scenarios where most user intents are under-specified.
+
+2. Motivation: In real-world interactive programming scenarios, where user intents are mostly under-specified, it is challenging to generate code implementation that perfectly aligns with users' natural language intents. Existing approaches apply self-planning to solve complex programming tasks, which include a planning phase to guide the code generation step. However, the majority of these tasks are fully specified and do not involve interactivity from users. Additionally, while the use of contexts (e.g., outputs from previous cells in Notebooks) is helpful, current methods rely solely on all previous contexts to generate the implementation for the current task. We propose an approach that combines both self-planning and context curation to fully leverage the power of Large Language Models (LLMs). Our key motivation is that LLMs can decompose an under-specified intent into several specific sub-tasks/steps and curate only the appropriate contexts (not all contexts) from the history for the completion of each sub-task/step, ultimately generating codes that satisfy user intents.
+
+3. Proposed Method: Our proposed method, Chain-of-Context (CoC), involves the following steps:
+	(1) Plan decomposition: Given a problem intent from the user, prompt the LLMs to generate a plan to solve the problem (i.e., decompose the plan into several sub-tasks).
+	(2) Context curation: Given all the contexts so far (e.g., previous program cells, variables, dataframes, etc.), for each decomposed sub-step, prompt LLM to determine the useful contexts needed for completing the sub-step (e.g., which columns should we focus on from the previous dataframe).
+	(3) Code implementation: Given all the decomposed sub-steps and their corresponding curated contexts that are useful, append them to the original user intent and prompt LLMs to generate the code implementation.
+Each of the three steps is performed by prompting the same LLM in different ways to obtain the desired response.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Datasets: We choose datasets that evaluate interactive code generations from natural language. Specifically, we select ARCADE, a benchmark of 1078 code generation problems using the pandas data analysis framework in data science notebooks.
+	- Step 2: Construct prompts: We choose two baselines:
+		(1) Direct prompting: Given a user intent, we generate code implementations left-to-right directly.
+		(2) Self-planning: Given a user intent, we first decompose the plan into several sub-tasks, and then generate the code implementation for each sub-task.
+	Given that both baselines fail to consider the contexts necessary to achieve the user intent, CoC attempts to curate these contexts by providing an intermediate step to query each useful context for each sub-step before generating the code implementation. The detailed steps are as follows:
+		• Plan decomposition: Given the user intent, the model is prompted to decompose the original intent into several executable sub-tasks. Each sub-task includes its title and description.
+		• Candidate context retrieval: For each sub-task, conditioned on its descriptions and all context so far (e.g., all past cells in the notebook), the model is prompted to retrieve only the relevant contexts that are helpful to solve the target sub-task.
+		• Retrieved context verification: After retrieving the candidate contexts, the next step is to verify if the contexts are actually relevant for solving the current task. Specifically, conditioned on each sub-task and each candidate context, the model is prompted to answer the binary question (i.e., Is the candidate context relevant to solving the sub-task?). We only keep the relevant contexts at the end for each sub-task.
+		• Code implementation: Given all the decomposed sub-tasks and their corresponding verified relevant contexts, we append them to the original user intent. The model is finally prompted to generate the code implementation for the problem.
+	- Step 3: Select models: We test several closed-source models, including GPT-4, Gemini Pro 1.5, and Claude-3.5 series. We also experiment with open-source large models, including LLaMA-3-70B-Chat and LLaMA-3-70B-Instruct.
+	- Step 4: Get Results: Obtain code implementations from the models on ARCADE with both the baselines and proposed method.
+	- Step 5: Analyze Results: Compare whether the new method improves the performance of LLMs in the interactive code generation task compared to the baselines.
+
+5. Test Case Examples:
+	- Test Case 1:
+		Example problem formulation (all previous context cells in a notebook)
+		[1] 
+		import pandas as pd
+		import matplotlib.pyplot as plt
+		[2]
+		df = pd.read_csv('scores.csv')
+		[3]
+		# Schema of Dataframes:
+		# Columns in df with example values:
+		# Stu_Name (Mike), Engineering (90), English (89), Math (92)
+		[4]
+		df['avg_scores'] = (df['Engineering'] + df['English'] + df['Math']) / 3
+		Baseline 1 prompt input (Direct Prompting): Get the students with an average score above 90 for science subjects.
+		Baseline 1 prompt expected output (Direct Prompting):
+		df[df['avg_scores_science'] > 90]['Student_Name']
+		Baseline 2 prompt input (self-planning; Step 1: problem decomposition): decompose the problem into several sub-steps:
+		Baseline 2 expected output (self-planning; Step 1: problem decomposition):
+		Sub-step1: Identify science subjects
+		Sub-step 2: calculate average scores
+		Sub-step 3: Filter students and output results
+		Baseline 2 prompt input (self-planning; Step 2: code implementation): generate code for each sub-step
+		Baseline 2 prompt expected output (self-planning; Step 2: code implementation)
+		# Sub-step1: Identify science subjects: df['Physics'], df['Chemistry'], df['Biology'], df['Math']
+		# Sub-step2: Calculate average scores for the identified science subjects
+		df['average_scores_science'] = (df['Physics']+df['Chemistry']+df['Biology']+df['Math'])/4
+		# Sub-step3: Filter students and output results
+		df[df['average_scores_science'] > 90]['Student_Name']
+	- Test Case 2:
+		Proposed prompt input (Chain-of-Context Prompting; Step 1: Plan decomposition): decompose the problem into several executable sub-tasks. each sub-task includes its title and description
+		Proposed prompt expected output (Chain-of-Context Prompting; Step 1: Plan decomposition):
+		Sub-step1: Identify science subjects: identify the columns in the input DataFrame "df" that are science subjects
+		Sub-step 2: Calculate average scores: create a new column called 'science_scores_avg' that takes the columns from step 1 and calculate their average scores
+		Sub-step 3: Filter students and output results: output the student names that have the 'science_scores_avg' greater than 90
+		Proposed prompt input (Chain-of-Context Prompting; Step 2: Candidate context retrieval): for each sub-task, retrieve the relevant contexts that are helpful to solve each sub-task
+		Proposed prompt expected output (Chain-of-Context Prompting; Step 2: Candidate context retrieval):
+		Sub-step 1: in cell [3], columns 'Engineering' and 'Math' in df;
+		Sub-step 2: in cell [3], df[Engineering] and df['Math']
+		Sub-step 3: need results from step 2, and Stu_Name in df as the contexts
+		Proposed prompt input (Chain-of-Context Prompting; Step 3: Retrieved context verification): Is the candidate context relevant to solving the sub-tasks?
+		Proposed prompt expected output (Chain-of-Context Prompting; Step 3: Retrieved context verification):
+		Sub-step 1: Yes
+		Sub-step 2: Yes
+		Sub-step 3: Yes
+		Proposed prompt input (Chain-of-Context Prompting; Step 4: code implementation): given all the relevant contexts for each sub-task, generate the code implementation for the initial problem intent
+		Proposed prompt expected output (Chain-of-Context Prompting; Step 4: code implementation): 
+		# Sub-step1: Identify science subjects from df: df['Engineering'], df['Math'] 
+		# Sub-step2: Calculate average scores for the identified science subjects
+		df['science_scores_avg'] = (df['Engineering']+df['Math'])/2
+		# Sub-step3: Filter students and output results
+		df[df['science_scores_avg'] > 90]['Stu_Name']
+		Explanation: Given a user problem intent, an LLM with direct prompting generates the code implementation that uses the wrong columns in the target DataFrame "df". Similarly, an LLM with self-planning also neglected the relevant context in previous cells and referred to the columns that are non-existent in "df", resulting in incorrect code implementation. To improve this, Chain-of-Context first generates a plan decomposition in a more detailed format (i.e., contains specific descriptions for each sub-task). Then, for each sub-task, it retrieves and verifies all relevant candidate contexts that are useful to solve each sub-task. The resulting code implementation considers all these intermediate context chains that are curated for more accurate results.
+
+6. Fallback Plan: If the proposed method does not help as compared to the baselines, we will analyze each step of the CoC process to see (1) if the generated sub-tasks are actually achievable with the context so far; (2) if the retrieved contexts are grounded (i.e., real context from previous cells); (3) if the retrieved contexts are relevant to solve each sub-task; and (4) if the generated code is correct and satisfies the initial user intent. This can help us debug the proposed method or turn this into some interesting analysis of the model's ability to curate contexts for executing sub-tasks to fulfill a global problem intent.

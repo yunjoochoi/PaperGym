@@ -1,0 +1,75 @@
+Title: Adaptive Contextual Pruning: Improving Relevance and Conciseness in Long-Form Generation
+
+1. Problem Statement: Large language models often struggle with maintaining relevance and conciseness in long-form generation, frequently including irrelevant or redundant information that can lead to factual inconsistencies. This issue is particularly pronounced in tasks requiring extended coherence and context management, such as book summarization or technical documentation writing.
+
+2. Motivation: Current approaches often use fixed-length context windows or simple truncation strategies, which can lose important context. Human writers naturally focus on the most relevant parts of context as they write, dynamically updating their mental focus. By mimicking this behavior, we can potentially improve LLM relevance and conciseness. Existing methods like retrieval-augmented generation or sliding window approaches do not fully capture the dynamic nature of human writing, where relevance shifts as the text progresses.
+
+3. Proposed Method: We propose Adaptive Contextual Pruning (ACP), which involves:
+	(1) Maintaining a dynamic relevance score for each piece of context based on its usage in recent generations.
+	(2) Periodically prompting the model to identify the most relevant context pieces for the current generation task.
+	(3) Pruning less relevant context to maintain a focused, manageable context window.
+	(4) Allowing the model to 'retrieve' previously pruned context if it becomes relevant again, prompted by keywords or themes in the current generation.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Use two datasets:
+			a) WikiText-103 for book summarization tasks
+			b) A curated dataset of technical documentation from popular open-source projects on GitHub for technical writing tasks
+		- For WikiText-103, use full articles as input and require summaries of varying lengths
+		- For technical documentation, use full README files or documentation pages as input and require concise explanations of key features or concepts
+	Step 2: Baseline Implementation
+		- Implement three baseline methods:
+			a) Standard generation with a fixed context window
+			b) Sliding window approach
+			c) Retrieval-augmented generation using a simple TF-IDF based retrieval system
+	Step 3: ACP Implementation
+		- Implement the Adaptive Contextual Pruning method:
+			a) Initialize a context window with the full input text
+			b) Assign initial relevance scores to each sentence or paragraph based on position and keyword relevance
+			c) Generate text in chunks of 100 tokens
+			d) After each chunk, prompt the model to rate the relevance of each context piece on a scale of 1-10
+			e) Update relevance scores based on the model's ratings and usage in the generated text
+			f) Prune context pieces with low relevance scores, keeping the total context within a specified token limit
+			g) If the current generation mentions keywords from pruned context, prompt the model to decide whether to retrieve that context
+	Step 4: Prompts Design
+		- Design prompts for each step of the ACP method, for example:
+			a) Context relevance rating: "Rate the relevance of each context piece to the current writing task on a scale of 1-10."
+			b) Pruning decision: "Identify the least relevant context pieces that can be removed to reduce the context to [X] tokens."
+			c) Retrieval decision: "Given the keyword [Y] from previously pruned context, decide if it's relevant to retrieve this context for the current writing task."
+	Step 5: Model Selection
+		- Use GPT-4 for main experiments, accessed through the OpenAI API
+		- Run comparative experiments with GPT-3.5-turbo to assess the method's effectiveness across different model capabilities
+	Step 6: Evaluation Metrics
+		- Use the following metrics:
+			a) Relevance: Use BERTScore to compare the generated text with the original input for semantic similarity
+			b) Conciseness: Calculate the compression ratio (generated text length / input length) and use GPT-4 to rate conciseness on a 1-5 scale
+			c) Factual Consistency: Use a separate GPT-4 instance to generate factual questions about the input, then evaluate the generated text's answers to these questions
+			d) Human Evaluation: Have human raters score a subset of generations on relevance, conciseness, and overall quality
+	Step 7: Experiment Execution
+		- For each dataset and task:
+			a) Generate outputs using each baseline method and ACP
+			b) Apply all automated evaluation metrics
+			c) Conduct human evaluation on a subset of results
+			d) Compare ACP performance against baselines across all metrics
+	Step 8: Analysis
+		- Analyze the results to answer:
+			a) How does ACP compare to baselines in terms of relevance, conciseness, and factual consistency?
+			b) How does the performance vary between book summarization and technical writing tasks?
+			c) What is the impact of different context window sizes and pruning thresholds?
+			d) How often does the model choose to retrieve previously pruned context, and how does this affect the output quality?
+
+5. Test Case Examples:
+	Test Case 1:
+		- Baseline Prompt Input: Summarize the following article in about 200 words: [First 1000 words of a WikiText-103 article]
+		- Baseline Prompt Expected Output: [A 200-word summary that may contain irrelevant details or miss key points from later in the article]
+		- Proposed Prompt Input (ACP Step 1: Initial Generation): Summarize the following article, focusing on the most relevant information: [Full WikiText-103 article]
+		- Proposed Prompt Expected Output (ACP Step 1: Initial Generation): [First 100 tokens of a summary]
+		- Proposed Prompt Input (ACP Step 2: Relevance Rating): Rate the relevance of each paragraph to the current summary on a scale of 1-10: [List of paragraphs from the original article]
+		- Proposed Prompt Expected Output (ACP Step 2: Relevance Rating): [List of relevance scores for each paragraph]
+		- Proposed Prompt Input (ACP Step 3: Context Pruning): Identify the least relevant paragraphs that can be removed to reduce the context to 1000 tokens while maintaining the most important information for the summary.
+		- Proposed Prompt Expected Output (ACP Step 3: Context Pruning): [List of paragraphs to be pruned]
+		- Proposed Prompt Input (ACP Step 4: Continued Generation): Continue the summary, focusing on the most relevant information from the remaining context: [Pruned context + previously generated summary]
+		- Proposed Prompt Expected Output (ACP Step 4: Continued Generation): [Next 100 tokens of the summary]
+		- Explanation: The ACP method allows for dynamic focus on relevant information throughout the summarization process, potentially leading to more concise and accurate summaries compared to the baseline method which may struggle with long inputs.
+
+6. Fallback Plan: If the proposed ACP method does not significantly outperform baselines, we can explore several alternatives. We will analyze the relevance scores and pruning decisions to understand if the model is effectively identifying relevant information. This could lead to refinements in the prompting strategy for relevance rating. We will experiment with different context window sizes and pruning thresholds to find an optimal balance between maintaining context and focusing on relevance. Additionally, we will implement a hybrid approach that combines ACP with retrieval-augmented generation, using the relevance scores to guide retrieval. We will conduct an in-depth error analysis to identify specific types of content or tasks where ACP underperforms, which could inform task-specific modifications to the method. If the method shows promise but falls short on factual consistency, we could explore incorporating a fact-checking step into the generation process, where the model verifies key claims against the original context before including them in the output.

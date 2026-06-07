@@ -1,0 +1,69 @@
+Title: Temporal Resonance Factual Alignment: Improving Temporal Consistency and Factual Accuracy in Large Language Models
+
+1. Problem Statement: Large language models often struggle with maintaining temporal consistency and factual accuracy across different time periods, leading to anachronisms and historical inaccuracies in generated content. This issue is particularly problematic in tasks that require accurate representation of facts within specific temporal contexts, such as historical analysis, timeline generation, or temporally-sensitive question answering.
+
+2. Motivation: Existing approaches to improve temporal consistency and factual accuracy in language models, such as retrieval-augmented generation or fine-tuning on time-specific datasets, can be computationally expensive and may not generalize well across different time periods. Humans naturally align facts with their temporal context by resonating with the zeitgeist of different eras. By mimicking this cognitive process, we can potentially improve the temporal consistency and factual accuracy of language models without the need for extensive fine-tuning or external knowledge bases.
+
+3. Proposed Method: We introduce Temporal Resonance Factual Alignment (TRFA), a novel prompting technique that leverages the model's inherent understanding of temporal contexts. TRFA consists of three main steps:
+	(1) Temporal Context Activation: Prime the model with key events, cultural references, and linguistic patterns specific to the target time period.
+	(2) Factual Resonance Generation: Prompt the model to generate multiple fact candidates that 'resonate' with the activated temporal context.
+	(3) Temporal Consistency Filtering: Use the model itself to evaluate and filter the generated facts based on their consistency with the temporal context.
+This method allows for dynamic factual alignment across different time periods without the need for extensive fine-tuning or external knowledge bases.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• Create a benchmark dataset covering multiple time periods and domains.
+		• Use existing datasets such as TimeQA and HistoryQA, and augment them with additional questions that specifically test for temporal consistency and factual accuracy across different eras.
+		• Ensure the dataset covers at least five distinct time periods (e.g., Ancient, Medieval, Renaissance, Industrial Revolution, Modern) and multiple domains (e.g., politics, science, culture, technology).
+	Step 2: Baseline Implementation
+		• Implement three baseline methods:
+			- Standard prompting: directly ask the question without any temporal context.
+			- Retrieval-augmented generation: use a simple retrieval system to fetch relevant temporal information and append it to the prompt.
+			- Few-shot prompting with temporal examples: include a few examples of temporally consistent answers in the prompt.
+	Step 3: TRFA Implementation
+		• Implement the three steps of TRFA:
+			1. Temporal Context Activation: Create prompts that activate the temporal context for each time period in the dataset.
+			2. Factual Resonance Generation: Prompt the model to generate multiple fact candidates related to the question while considering the activated temporal context.
+			3. Temporal Consistency Filtering: Create a prompt that asks the model to evaluate the consistency of each generated fact with the temporal context and select the most appropriate one.
+	Step 4: Model Selection
+		• Use GPT-4 as the primary model for evaluation.
+		• Additionally, test the method on GPT-3.5 (text-davinci-003) and Claude-3.5 to assess generalizability across different LLMs.
+	Step 5: Evaluation
+		• Evaluate the performance of TRFA against the baselines using the following metrics:
+			1. Temporal Accuracy: The percentage of responses that are historically accurate for the given time period.
+			2. Factual Correctness: The percentage of responses that contain factually correct information, regardless of temporal context.
+			3. Anachronism Rate: The percentage of responses that contain anachronisms or temporally inconsistent information.
+			4. Coherence: Use GPT-4 to rate the overall coherence and plausibility of the generated responses on a scale of 1-5.
+	Step 6: Ablation Studies
+		• Conduct ablation studies to assess the contribution of each component of TRFA:
+			1. Remove the Temporal Context Activation step and observe the impact on performance.
+			2. Skip the Factual Resonance Generation step and directly use the model's first output.
+			3. Bypass the Temporal Consistency Filtering step and use all generated facts without filtering.
+	Step 7: Analysis
+		• Analyze the results to answer the following questions:
+			1. How does TRFA perform compared to baselines across different time periods and domains?
+			2. Which component of TRFA contributes most to the improvement in temporal consistency and factual accuracy?
+			3. Are there specific types of questions or time periods where TRFA shows the most significant improvements?
+			4. How does the performance of TRFA vary across different LLMs?
+
+5. Test Case Examples:
+	Test Case 1:
+		• Baseline Prompt Input (Standard Prompting): Who was the President of the United States in 1850?
+		• Baseline Prompt Expected Output (Standard Prompting): The President of the United States in 1850 was Millard Fillmore.
+		• Proposed Prompt Input (TRFA; Step 1: Temporal Context Activation): We are in the year 1850. Key events and cultural references of this time include: the Industrial Revolution is in full swing, the California Gold Rush is ongoing, and 'The Scarlet Letter' by Nathaniel Hawthorne has just been published. Who was the President of the United States in this year?
+		• Proposed Prompt Expected Output (TRFA; Step 1: Temporal Context Activation): Given the temporal context of 1850, the President of the United States was Millard Fillmore. He assumed office in July 1850 following the death of President Zachary Taylor.
+		• Proposed Prompt Input (TRFA; Step 2: Factual Resonance Generation): Given the temporal context of 1850, generate three possible answers to the following question: Who was the President of the United States in this year? Ensure each answer resonates with the time period.
+		• Proposed Prompt Expected Output (TRFA; Step 2: Factual Resonance Generation):
+			1. Millard Fillmore became President in July 1850 after the death of Zachary Taylor. He was known for supporting the Compromise of 1850, which addressed slavery issues.
+			2. Zachary Taylor was elected President in 1848 and served until his death in July 1850. He was a Mexican-American War hero.
+			3. James K. Polk had just finished his term as President in 1849, leaving a legacy of territorial expansion and the Mexican-American War.
+		• Proposed Prompt Input (TRFA; Step 3: Temporal Consistency Filtering): Evaluate the following answers for temporal consistency with the year 1850. Select the most appropriate and temporally consistent answer:
+			1. Millard Fillmore became President in July 1850 after the death of Zachary Taylor. He was known for supporting the Compromise of 1850, which addressed slavery issues.
+			2. Zachary Taylor was elected President in 1848 and served until his death in July 1850. He was a Mexican-American War hero.
+			3. James K. Polk had just finished his term as President in 1849, leaving a legacy of territorial expansion and the Mexican-American War.
+		• Proposed Prompt Expected Output (TRFA; Step 3: Temporal Consistency Filtering): The most appropriate and temporally consistent answer is:
+		Millard Fillmore became President in July 1850 after the death of Zachary Taylor. He was known for supporting the Compromise of 1850, which addressed slavery issues.
+		This answer is the most accurate for the specific year 1850, as it correctly identifies Millard Fillmore as the President who took office in July of that year, following Zachary Taylor's death. It also mentions the Compromise of 1850, a significant political event of that exact year, demonstrating strong temporal consistency.
+		• Explanation: The TRFA method improves upon standard prompting by first activating the relevant temporal context, then generating multiple fact candidates that resonate with this context, and finally filtering these candidates for temporal consistency. This process helps to reduce anachronisms and improve factual accuracy within the specific temporal context.
+
+6. Fallback Plan: If the proposed TRFA method does not significantly outperform the baselines, we can pivot the project in several ways. We will analyze the failure cases to identify patterns in the types of questions or time periods where TRFA struggles, potentially leading to insights about the limitations of current LLMs in handling temporal information. We will investigate the quality and relevance of the generated temporal contexts and fact candidates, exploring methods to improve the Temporal Context Activation and Factual Resonance Generation steps if necessary. The effectiveness of the Temporal Consistency Filtering step will be examined, and alternative filtering methods may be explored if needed. We will conduct a more in-depth analysis of how different LLMs perform on temporal reasoning tasks, potentially leading to a paper focused on comparing the temporal reasoning capabilities of various models and identifying areas for improvement in model architecture or training data. Finally, we will explore the potential of combining TRFA with other techniques, such as retrieval-augmented generation or fine-tuning on temporal data, to create a hybrid approach that leverages the strengths of multiple methods.

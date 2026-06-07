@@ -1,0 +1,114 @@
+Title: Semantic Divergence Minimization: Reducing Hallucinations in Large Language Models through Iterative Concept Grounding
+
+1. Problem Statement: Large language models often generate hallucinations by diverging from the core semantic content of the input, especially in complex reasoning tasks. This problem undermines the reliability and trustworthiness of LLMs in critical applications that require accurate and factual responses.
+
+2. Motivation: Current approaches like chain-of-thought prompting focus on generating intermediate steps but do not explicitly constrain semantic drift. By continuously grounding generated content to the original semantic space of the input, we can reduce hallucinations while preserving reasoning capabilities. This method leverages the LLM's own ability to extract and compare semantic concepts, creating a self-correcting mechanism that does not require external knowledge bases or complex architectures.
+
+3. Proposed Method: We introduce Semantic Divergence Minimization (SDM) prompting. For each reasoning step, we prompt the model to:
+	(1) Generate a candidate next step.
+	(2) Extract key semantic concepts from the original input.
+	(3) Measure semantic similarity between the candidate step and extracted concepts.
+	(4) If similarity is below a threshold, regenerate the step with explicit instructions to incorporate more relevant concepts.
+	(5) Repeat until convergence or maximum iterations.
+This creates a semantic 'gravity well' that keeps reasoning tethered to the input's conceptual core.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Use two datasets: HotpotQA for multi-hop reasoning and GSM8K for complex math word problems.
+		- For HotpotQA, utilize the dev set (7,405 questions).
+		- For GSM8K, employ the test set (1,319 problems).
+	Step 2: Baseline Implementation
+		- Implement two baselines:
+			a) Standard prompting: directly asking the model to answer the question.
+			b) Chain-of-thought (CoT) prompting: asking the model to show its work step-by-step before giving the final answer.
+	Step 3: SDM Implementation
+		- Implement the SDM method with the following sub-steps for each reasoning iteration:
+			a) Generate next step.
+			b) Extract key concepts from input.
+			c) Measure semantic similarity.
+			d) Regenerate if below threshold.
+			e) Repeat until convergence or maximum iterations.
+	Step 4: Prompt Engineering
+		- Design prompts for each step of SDM. For example:
+			- "Generate the next step in solving this problem:"
+			- "Extract key concepts from the original question:"
+			- "Rate the semantic similarity between these concepts and the generated step on a scale of 0-10:"
+			- "Regenerate the step, focusing more on these key concepts:"
+	Step 5: Hyperparameter Tuning
+		- Experiment with different similarity thresholds (e.g., 5, 6, 7 out of 10) and maximum iteration limits (e.g., 3, 5, 7) to find the optimal balance between performance and computational cost.
+	Step 6: Model Selection
+		- Use GPT-4 as the primary model due to its advanced reasoning capabilities.
+		- Test GPT-3.5-turbo for comparison.
+	Step 7: Evaluation
+		- For HotpotQA, use the official evaluation script to compute Exact Match (EM) and F1 scores.
+		- For GSM8K, use accuracy as the metric.
+		- Manually review a subset of responses to assess qualitative improvements in reasoning and reduction of hallucinations.
+	Step 8: Analysis
+		- Compare SDM results with baselines.
+		- Analyze the correlation between semantic similarity scores and answer correctness.
+		- Examine cases where SDM significantly improves or fails to improve over baselines.
+
+5. Test Case Examples:
+	Example 1 (HotpotQA):
+		Input: Who was born first, Alec Guinness or Billie Holiday?
+		Baseline Output: Alec Guinness was born first. He was born on April 2, 1914, while Billie Holiday was born on April 7, 1915.
+		SDM Output: To answer this question, let's break it down step by step:
+		1. Find Alec Guinness's birth date
+		2. Find Billie Holiday's birth date
+		3. Compare the two dates
+
+		Step 1: Alec Guinness's birth date
+		Alec Guinness was born on April 2, 1914.
+
+		Step 2: Billie Holiday's birth date
+		Billie Holiday was born on April 7, 1915.
+
+		Step 3: Comparison
+		Comparing the two dates:
+		Alec Guinness: April 2, 1914
+		Billie Holiday: April 7, 1915
+
+		Alec Guinness was born in 1914, while Billie Holiday was born in 1915.
+
+		Therefore, Alec Guinness was born first.
+		Explanation: The SDM method provides a more structured and transparent reasoning process, reducing the risk of hallucination by grounding each step in the key concepts (birth dates) from the original question.
+	Example 2 (GSM8K):
+		Input: Janet's ducks lay 16 eggs per day. She eats three for breakfast every morning and sells the rest at the farmers' market daily for $2 per egg. How much money does she make every week?
+		Baseline Output: Let's solve this step by step:
+		1. Janet's ducks lay 16 eggs per day
+		2. She eats 3 eggs for breakfast daily
+		3. She sells the rest at $2 per egg
+		4. We need to calculate for a week (7 days)
+
+		Eggs available for sale daily = 16 - 3 = 13 eggs
+		Money made daily = 13 * $2 = $26
+		Money made weekly = $26 * 7 = $182
+
+		Therefore, Janet makes $182 every week.
+		SDM Output: Let's break this down step by step:
+
+		1. Calculate eggs available for sale daily:
+		   Eggs laid per day: 16
+		   Eggs eaten for breakfast: 3
+		   Eggs for sale = 16 - 3 = 13 eggs
+
+		2. Calculate daily earnings:
+		   Price per egg: $2
+		   Daily earnings = 13 eggs * $2 = $26
+
+		3. Calculate weekly earnings:
+		   Days in a week: 7
+		   Weekly earnings = $26 * 7 = $182
+
+		Therefore, Janet makes $182 every week from selling her duck eggs.
+
+		Let's verify the key concepts:
+		- Ducks lay 16 eggs per day
+		- Janet eats 3 eggs daily
+		- Sells eggs for $2 each
+		- Calculation is for one week (7 days)
+
+		All key concepts from the original question are incorporated, ensuring our reasoning stays grounded in the given information.
+		Explanation: The SDM method not only provides a clear step-by-step solution but also explicitly verifies that all key concepts from the original question are incorporated, reducing the risk of introducing irrelevant information or hallucinating facts.
+
+6. Fallback Plan: If the proposed SDM method does not significantly outperform baselines, we can pivot the project in several ways. First, we could conduct an in-depth analysis of where and why SDM fails, potentially uncovering insights about LLM reasoning processes. We might find that SDM works better for certain types of questions or reasoning tasks, which could lead to a more nuanced application of the method. Second, we could explore variations of SDM, such as using different prompts for concept extraction or similarity measurement, or incorporating a dynamic threshold that adjusts based on the complexity of the question. Third, we could combine SDM with other prompting techniques like chain-of-thought or self-consistency to create a hybrid approach. Finally, if the semantic grounding aspect proves challenging, we could shift focus to analyzing how LLMs interpret and maintain semantic consistency throughout multi-step reasoning, which could provide valuable insights for future work on reducing hallucinations.

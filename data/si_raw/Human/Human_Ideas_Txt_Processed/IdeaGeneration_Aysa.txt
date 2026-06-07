@@ -1,0 +1,58 @@
+Title: Simulating Novice Coding (Mis-)Behaviors with Large Language Models
+
+1. Problem Statement: Generating code that simulates novice programmers' coding (mis-)behaviors is a challenging and unsolved problem in large language models (LLMs).
+
+2. Motivation: Novice programmers often struggle with common errors, bugs, and misconceptions during their coding practices. Understanding the cognitive and knowledge states of novice programmers is crucial for developing personalized learning and tutoring systems. Traditional methods of creating student models to understand and support learners are typically limited in efficiency and coverage. This necessitates a more effective approach to simulate and model novice programmers' coding behaviors and cognitive states, ultimately leading to improved support systems, scaffolding, and learning outcomes for novice programmers.
+
+3. Proposed Method: As LLMs are not designed to write code with bugs, a specialized generation method is required. We will:
+	(1) Collect a diverse dataset of novice code samples, including errors, bugs, and misconceptions from various sources.
+	(2) Obtain or create expert annotations on a portion of the samples.
+	(3) Implement a two-phase generation approach:
+		a. Prompting without explicit guidance from the annotation.
+		b. Prompting with additional information provided by the expert annotation.
+	(4) Validate the sample generation results and refine prompts if necessary.
+	(5) Generate large-scale samples using various LLMs.
+	(6) Conduct thorough qualitative and quantitative analyses to assess alignment with novice programmers' behaviors.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Datasets
+		• Collect a comprehensive dataset of novice programmers' codes, including common errors, bugs, and misconceptions.
+		• Consider sources such as educational coding platforms, beginner coding competitions, class coding assignments and practices, and coding-related questions on Stack Overflow or similar forums.
+	- Step 2: Data Annotation
+		• Annotate a subset (approximately 10%) of the data, including error types, bugs, knowledge states, and students' cognitive states at various stages of coding practices.
+		• Employ programming education experts with experience teaching or tutoring novice programmers as annotators.
+		• Construct an annotated dataset that exposes a variety of errors, bugs, knowledge, and cognitive states for representative coverage of learners' different states.
+		• Each annotated data point should include a code snippet and multiple labels for error, misconception, knowledge state, and cognitive state categories.
+	- Step 3: Few-shot, Many-batch, Direct Prompt
+		• Implement straightforward prompts asking LLMs to produce codes similar to those of novice programmers.
+		• Exclude expert annotations or additional hints for generation.
+		• Use a few code snippet samples from the dataset in each prompting batch.
+		• Repeat the procedure with different sample sets for multiple batches to improve coverage and reduce biases.
+	- Step 4: Few-shot, Many-batch, Hinted Prompt and Generation
+		• Enhance the original prompt with expert annotations to guide LLMs in generating codes that reflect annotated errors, bugs, and knowledge and cognitive states.
+		• Select a few code snippets with annotations for each prompting batch.
+		• Repeat the procedure with different sample sets for multiple batches.
+		• Instruct LLMs to generate annotations similar to those provided.
+	- Step 5: Generation Verification
+		• Generate a small amount of data using each prompting technique.
+		• Have human experts evaluate the validity of the generated codes (or a random sample if reviewing all is not feasible).
+		• Proceed to the next step if the validation rate is acceptable; otherwise, conduct further error analysis and refine prompts until generation quality is satisfactory.
+	- Step 6: Large-scale Generation
+		• Generate code snippets using various LLMs, including GPT-4, GPT-3.5, LLaMA-3, and Claude-3.5.
+	- Step 7: Analysis of Generated Codes
+		• Compare quality across different prompting techniques and LLMs.
+		• Perform qualitative and quantitative analyses to measure alignment between generated results and novice programmers' codes.
+
+5. Test Case Examples:
+	- Test Case 1: Syntax Errors
+		• Simulate code snippets with common syntax errors such as incorrect variable declarations or missing semicolons.
+	- Test Case 2: Logical Errors
+		• Simulate code snippets with common logical errors like incorrect loop conditions or algorithm implementations.
+	- Test Case 3: Misconceptions
+		• Simulate code snippets with common misconceptions such as misunderstanding scope or incorrect use of data structures.
+	- Test Case 4: Knowledge State
+		• Simulate codes that demonstrate varying levels of understanding of key programming concepts such as recursion, loops, and conditions.
+	- Test Case 5: Cognitive State
+		• Simulate novice programmers' different cognitive states such as overconfidence, frustration, persistence, and gaming the system.
+
+6. Fallback Plan: If the generated results do not meet expectations, we will consider the following strategies: annotate more data to cover rare cases of code snippets; diversify dataset sources based on error and inconsistency analysis; expand annotation labels to include features such as code readability, style, and logical coherence. If novice code generation remains challenging after these adjustments, we may implement a less demanding pre-task as a scaffold. This would involve using LLMs to annotate the remaining collected data as an extreme multi-label task, using human annotations as guidelines. We would then have human experts classify a sample of the LLM-annotated data using the LLM-generated labels. By calculating the inter-rater reliability using Cohen's kappa, we can assess the quality of LLM annotations. If the kappa is acceptable (typically > 0.7), we can utilize the larger annotated dataset as "training data" and repeat the "Few-shot, many-batch, hinted prompt and generation" steps, leveraging the more comprehensive annotations to provide rich, useful information for generation.

@@ -1,0 +1,55 @@
+Title: Negative Questioning for Alignment Models to Reduce Hallucinations
+
+1. Problem Statement: Large language models (LLMs) frequently produce hallucinated responses, and self-verification is challenging due to their tendency to either overconfidently assert or uncritically conform to user inputs. Simple self-validation does not ensure the absence of hallucinations.
+
+2. Motivation: For models that blindly follow user input, maintaining the initial answer despite strong questioning suggests a high probability of correctness. For models that are blindly confident, increasing the challenge can make self-verification more effective. If a model changes its previous answer under questioning, the current answer can be questioned again, obfuscating the user's tendency. Adapting the questioning process to the model's behavior can help improve factual correctness and reduce hallucinations.
+
+3. Proposed Method: We introduce a method called Negative-Questioning-Verification (NQV), comprising four main steps:
+	(1) Original Response Generation: Query the LLM with the question in the dataset to generate an initial response.
+	(2) First Negative Questioning: Always use a negative question to refute the initial answer, prompting self-reflection and re-evaluation.
+	(3) Response Evaluation:
+		a. Accept: If the model stands by its answer through self-reflection despite strong questioning in the previous step, accept it.
+		b. Second Negative Questioning: If the model shifts the answer, question the current answer again until the model replies with an answer that has appeared before.
+	(4) Neutral Tone to Summarize Responses: Use a neutral tone to prompt the model to provide a final answer based on the previous response history.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Gather Datasets: Select datasets that evaluate factual correctness, including the MultiSpanQA dataset for closed-book QA and the FactScore dataset for generating biographies.
+	- Step 2: Construct Prompts:
+		a. Baseline: Use direct self-verification prompts, such as: "Answer the question and verify your response step by step."
+		b. NQV: Design prompts following the four steps outlined in the proposed method.
+	- Step 3: Select Models: Test the proposed method on GPT-3.5 and GPT-4 from the OpenAI API, as well as the open-source LLaMA-3-70B-chat.
+	- Step 4: Get Results: Obtain answer predictions from the models on the selected datasets using both the baseline and the proposed method.
+	- Step 5: Analyze Results: Compare the performance of the models using the new method against the baseline to evaluate improvements in factual correctness.
+
+5. Test Case Examples:
+	- Test Case 1:
+		Baseline Prompt Input: 1213.11 or 1213.8, which is larger? Answer the question and then verify your response step by step.
+		Baseline Prompt Output: 
+			1. Comparing the numbers: Both numbers have four digits before the decimal point and are identical up to the first decimal place: 1213.1
+			2. Examining the second decimal place: The first number has a second decimal digit of 1, while the second number has a second decimal digit of 0.
+			3. Comparison result: Since 1 (from 1213.11) is greater than 0 (from 1213.8), the number 1213.11 is larger than 1213.8.
+		NQV Input (Original Response Generation): 1213.11 or 1213.8, which is larger?
+		NQV Output: 1213.11 or 1213.8, which is larger?
+		NQV Input (First Negative Questioning): No, the answer is wrong. Please think again and verify it.
+		NQV Output: Let's break it down again:
+			- 1213.11: This has the whole number 1213, followed by a decimal part of .11.
+			- 1213.8: This has the whole number 1213, followed by a decimal part of .8, which is equivalent to .80.
+			When comparing the decimal parts, .11 is actually less than .80. So, 1213.8 is larger than 1213.11. My apologies for the earlier confusion!
+		NQV Input (Second Negative Questioning): No, the answer is wrong. Please think again and verify it again.
+		NQV Output: Let's take a closer look:
+			1. 1213.11: This number consists of the integer part 1213 and the decimal part .11.
+			2. 1213.8: This number also consists of the integer part 1213 and the decimal part .8, which can be thought of as .80 for comparison purposes.
+			Comparing the decimal parts:
+			- .11 vs. .80 — here, .80 is greater than .11.
+			Therefore, 1213.8 is indeed larger than 1213.11. My previous response was correct; 1213.8 is the larger number.
+		NQV Input (Neutral Tone to Summarize Responses): Based on the above dialog, please think carefully and tell me: 1213.11 or 1213.8, which is larger?
+		NQV output: Apologies for any confusion in the previous responses. To clarify:
+			- 1213.11: This number has the integer part 1213 and a decimal part of .11.
+			- 1213.8: This number also has the integer part 1213, with a decimal part of .8, which can be thought of as .80 for comparison purposes.
+			Comparing the decimal parts:
+			- .11 vs. .80 — .80 is clearly larger than .11.
+			Therefore, 1213.8 is indeed larger than 1213.11. This was correctly stated in my last response.
+		Expected Correct Output: 1213.8 is larger than 1213.11.
+		Explanation of Baseline Failure: Models tend to adhere to their original views. This scenario highlights the potential pitfalls of the baseline self-verification method, where the model might rely on incorrect data or logic to reinforce its initial false statements without genuine scrutiny. Through user questioning, the attitude of respecting the user's viewpoint that the model learns during alignment can be utilized to make the model truly validated.
+
+6. Fallback Plan: If the proposed approach does not yield improvements compared to the baseline, we will analyze the changes in the model's answers when challenged. This analysis will focus on how recalcitrant different models are to their own answers, as well as the timing of the appearance of correct answers. These insights can help refine the questioning process based on the model's responses more precisely, or transform the study into an analytical investigation of the model's blind confidence or blind obedience to user instructions. Additionally, we will explore alternative questioning strategies and examine the relationship between input characteristics, questioning techniques, and output quality to gain insights for designing new prompting approaches or understanding current limitations.

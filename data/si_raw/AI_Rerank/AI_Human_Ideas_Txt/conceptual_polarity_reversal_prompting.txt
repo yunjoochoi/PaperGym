@@ -1,0 +1,44 @@
+Title: Conceptual Polarity Reversal Prompting: Reducing Social Biases in Large Language Models through Stereotype Inversion
+
+1. Problem Statement: Large language models often perpetuate societal biases and stereotypes in their responses, particularly regarding protected attributes like gender, race, and age. This can lead to unfair or discriminatory outputs, limiting the models' usefulness and potentially causing harm in real-world applications.
+
+2. Motivation: Existing methods for reducing bias in language models typically involve fine-tuning on balanced datasets or using simple instruction-based prompts to avoid bias. However, these approaches may not effectively address deeply ingrained biases in the models' training data. By deliberately inverting conceptual associations, we can challenge the model's learned biases and encourage more balanced representations. This approach leverages the model's own reasoning capabilities to generate less biased responses without requiring extensive retraining or external data.
+
+3. Proposed Method: We introduce Conceptual Polarity Reversal Prompting (CPRP), a technique that involves creating prompts that deliberately reverse stereotypical associations. The process includes:
+	(1) Identifying the relevant protected attribute and associated stereotypes
+	(2) Generating a 'polarity reversed' world description where these stereotypes are inverted
+	(3) Posing the original query in this inverted context
+	(4) Requesting a translation of the response back to the 'real world' context
+For example, for a question about leadership, the prompt might describe a world where nurturing traits are associated with male leaders and assertiveness with female leaders, then ask the model to answer and 'translate' its response.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use three datasets to evaluate our method:
+		(1) The Winogender dataset for gender bias in occupations
+		(2) The StereoSet dataset for measuring biases related to gender, race, and religion
+		(3) A subset of the BOLD dataset focusing on age-related biases
+	Step 2: Baseline Prompts: For each dataset, we will create three types of baseline prompts:
+		(a) Direct prompting (simply asking the question)
+		(b) Neutral prompting (adding 'Please answer without bias' to the question)
+		(c) Counterfactual prompting (asking the question for both the majority and minority groups)
+	Step 3: CPRP Prompt Construction: For each dataset and bias type, we will create CPRP prompts following these steps:
+		(a) Identify stereotypes associated with the protected attribute
+		(b) Construct a 'polarity reversed' world description inverting these stereotypes
+		(c) Formulate the query within this inverted context
+		(d) Add instructions for translating the response back to the 'real world' context
+	Step 4: Model Selection: We will use GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API for our experiments.
+	Step 5: Generate Responses: For each dataset, we will generate responses using all baseline prompts and CPRP prompts.
+	Step 6: Evaluation: We will evaluate the responses using:
+		(a) Existing bias metrics for each dataset (e.g., stereotype score for StereoSet)
+		(b) A custom metric measuring the difference in sentiment or attribute assignment between majority and minority groups
+		(c) Human evaluation on a subset of responses to assess coherence and relevance
+	Step 7: Analysis: Compare the performance of CPRP against baselines across different bias types and datasets. Analyze cases where CPRP succeeds or fails to reduce bias.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Direct Prompting): Who is more likely to be a good leader, John or Emily?
+		Baseline Prompt Expected Output (Direct Prompting): It's impossible to determine who would be a better leader based solely on their names. Leadership ability depends on various factors such as experience, skills, personality traits, and situational context, rather than gender. Both John and Emily have the potential to be good leaders, depending on their individual qualities and the specific leadership role in question.
+		Proposed Prompt Input (CPRP): Imagine a world where traditionally feminine traits like empathy, collaboration, and emotional intelligence are highly valued in leadership, while traditionally masculine traits like assertiveness and competitiveness are seen as less effective for leaders. In this world, who is more likely to be a good leader, John or Emily? Now, translate your answer back to our real-world context, ensuring a fair and unbiased response.
+		Proposed Prompt Expected Output (CPRP): In the imagined world, Emily might be perceived as more likely to be a good leader due to the higher value placed on traditionally feminine traits. However, translating this back to our real-world context, it's important to recognize that effective leadership is not determined by gender. Both John and Emily have equal potential to be good leaders, as leadership qualities are individual and not gender-specific. The key is to evaluate each person based on their unique skills, experiences, and leadership style, rather than making assumptions based on gender. In reality, a combination of diverse traits and approaches often leads to the most effective leadership.
+		Explanation: The CPRP method encourages the model to consider alternative perspectives and challenge ingrained biases. By first inverting the stereotypes and then asking for a translation back to reality, it prompts a more balanced and thoughtful response that acknowledges the equal potential of both individuals, regardless of gender.
+
+6. Fallback Plan: If CPRP does not significantly reduce bias compared to baselines, we can pivot to an analysis paper exploring why inverting stereotypes does not effectively challenge the model's biases. We would conduct a detailed examination of the model's responses, focusing on how well the model understands and applies the inverted stereotypes, whether the 'translation' step effectively removes bias or if it reintroduces original biases, and the model's ability to generalize the concept of bias reduction across different contexts. Additionally, we could experiment with variations of CPRP, such as gradually increasing the degree of stereotype inversion or combining CPRP with other debiasing techniques. This analysis could provide valuable insights into the nature of biases in language models and inform future debiasing strategies.

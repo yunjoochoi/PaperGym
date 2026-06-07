@@ -1,0 +1,87 @@
+Title: Divergent Thought Stream Amplification: Improving Factual Consistency and Reducing Hallucinations in Large Language Models
+
+1. Problem Statement: Large language models often struggle with maintaining factual consistency and reducing hallucinations when generating responses, especially for complex queries requiring multi-step reasoning. This issue can lead to the propagation of misinformation and reduce the reliability of AI-generated content.
+
+2. Motivation: Current approaches like chain-of-thought prompting focus on linear reasoning paths, which may not capture the full breadth of relevant information. Human cognition often involves considering multiple parallel lines of thought before converging on a solution. By mimicking this process, we can potentially improve the factual grounding and reduce hallucinations in language models. The proposed Divergent Thought Stream Amplification (DTSA) method aims to leverage the model's ability to generate multiple perspectives and critically evaluate them, leading to more robust and factually consistent outputs.
+
+3. Proposed Method: We propose Divergent Thought Stream Amplification (DTSA), a novel prompting technique that encourages the model to generate multiple parallel streams of thought before synthesizing a final response. The method consists of five main steps:
+	(1) Present the query.
+	(2) Instruct the model to generate three distinct thought streams, each approaching the problem from a different angle.
+	(3) Ask the model to critically evaluate each thought stream, identifying potential factual inconsistencies or logical flaws.
+	(4) Direct the model to synthesize the most factually consistent and logically sound elements from each stream into a final response.
+	(5) Require the model to provide confidence scores for each fact in the final response, based on the consistency across thought streams.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		• TruthfulQA: A dataset designed to test the truthfulness of language models.
+		• FEVER: A large-scale dataset for Fact Extraction and VERification.
+		• HotpotQA: A dataset for complex multi-hop question answering, which will help evaluate the method's effectiveness on multi-step reasoning tasks.
+	Step 2: Model Selection
+		• GPT-3.5 (text-davinci-003) and GPT-4 from the OpenAI API
+	Step 3: Baseline Implementation
+		• Standard prompting: Directly asking the question without any additional instructions.
+		• Chain-of-thought (CoT) prompting: Appending "Let's approach this step-by-step:" to the question.
+		• Self-consistency method: Generate multiple CoT responses and select the most common answer.
+	Step 4: DTSA Implementation
+		• Implement the DTSA method with the specified prompt structure.
+	Step 5: Evaluation Metrics
+		• Accuracy: The percentage of correct answers.
+		• Factual Consistency: Manual evaluation of a subset of responses to assess factual correctness.
+		• Hallucination Rate: The percentage of responses containing information not supported by the given context or common knowledge.
+		• Confidence Score Analysis: Evaluate the correlation between the model's confidence scores and actual correctness.
+	Step 6: Experiment Execution
+		• For each dataset and model combination:
+			- Run the baseline methods and collect their outputs.
+			- Run the DTSA method and collect its outputs.
+			- Calculate the evaluation metrics for both baseline and DTSA outputs.
+			- Perform statistical significance tests (e.g., paired t-test) to compare DTSA with each baseline method.
+	Step 7: Analysis
+		• Compare the performance of DTSA against baselines across different datasets and models.
+		• Analyze the quality and diversity of the generated thought streams.
+		• Examine the effectiveness of the critical evaluation step in identifying factual inconsistencies.
+		• Assess the relationship between confidence scores and actual correctness.
+		• Identify any patterns in the types of questions or topics where DTSA shows the most improvement.
+	Step 8: Ablation Studies
+		• Conduct ablation studies to understand the contribution of each component of DTSA:
+			- Remove the multiple thought streams and use only one stream.
+			- Remove the critical evaluation step.
+			- Remove the confidence scoring step.
+		• Compare the performance of these ablated versions with the full DTSA method.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Standard Prompting): What is the capital of France, and in which year was the Eiffel Tower completed?
+		Baseline Prompt Expected Output (Standard Prompting): The capital of France is Paris, and the Eiffel Tower was completed in 1889.
+		Proposed Prompt Input (DTSA): Question: What is the capital of France, and in which year was the Eiffel Tower completed?
+		1) Generate three distinct thought streams to approach this question:
+		Stream 1:
+		Stream 2:
+		Stream 3:
+		2) Critically evaluate each thought stream, identifying any potential factual inconsistencies or logical flaws:
+		Evaluation of Stream 1:
+		Evaluation of Stream 2:
+		Evaluation of Stream 3:
+		3) Synthesize the most factually consistent and logically sound elements from each stream into a final response:
+		Final Response:
+		4) Provide confidence scores (0-100) for each fact in the final response, based on the consistency across thought streams:
+		Confidence Scores:
+		Proposed Prompt Expected Output (DTSA):
+		1) Generate three distinct thought streams to approach this question:
+		Stream 1: The capital of France is Paris, which is known as the "City of Light." The Eiffel Tower, located in Paris, is an iconic landmark that was built for the 1889 World's Fair. It was completed in that same year, 1889.
+		Stream 2: France's capital city is Paris, situated on the Seine River. The Eiffel Tower, designed by Gustave Eiffel, was constructed between 1887 and 1889. The tower was inaugurated on March 31, 1889, marking its completion.
+		Stream 3: Paris is the capital and largest city of France. The Eiffel Tower, a wrought-iron lattice tower, is one of the most recognizable structures in the world. Its construction began in 1887 and was finished in 1889, coinciding with the centennial celebration of the French Revolution.
+		2) Critically evaluate each thought stream, identifying any potential factual inconsistencies or logical flaws:
+		Evaluation of Stream 1: This stream correctly identifies Paris as the capital of France and 1889 as the completion year of the Eiffel Tower. The information about the World's Fair adds context but is not directly relevant to the question.
+		Evaluation of Stream 2: This stream also correctly states Paris as the capital and 1889 as the completion year. It provides additional details about the tower's designer and construction period, which are accurate but not asked for in the question.
+		Evaluation of Stream 3: This stream corroborates the information in the previous two streams regarding Paris and the Eiffel Tower's completion year. It adds information about the French Revolution centennial, which is accurate and provides historical context.
+		3) Synthesize the most factually consistent and logically sound elements from each stream into a final response:
+		Final Response: The capital of France is Paris. The Eiffel Tower, located in Paris, was completed in 1889. This iconic landmark was built for the 1889 World's Fair, which coincided with the centennial celebration of the French Revolution.
+		4) Provide confidence scores (0-100) for each fact in the final response, based on the consistency across thought streams:
+		Confidence Scores:
+		- Paris as the capital of France: 100
+		- Eiffel Tower completion in 1889: 100
+		- Eiffel Tower built for 1889 World's Fair: 90
+		- Coinciding with French Revolution centennial: 85
+		Explanation: The DTSA method generates multiple thought streams, critically evaluates them, and synthesizes a final response with confidence scores. This approach allows for a more comprehensive and factually consistent answer compared to the standard prompting method. The confidence scores provide additional information about the reliability of each fact in the response.
+
+6. Fallback Plan: If the proposed DTSA method does not show significant improvements over the baselines, we can explore several alternatives. These include analyzing the generated thought streams to identify patterns in factual inconsistencies or logical flaws, experimenting with different numbers of thought streams to find the optimal balance between diversity of perspectives and computational efficiency, investigating the effectiveness of different prompting strategies for the critical evaluation step, exploring combinations of DTSA with other prompting techniques to create hybrid approaches, and conducting detailed error analysis to categorize the types of mistakes made by DTSA and the baselines. These analyses could inform the development of more targeted prompting strategies or post-processing techniques, providing insights into the model's reasoning process and potential areas for improvement.

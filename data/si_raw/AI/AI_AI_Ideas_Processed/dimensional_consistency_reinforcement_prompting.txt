@@ -1,0 +1,58 @@
+Title: Dimensional Consistency Reinforcement Prompting: Enhancing Mathematical Problem Solving in Large Language Models
+
+1. Problem Statement: Large Language Models (LLMs) often make dimensional errors in mathematical problem-solving, leading to incorrect or physically impossible solutions. This issue significantly impacts the reliability and applicability of LLMs in scientific and engineering domains where dimensional consistency is crucial.
+
+2. Motivation: Current approaches to address dimensional errors in LLMs mainly focus on post-hoc error checking or incorporating dimensional analysis as an additional step in the reasoning process. However, these methods do not fully capture the intuitive way physicists and engineers consider dimensional consistency throughout their problem-solving process. By integrating dimensional awareness more deeply into the prompting process, we aim to significantly reduce dimensional errors and improve solution quality, mimicking the natural thought process of domain experts.
+
+3. Proposed Method: We propose Dimensional Consistency Reinforcement Prompting (DCRP), a novel technique that interleaves dimensional consistency checks throughout the problem-solving process. The prompt structure includes:
+	(1) Problem statement
+	(2) Initial solution step
+	(3) Dimensional consistency check: 'Verify the dimensional consistency of your last step'
+	(4) Correction instruction if needed: 'If dimensionally inconsistent, revise your last step'
+	(5) Repeat steps 2-4 until problem is solved
+	(6) Final dimensional consistency verification
+This approach reinforces dimensional awareness at each step, allowing the LLM to catch and correct errors early in the reasoning process.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: Curate a diverse set of physics and engineering problems from existing datasets such as STEM-100 and PhysicalQA. Ensure the problems cover various topics and complexity levels, with a focus on those requiring dimensional analysis.
+	Step 2: Baseline Methods Implementation: Implement three baseline methods:
+		(a) Standard prompting: directly asking the LLM to solve the problem
+		(b) Chain-of-thought prompting: asking the LLM to show its work step-by-step
+		(c) Post-hoc dimensional analysis: standard prompting followed by a separate dimensional consistency check
+	Step 3: DCRP Implementation: Develop the DCRP prompting structure as described in the proposed method. Create a template that can be applied to any given problem, incorporating the iterative dimensional consistency checks.
+	Step 4: Model Selection: Use GPT-4 and GPT-3.5-turbo from OpenAI's API as the primary models for evaluation. Additionally, test the method on open-source models like LLaMA-3 for comparison.
+	Step 5: Experiment Execution: For each problem in the dataset:
+		(a) Apply all baseline methods and DCRP
+		(b) Record the full output for each method, including intermediate steps for DCRP
+		(c) Store the final answers and any dimensional consistency information provided
+	Step 6: Evaluation Metrics: Assess performance using:
+		(a) Solution accuracy: correctness of the final answer
+		(b) Dimensional error rate: frequency of dimensional inconsistencies in the final answer
+		(c) Step-wise dimensional consistency: for DCRP, measure how often dimensional errors are caught and corrected during the process
+	Step 7: Analysis: Compare DCRP against baselines across all metrics. Conduct a detailed error analysis to understand the types of problems where DCRP shows the most improvement and where it might struggle.
+	Step 8: Ablation Studies: Perform ablations by varying the frequency of dimensional checks in DCRP and by removing specific components (e.g., the correction instruction) to understand their individual impacts.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input (Standard Prompting): A car accelerates from 0 to 60 mph in 6 seconds. What is its acceleration in m/s^2?
+		Baseline Prompt Expected Output (Standard Prompting): To solve this, let's convert the units and use the acceleration formula:
+		1. Convert 60 mph to m/s:
+		   60 mph = 60 * 1609.34 / 3600 = 26.82 m/s
+		2. Use the acceleration formula: a = (v - u) / t
+		   Where v = final velocity, u = initial velocity, t = time
+		   a = (26.82 - 0) / 6 = 4.47 m/s^2
+		Therefore, the car's acceleration is approximately 4.47 m/s^2.
+		Proposed Prompt Input (DCRP; Step 1: Initial Solution): A car accelerates from 0 to 60 mph in 6 seconds. What is its acceleration in m/s^2? Solve this step-by-step, and after each step, verify the dimensional consistency.
+		Proposed Prompt Expected Output (DCRP; Step 1: Initial Solution): Step 1: Convert 60 mph to m/s
+		60 mph = 60 * 1609.34 / 3600 = 26.82 m/s
+		Dimensional check: [60 miles/hour] * [1609.34 meters/mile] / [3600 seconds/hour] = [meters/second]. This is dimensionally consistent.
+		Step 2: Calculate acceleration using a = (v - u) / t
+		a = (26.82 m/s - 0 m/s) / 6 s
+		Dimensional check: ([meters/second] - [meters/second]) / [seconds] = [meters/second^2]. This is dimensionally consistent.
+		Step 3: Compute the final result
+		a = 26.82 / 6 = 4.47 m/s^2
+		Dimensional check: The final answer is in [meters/second^2], which is the correct unit for acceleration. This is dimensionally consistent.
+		Therefore, the car's acceleration is 4.47 m/s^2.
+		Explanation: The DCRP method explicitly checks dimensional consistency after each step, ensuring that the units are correct throughout the problem-solving process. This reduces the likelihood of dimensional errors and provides a clear, step-by-step solution that is both mathematically and dimensionally sound.
+
+6. Fallback Plan: If DCRP does not significantly outperform baseline methods, we will conduct a thorough analysis to understand why. This may include examining cases where DCRP fails to catch dimensional errors, analyzing whether the dimensional consistency checks are too rigid and hinder problem-solving flexibility, and investigating if the method introduces unnecessary complexity for simpler problems. Based on these findings, we could explore modifications such as adaptive dimensional checking (varying the frequency based on problem complexity) or combining DCRP with other prompting techniques like few-shot learning or self-consistency checks. Additionally, we could shift focus to analyze how different types of problems benefit from dimensional consistency checks, potentially leading to insights on when and how to best apply dimensional reasoning in LLMs.

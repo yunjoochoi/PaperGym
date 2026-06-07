@@ -1,0 +1,38 @@
+Title: Enhancing AI Model Reliability by Learning to Express Uncertainty
+
+1. Problem Statement: Users struggle to reliably utilize AI models, even those capable of producing calibrated confidence estimates, as they lack clarity on when to appropriately accept or rely on AI assistance.
+
+2. Motivation: Human-Computer Interaction research has demonstrated that users prefer verbal expressions of uncertainty over numerical confidence estimates in AI-assisted decision-making. However, it remains unclear which linguistic phrases, or "epistemic markers of uncertainty," maximize reliable AI use. Additionally, individual responses to different uncertainty expressions vary, particularly in high-stakes domains where caution may be preferable. AI systems should be capable of expressing confidence to users while adapting to their preferences and domain specifications.
+
+3. Proposed Method: We propose prompting a language model to express an arbitrary AI model's confidence to a user in a manner that maximizes appropriate reliance, by learning from the user's preferences. The key steps include:
+    (1) Simulating human-AI interactions to evaluate uncertainty expression methods.
+    (2) Comparing different baseline methods of expressing uncertainty.
+    (3) Developing a method to prompt a language model to express uncertainty more effectively based on interaction history.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Simulate human-AI interactions:
+        • Simulate an AI by sampling predictions and confidences from probability distributions.
+        • Simulate a user using an LLM, similar to the LACIE approach.
+    - Step 2: Compare baseline methods of expressing uncertainty:
+        • Numeric confidence scores
+        • Partitioning confidence space into quintiles with corresponding verbal expressions
+        • Prompting an LLM to translate numerical confidence scores into linguistic uncertainty expressions
+    - Step 3: Develop method to prompt LLM for improved uncertainty expression:
+        • Provide interaction history to the LLM
+        • Prompt LLM to verbalize output based on learned patterns from interaction history
+
+5. Test Case Examples:
+    - Test Case 1: Clinical Diagnosis Scenario
+        • Context: A clinician using an AI system for diagnosis, where an incorrect diagnosis may be more harmful than rejecting a correct one.
+        • AI Confidence: 40%
+        • Baseline Output: "I am 40% confident in this diagnosis."
+        • Proposed Method Output: "I am quite uncertain about this diagnosis."
+        • Explanation: The proposed method's output lowers the chances of a false diagnosis being accepted by the clinician.
+    - Test Case 2: Decision-Making Scenario
+        • Context: A situation where it's crucial for the AI to help the user make a definitive decision.
+        • AI Confidence: 95%
+        • Baseline Output: "I am 95% confident in this recommendation."
+        • Proposed Method Output: "I am very confident in this recommendation."
+        • Explanation: The proposed method uses strong uncertainty expressions to assist the user in making a definitive decision.
+
+6. Fallback Plan: If the proposed method does not yield the expected results, we will conduct an in-depth analysis of the relationship between uncertainty phrases and appropriate AI use. This analysis will provide valuable insights into the effectiveness of various linguistic expressions in different contexts, potentially informing future research on human-AI interaction and trust-building in AI systems. We will also explore alternative approaches to customizing uncertainty expressions based on user preferences and task domains.

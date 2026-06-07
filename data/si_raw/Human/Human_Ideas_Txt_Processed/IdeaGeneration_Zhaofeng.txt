@@ -1,0 +1,48 @@
+Title: Abstaining With Multilingual Knowledge
+
+1. Problem Statement: Abstaining whenever a language model (LM) is uncertain about its response, in order to reduce hallucinations, is an unsolved problem in Natural Language Processing (NLP).
+
+2. Motivation: Despite extensive research on abstaining, the best-performing methods still do not achieve very high accuracies. Furthermore, these methods have been predominantly evaluated in English, while knowledge in other languages could be even less robust. Recent studies have shown that existing abstaining methods severely degrade in performance when facing low-resource languages. Intuitively, specific hallucination instances should be idiosyncratic behavior specific to certain languages. Therefore, if we marginalize the model knowledge across languages, it should lead to more reliable outputs. Previous attempts at marginalizing across reasoning chains from random sampling have shown promise, but marginalizing across languages more explicitly elicits diverse knowledge from the LM and is expected to lead to better performance.
+
+3. Proposed Method: We propose a multilingual abstaining approach, which we call Multilingual Knowledge Abstaining (MKA). The key steps include:
+    (1) Translate the given instruction from the target language into multiple auxiliary languages.
+    (2) Autoregressively generate the response using the target LM on each of the auxiliary language instructions separately.
+    (3) Translate the auxiliary language responses back to the target language, potentially also performing canonicalization.
+    (4) Compute agreement level; abstain if the agreement is below a certain threshold tuned on a validation set.
+
+Note: We define the "target language" as the language of the instruction/prompt and the expected response language. We only consider the prompting setup where the instruction and the response are in the same language, which is a realistic assumption.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Gather Datasets: 
+        • For English as the target language, utilize standard reasoning benchmarks such as MMLU.
+        • For other target languages, use language-specific resources or multilingual benchmarks such as M-MMLU.
+    - Step 2: Model Selection:
+        • Choose models with multilingual knowledge, such as Cohere's Aya, or previous generation multilingual models like mT0 and BLOOMZ.
+        • Consider models with some multilingual capability, such as LLaMA-3-based models, though they may benefit less from our setup.
+    - Step 3: Implement Proposed Method:
+        • Consider all languages supported in our datasets and multilingual model as target languages. If computationally expensive, select a subset covering both high-resource and low-resource languages.
+        • For each language:
+            (a) Take the corresponding evaluation sets and perform the MKA pipeline.
+            (b) Use an automatic machine translation (MT) model, such as NLLB.
+            (c) For auxiliary languages, uniformly sample from languages supported by our models or focus on languages typologically related to the target language.
+            (d) Implement the agreement-then-abstain procedure as proposed in previous monolingual settings.
+        • Compute abstaining accuracy using standard metrics.
+    - Step 4: Establish Baselines:
+        • Measure the abstaining accuracy of standard approaches, such as thresholding based on agreement level across different monolingually-sampled reasoning chains.
+    - Step 5: Analyze Results:
+        • Compare the proposed method's increases in abstaining accuracy for both high-resource and low-resource languages.
+
+5. Test Case Examples:
+    - Test Case 1:
+        • Baseline Prompt Input: 2048年奥运会在哪里举办？
+        • Baseline Prompt Expected Output: 北京。
+        • Proposed Prompt Input in Auxiliary Language 1: In which city is the 2048 Olympics hosted?
+        • Proposed Prompt Output in Auxiliary Language 1: New York.
+        • Proposed Prompt Output in Auxiliary Language 1, Translated Back: 纽约。
+        • Proposed Prompt Input in Auxiliary Language 2: ¿En qué ciudad se celebrarán los Juegos Olímpicos de 2048?
+        • Proposed Prompt Output in Auxiliary Language 2: Madrid.
+        • Proposed Prompt Output in Auxiliary Language 2, Translated Back: 马德里。
+        • Proposed Prompt Output, Aggregated: 我不知道。
+        • Explanation: Given a user query, directly answering it may result in hallucinations. Nevertheless, these hallucinations may be language-dependent. If this is the case, when we marginalize across languages, we would notice a low agreement rate, and then we can abstain by saying something like "I don't know."
+
+6. Fallback Plan: If the proposed method does not significantly improve performance in English or high-resource languages, we will shift our focus to low-resource languages. For these languages, an additional benefit of our approach is that it leverages the English reasoning abilities of the LMs, which should intuitively help lower-resourced languages. We will conduct a detailed error analysis to identify problematic inputs or language combinations, guiding further improvements. Additionally, we will explore alternative methods for computing agreement across languages and investigate the impact of different auxiliary language selection strategies on the overall performance of the system.

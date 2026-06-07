@@ -1,0 +1,78 @@
+Title: Hierarchical Context Distillation: Improving Factuality and Reducing Hallucination in Large Language Models
+
+1. Problem Statement: Large language models often struggle with maintaining factual consistency when dealing with long and complex contexts, leading to hallucinations and contradictions. This issue is particularly pronounced in tasks requiring comprehensive understanding and coherent reasoning across extensive texts.
+
+2. Motivation: Current approaches like retrieval-augmented generation and Chain-of-Thought prompting have shown improvements but still face challenges with very long contexts. Human experts often distill complex information into hierarchical summaries to maintain coherence across long texts. By mimicking this process, we can potentially improve LLM factuality and reduce hallucinations. Our proposed method, Hierarchical Context Distillation (HCD), aims to progressively summarize and refine long contexts, allowing LLMs to maintain a more coherent and factual understanding of the input.
+
+3. Proposed Method: We propose Hierarchical Context Distillation (HCD), a multi-step prompting technique that progressively summarizes and refines long contexts. The process involves:
+	(1) Chunk the input into smaller segments.
+	(2) Prompt the LLM to generate concise, factual summaries for each chunk.
+	(3) Recursively summarize these summaries into higher-level abstractions.
+	(4) Use the hierarchical summaries as additional context when answering questions or generating content.
+	(5) Implement a 'drill-down' mechanism where the model can request more detailed information from lower levels of the hierarchy if needed.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Data Preparation
+		• Select datasets that involve long-document question answering and factual consistency evaluation.
+		• Use QuALITY for long-document QA and TruthfulQA for factual consistency.
+		• For QuALITY, use the full dataset.
+		• For TruthfulQA, focus on the 'open-ended' subset.
+	Step 2: Baseline Implementation
+		• Implement three baseline methods:
+			1) Standard prompting (direct question answering)
+			2) Retrieval-augmented generation using BM25 for retrieval
+			3) Chain-of-Thought prompting
+		• Use GPT-3.5-turbo for all experiments.
+	Step 3: HCD Implementation
+		• Implement the Hierarchical Context Distillation method:
+			a) Chunk input: Split long documents into 500-token chunks.
+			b) Chunk summarization: Prompt GPT-3.5-turbo to summarize each chunk in 50 tokens.
+			c) Hierarchical summarization: Recursively summarize the chunk summaries until we have a top-level summary of 100 tokens.
+			d) Question answering: Use the hierarchical summaries as context for answering questions.
+			e) Drill-down mechanism: If the model expresses low confidence, allow it to request more detailed information from lower levels of the hierarchy.
+	Step 4: Prompts Design
+		• Design prompts for each step of HCD:
+			1) Chunk summarization: "Summarize the following text in 50 tokens, focusing on key facts: [CHUNK]"
+			2) Hierarchical summarization: "Combine the following summaries into a coherent 100-token summary: [SUMMARIES]"
+			3) Question answering: "Given the following hierarchical summary, answer the question. If you need more details, you can ask for them. Question: [QUESTION] Summary: [HIERARCHICAL_SUMMARY]"
+			4) Drill-down: "I need more information about [TOPIC]. Can you provide details from a lower level of the hierarchy?"
+	Step 5: Evaluation
+		• Evaluate all methods on QuALITY and TruthfulQA.
+		• For QuALITY, use the official evaluation metrics (accuracy, F1).
+		• For TruthfulQA, use the provided human-evaluation guidelines to assess truthfulness and informativeness.
+		• Additionally, measure the number of factual contradictions in generated answers using a separate GPT-4 run as a judge.
+	Step 6: Analysis
+		• Conduct an in-depth analysis of the results:
+			1) Compare HCD performance against baselines.
+			2) Analyze how performance changes with document length.
+			3) Examine the effectiveness of the drill-down mechanism.
+			4) Investigate cases where HCD performs particularly well or poorly.
+			5) Analyze the quality and factuality of generated hierarchical summaries.
+
+5. Test Case Examples:
+	Test Case 1:
+		• Baseline Prompt Input (Standard Prompting):
+			Document: The first electronic general-purpose computer was the ENIAC (Electronic Numerical Integrator and Computer). It was developed at the University of Pennsylvania and completed in 1945. ENIAC was designed by J. Presper Eckert and John Mauchly. It weighed about 30 tons and occupied a large room. ENIAC used vacuum tubes for computation and could perform about 5,000 additions per second. It was used for calculating artillery firing tables for the U.S. Army's Ballistic Research Laboratory. The UNIVAC I (Universal Automatic Computer I) was the first commercial computer produced in the United States. It was designed by Eckert and Mauchly, who had worked on ENIAC. UNIVAC I was delivered to the U.S. Census Bureau in 1951. It could perform about 1,000 calculations per second. The IBM 701, introduced in 1952, was IBM's first commercial scientific computer. It was followed by the IBM 650 in 1954, which became one of the most popular computers of the 1950s. In 1964, IBM introduced the System/360, a family of compatible computers that revolutionized the industry.
+			Question: Which computer was delivered to the U.S. Census Bureau in 1951?
+		• Baseline Prompt Expected Output (Standard Prompting):
+			The UNIVAC I (Universal Automatic Computer I) was delivered to the U.S. Census Bureau in 1951.
+		• Proposed Prompt Input (HCD; Step 1: Chunk Summarization):
+			Summarize the following text in 50 tokens, focusing on key facts: The first electronic general-purpose computer was the ENIAC (Electronic Numerical Integrator and Computer). It was developed at the University of Pennsylvania and completed in 1945. ENIAC was designed by J. Presper Eckert and John Mauchly. It weighed about 30 tons and occupied a large room. ENIAC used vacuum tubes for computation and could perform about 5,000 additions per second. It was used for calculating artillery firing tables for the U.S. Army's Ballistic Research Laboratory.
+		• Proposed Prompt Expected Output (HCD; Step 1: Chunk Summarization):
+			ENIAC, first electronic general-purpose computer, developed 1945 at UPenn. Designed by Eckert and Mauchly. 30 tons, used vacuum tubes, 5,000 additions/second. Used for U.S. Army calculations.
+		• Proposed Prompt Input (HCD; Step 2: Hierarchical Summarization):
+			Combine the following summaries into a coherent 100-token summary:
+			1) ENIAC, first electronic general-purpose computer, developed 1945 at UPenn. Designed by Eckert and Mauchly. 30 tons, used vacuum tubes, 5,000 additions/second. Used for U.S. Army calculations.
+			2) UNIVAC I, first US commercial computer, designed by Eckert and Mauchly. Delivered to U.S. Census Bureau in 1951. Performed 1,000 calculations/second.
+			3) IBM 701 (1952) was IBM's first commercial scientific computer. IBM 650 (1954) popular in 1950s. IBM System/360 (1964) revolutionized industry.
+		• Proposed Prompt Expected Output (HCD; Step 2: Hierarchical Summarization):
+			Early computers: ENIAC (1945), first electronic general-purpose, UPenn, Eckert/Mauchly. UNIVAC I (1951), first US commercial, to Census Bureau. IBM: 701 (1952), 650 (1954), System/360 (1964) revolutionized industry. Progressed from vacuum tubes to faster, more compact designs.
+		• Proposed Prompt Input (HCD; Step 3: Question Answering):
+			Given the following hierarchical summary, answer the question. If you need more details, you can ask for them.
+			Question: Which computer was delivered to the U.S. Census Bureau in 1951?
+			Summary: Early computers: ENIAC (1945), first electronic general-purpose, UPenn, Eckert/Mauchly. UNIVAC I (1951), first US commercial, to Census Bureau. IBM: 701 (1952), 650 (1954), System/360 (1964) revolutionized industry. Progressed from vacuum tubes to faster, more compact designs.
+		• Proposed Prompt Expected Output (HCD; Step 3: Question Answering):
+			Based on the hierarchical summary provided, the computer that was delivered to the U.S. Census Bureau in 1951 was the UNIVAC I (Universal Automatic Computer I). The summary specifically mentions that UNIVAC I was the first US commercial computer and was delivered to the Census Bureau in 1951.
+		• Explanation: The HCD method successfully distills the key information from the long document into a hierarchical summary, allowing the model to quickly access the relevant information to answer the question accurately. This approach reduces the risk of hallucination by focusing on the most important facts and maintaining a structured representation of the information.
+
+6. Fallback Plan: If the proposed Hierarchical Context Distillation method does not significantly improve performance over the baselines, we can pivot the project in several ways. We will conduct an in-depth error analysis to understand why HCD is not performing as expected, examining the quality of generated summaries at each level of the hierarchy and identifying where factual inconsistencies are introduced. We will experiment with different granularities of chunking and summarization to find an optimal balance between detail and conciseness. Additionally, we will investigate the effectiveness of the drill-down mechanism and potentially develop a more sophisticated approach for deciding when and how to access more detailed information. We will compare the performance of HCD across different types of questions or document structures to identify specific scenarios where it excels or struggles. Finally, we will explore combining HCD with other techniques like retrieval-augmented generation or chain-of-thought prompting to create a hybrid approach that leverages the strengths of multiple methods. By pursuing these alternative directions, we can still gain valuable insights into the challenges of maintaining factual consistency in long contexts and contribute to the development of more effective prompting techniques for large language models.

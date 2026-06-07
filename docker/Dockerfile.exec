@@ -6,6 +6,5 @@ COPY pyproject.toml ./
 COPY src ./src
 RUN pip install --no-cache-dir -e . \
     && pip install --no-cache-dir datasets scikit-learn numpy
-# Pre-stage GSM8K so parallel sandboxes don't race the HF Hub.
-RUN python -c "from datasets import load_dataset; load_dataset('openai/gsm8k','main')"
+# datasets/labels are NOT baked in — labels live host-side only (data/datasets/<task>/test.jsonl)
 WORKDIR /work

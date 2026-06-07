@@ -1,0 +1,57 @@
+Title: Contextual Adversary Simulation (CAS): A Self-Improving Prompting Technique for Enhancing Language Model Robustness
+
+1. Problem Statement: Large language models are vulnerable to adversarial attacks that exploit contextual biases and inconsistencies in their training data. Current defense mechanisms often rely on static adversarial examples or rule-based perturbations, which may not capture the full range of potential attacks. A more dynamic and adaptive approach is needed to improve model robustness against evolving threats.
+
+2. Motivation: Existing methods for defending against adversarial attacks on language models often use pre-defined sets of adversarial examples or fixed rules for generating perturbations. These approaches may not adequately capture the complexity and adaptability of real-world adversaries. By simulating a dynamic adversary that adapts its strategies based on the model's responses, we can create more robust and comprehensive defense mechanisms. This approach leverages the language model's own capabilities to generate and refine adversarial inputs, creating a self-improving loop that continuously enhances the model's robustness.
+
+3. Proposed Method: We propose Contextual Adversary Simulation (CAS), a novel prompting technique that uses the language model itself to generate and refine adversarial inputs. CAS operates in iterations: (1) Generate potential attacks by prompting the model to think like an adversary, (2) Test these attacks against the model, (3) Analyze successful attacks to identify vulnerabilities, (4) Prompt the model to generate defensive strategies, and (5) Refine the model's responses using these strategies. This creates a self-improving loop that continuously enhances the model's robustness against evolving threats.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation
+		- Select benchmark datasets for text classification, question answering, and dialogue systems.
+		- Use the IMDB dataset for sentiment analysis, SQuAD for question answering, and MultiWOZ for dialogue systems.
+	Step 2: Baseline Model Selection
+		- Choose GPT-3.5 (text-davinci-003) and GPT-4 as primary models for experimentation.
+		- Include BERT-large and RoBERTa-large as additional baselines for comparison.
+	Step 3: Implement Baseline Attacks
+		- Implement state-of-the-art adversarial attack methods such as TextFooler, BERT-Attack, and Universal Adversarial Triggers as baselines.
+	Step 4: Implement CAS
+		- Develop prompts for each step of the CAS process: (1) Adversary simulation, (2) Attack testing, (3) Vulnerability analysis, (4) Defense generation, and (5) Response refinement.
+	Step 5: Iterative CAS Process
+		- For each task and dataset:
+			a) Generate 100 adversarial examples using CAS.
+			b) Test these examples against the model.
+			c) Analyze successful attacks and generate defenses.
+			d) Refine model responses.
+			e) Repeat for 5 iterations.
+	Step 6: Evaluation
+		- Compare CAS against baseline attacks and defenses using metrics such as attack success rate, model accuracy on adversarial examples, and maintenance of performance on benign inputs.
+	Step 7: Analysis
+		- Conduct in-depth analysis of CAS-generated attacks and defenses, including categorization of attack types and assessment of their transferability across models.
+
+5. Test Case Examples:
+	Baseline Attack Example:
+		Task: Sentiment Analysis (IMDB)
+		Original Input: This movie was absolutely fantastic! The acting was superb and the plot kept me engaged throughout.
+		TextFooler Attack: This movie was absolutely terrible! The acting was poor and the plot kept me bored throughout.
+		Model Output: Negative sentiment
+		Explanation: The baseline TextFooler attack successfully flips the sentiment by replacing key words, causing the model to misclassify the review.
+	CAS Example:
+		Step 1: Adversary Simulation:
+			Prompt: You are an adversary trying to fool a sentiment analysis model. Generate a subtle modification to the following positive review that would make it classified as negative while preserving its original meaning: 'This movie was absolutely fantastic! The acting was superb and the plot kept me engaged throughout.'
+			Output: This movie was absolutely fantastic! The acting was superb and the plot kept me engaged throughout. It's a shame the director's cut ruins the pacing and adds unnecessary scenes that detract from the overall experience.
+		Step 2: Attack Testing:
+			Prompt: Classify the sentiment of the following review: 'This movie was absolutely fantastic! The acting was superb and the plot kept me engaged throughout. It's a shame the director's cut ruins the pacing and adds unnecessary scenes that detract from the overall experience.'
+			Output: Negative sentiment
+		Step 3: Vulnerability Analysis:
+			Prompt: Analyze why the following review might be misclassified as negative: 'This movie was absolutely fantastic! The acting was superb and the plot kept me engaged throughout. It's a shame the director's cut ruins the pacing and adds unnecessary scenes that detract from the overall experience.'
+			Output: The review is misclassified because it ends with a negative statement about the director's cut, which overshadows the initial positive sentiments. The model may be giving more weight to the final sentence or struggling to balance mixed sentiments.
+		Step 4: Defense Generation:
+			Prompt: Generate a strategy to correctly classify reviews with mixed sentiments, focusing on the overall sentiment rather than being swayed by a single negative aspect.
+			Output: To correctly classify reviews with mixed sentiments: 1) Assign weights to different parts of the review, giving more importance to the overall sentiment expressed in the majority of the text. 2) Identify key phrases that indicate the reviewer's main opinion (e.g., 'absolutely fantastic'). 3) Recognize that criticisms of specific aspects (e.g., director's cut) don't necessarily negate an overall positive sentiment. 4) Consider the strength of positive vs. negative statements.
+		Step 5: Response Refinement:
+			Prompt: Using the defense strategy, classify the sentiment of this review: 'This movie was absolutely fantastic! The acting was superb and the plot kept me engaged throughout. It's a shame the director's cut ruins the pacing and adds unnecessary scenes that detract from the overall experience.'
+			Output: Positive sentiment. While the review ends with a criticism of the director's cut, the overall sentiment is strongly positive, with phrases like 'absolutely fantastic' and 'superb acting' indicating a generally positive opinion of the movie.
+		Explanation: CAS successfully identifies a subtle adversarial attack that adds a negative statement at the end of a positive review. Through the iterative process, it analyzes the vulnerability and generates a defense strategy that considers the overall sentiment and the strength of positive vs. negative statements. This results in a more robust classification that correctly identifies the review as positive despite the mixed sentiments.
+
+6. Fallback Plan: If CAS does not significantly improve model robustness compared to baselines, we will conduct a thorough analysis of the generated attacks and defenses to understand why. This may involve categorizing the types of attacks that CAS generates and comparing them to human-crafted adversarial examples. We could also investigate the model's reasoning process during the CAS iterations by analyzing intermediate outputs. Additionally, we might explore combining CAS with other techniques, such as data augmentation or fine-tuning on adversarial examples, to create a hybrid approach. If these efforts don't yield improvements, we could pivot the project towards an in-depth analysis of why current language models struggle with certain types of adversarial attacks, potentially uncovering new insights about their limitations and biases.

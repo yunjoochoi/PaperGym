@@ -1,0 +1,55 @@
+Title: InsideOut - Debiased Emotional Dialogue Generation with Multi-Agent System
+
+1. Problem Statement: Large language model-based dialogue systems struggle with generating contextually appropriate and emotionally rich responses due to emotional biases formed during pre-training and their failure to grasp human nuances and emotional contexts.
+
+2. Motivation: Most dialogue systems powered by large language models utilize a single-agent system, where only one agent (LLM) is used for reasoning and generation. This method is often impacted by its inherent bias and is single-dimensional in emotion. This study aims to address this problem using a Multi-Agent System (MAS), where each agent represents a specific emotion to focus on. This system enforces consideration of different emotions and better understands nuances and contexts in various aspects.
+
+3. Proposed Method: Our proposed MAS, InsideOut, has the following information flow:
+	(1) Initiation of the Agents: Define each agent with a different emotion, setting them to analyze, reason, and generate with their specific emotions.
+	(2) Broadcast and Generation: Feed each agent with the same conversation history and background information. Ask them to reason with chain of thought before response generation.
+	(3) Aggregate and Summarize: Use a supervisor agent to aggregate emotion-specific responses from the other agents, and summarize a final response to generate.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Selection
+		- Utilize DailyDialog, a human-human multi-turn dialog dataset covering a wide range of daily topics.
+		- Employ EmpatheticDialogues, a dataset of human-human conversations grounded in emotional situations.
+		- Both datasets have emotion labels for evaluation.
+	Step 2: Task Definition
+		- Each conversation history H has a golden response r_g, with a corresponding gold emotion e_g.
+		- The set of emotions is E.
+		- Based on a conversation history H, each model should generate a response r, aiming for its corresponding emotion e to align with the gold emotion e_g.
+	Step 3: Prompt Design
+		- Baseline 1 (Single Agent): "According to the conversation history, please generate a proper response."
+		- Baseline 2 (Single Agent with Multi-Emotions): "According to the conversation history, first consider the following Emotion: {E}. For each emotion, analyze and reason about the history, and generate the corresponding emotional response after the conversation history. Lastly, generate one final response based on the responses."
+		- InsideOut:
+			- Definition of each agent for an emotion e_i: "You are {e_i}, you only focus on this single emotion. According to the conversation history, analyze and reason with your emotion {e_i}, and generate the corresponding emotional response with emotion {e_i}."
+			- Definition of supervisor agent: "According to the conversation history, first read the analysis, reasoning and responses from different emotions. After, please generate one final response based on the responses."
+		- GPT Emotion Classifier: "Choose one emotion to categorize your final response: {E}."
+	Step 4: Select Models
+		- Utilize GPT-4 from OpenAI for main analysis.
+		- Employ LLaMA-3 from Meta for ablation study.
+	Step 5: Get Results
+		- Use different methods to generate responses to the datasets.
+		- Utilize GPT-4 to categorize the responses to one of the emotions from the set E.
+	Step 6: Evaluation
+		- Compare generated emotion e with gold emotion e_g to assess the alignment of models' emotion generation with human emotion.
+
+5. Test Case Examples:
+	Test Case 1:
+		Emotion Set E: {no emotion, anger, disgust, fear, happiness, sadness and surprise}
+		Input Conversation History:
+			A: "Congratulations, Vivian. You won the grand prize, again."
+			B: "Isn't it just great! I just knew I'd win!"
+		Gold Response: "You did? How? Did you wear red underwear again this year?"
+		Corresponding Gold Emotion: Surprise
+		Baseline 1 Response: "Wow, Vivian! That's amazing news! Congratulations on winning the grand prize again! How do you feel about it?"
+		Corresponding Emotion: Happiness
+		Baseline 2 Response: [Detailed multi-emotion analysis omitted for brevity]
+		Final Response: "You're really good at this, Vivian. I just hope I can have my moment to shine one day too."
+		Corresponding Emotion: Sadness
+		InsideOut Response:
+			Agents' Responses: [Detailed emotion-specific responses omitted for brevity]
+			Supervisor's Response: "Wow, Vivian, you've done it again! I must admit, it's surprising and a bit daunting to see you win repeatedly. Your confidence is truly something."
+		Corresponding Emotion: Surprise
+
+6. Fallback Plan: If the multi-agent system with a structured information flow struggles with the bias of the last agent, an alternative approach would be to implement a decentralized (unstructured) MAS. In this system, different agents can communicate and discuss with each other for a final output in a democratic setting. Using decentralized MAS, dialogues can not only focus on different emotional aspects but also make final generation by considering voices from all agents, effectively lowering the emotional bias. This approach allows for a more balanced and nuanced emotional response generation, potentially addressing any limitations observed in the structured MAS approach.

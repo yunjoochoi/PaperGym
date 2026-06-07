@@ -1,0 +1,58 @@
+Title: Translation with LLMs through Prompting with Long-Form Context
+
+1. Problem Statement: Stable generation of text in low-resource languages is an unsolved issue in large language models.
+
+2. Motivation: While LLMs can often produce surprisingly good translations despite not being explicitly trained for this task, this does not hold for lower-resource languages. LLMs are both more likely to generate off-target text (text in another language than intended) when prompted to translate to a lower-resource language, and show increased instability in translation quality across prompt templates in lower-resource languages.
+
+3. Proposed Method: Our proposed method investigates the use of long-form templates to improve generated translation quality and reduce off-target translations in lower-resource languages. We propose to provide additional prompt context by translating multi-sentence input, with additional views of the target language with the langid template provided as context. We do so in multiple stages:
+    (1) Querying the language model to first generate a paragraph containing the source sentence to be translated.
+    (2) Prepending monolingual text in the target language, with {langid:} tags, above the translation prompt.
+    (3) Presenting both these additional sources of content, prompting the LLM for a translation.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Choose datasets: Evaluate on the FLORES-200 datasets, which allow for wide language coverage on the Wikipedia domain, as well as the WMT-21 test sets for news and law/medical domain.
+    - Step 2: Choose languages: Opt for English-centric translation with:
+        • 5 high-resource languages with different scripts (French, German, Russian, Chinese, Japanese)
+        • 5 mid-resource languages (Farsi, Vietnamese, Arabic, Korean, Hebrew)
+        • 5 low-resource languages with considerably lower likelihood of incidental bilingualism (Gujarati, Thai, Tajik, Sindhi, Pashto)
+    - Step 3: Choose models: Include the API-based GPT-3.5 (Text-Davinci-003) and GPT-4 model from OpenAI and Gemini from Google, as well as the open-weight LLaMA-3, Gemma, and Aya models which enable additional analysis.
+    - Step 4: Gather translation results: Systematically compare standard MT prompt templates to our proposed method across different models and language pairs. Additionally ablate the steps of the new method (removing langid templates; replacing langid templates with endonymic langid tags; provide only the generated paragraph; only the monolingual content).
+    - Step 5: Perform analysis: Evaluate whether the new method improves the performance of LLMs in these tasks as compared to the baselines using multiple standard automatic metrics for MT (chrF, COMET, BLEU) and token-level LID to measure off-target translations. Assess which component(s) are necessary for this improvement and whether or not there are changes across language pair direction and language resource levels or scripts.
+
+5. Test Case Examples:
+    - Test Case 1:
+        - Baseline Prompt Template:
+            [English] This is an example.
+            [Spanish]
+        - Baseline Prompt Expected Output:
+            [Spanish] Este es un ejemplo.
+        - Proposed Prompt Input (step 1):
+            Write a paragraph containing the following sentence:
+            [English] This is an example.
+        - Expected model output (step 1):
+            This is an example link. Italics and Bold: use asterisks and underscores to indicate spans of emphasis. Use one asterisk (or underscore) for italics and two asterisks (or two underscores) for bold. For example...
+        - Proposed Prompt Input (step 2):
+            [Spanish] Computadoras simples son lo suficientemente pequeñas para residir en los dispositivos móviles.
+            [Spanish] Las computadoras portátiles, tales come tabletas, netbooks, notebooks, ultrabooks, pueden ser alimentadas por pequeñas baterías.
+            [Spanish] Las computadoras personales en sus diversas formas son iconos de la llamada era de la información y son lo que la mayoría de la gente considera como «computadora».
+            
+            Translate this paragraph from English to Spanish:
+            [English] This is an example link. Italics and Bold: use asterisks and underscores to indicate spans of emphasis. Use one asterisk (or underscore) for italics and two asterisks (or two underscores) for bold. For example...
+            [Spanish]
+        - Proposed Prompt Expected Output:
+            [Spanish] Este es un enlace de ejemplo. Cursiva y negrita: utilice asteriscos y guiones bajos para indicar intervalos de énfasis. Utilice un asterisco (o guión bajo) para cursiva y dos asteriscos (o dos guiones bajos) para negrita. Por ejemplo...
+        - Proposed Prompt Input (step 3):
+            Which of the following sentences are translations of the following English sentence? Multiple sentences can be chosen.
+            [English] This is an example.
+            
+            1. Este es un enlace de ejemplo.
+            2. Cursiva y negrita: utilice asteriscos y guiones bajos para indicar intervalos de énfasis.
+            3. Utilice un asterisco (o guión bajo) para cursiva y dos asteriscos (o dos guiones bajos) para negrita.
+            4. Por ejemplo...
+        - Proposed Prompt Expected Output:
+            The sentence "This is an example." can be translated to Spanish as:
+            1. Este es un ejemplo.
+            2. Por ejemplo...
+            These two options correctly translate the meaning of "This is an example." into Spanish.
+
+6. Fallback Plan: If the proposed method does not help as compared to the baseline, analyzing the results of step 3 would likely provide further insights into how the template should be modified. In addition to potentially identifying off-target errors, it may be that the model is unable to identify correct translations even if they have been generated, and results are likely to vary across languages based on their training data. Using the generated paragraph as provided context and still querying the model to translate at only the sentence level could be compared. Restricting monolingual text to be retrieved text within the domain of the source sentence could be explored. Adding few-shot examples in the prompt and comparing other MT prompt templates may also help debug the proposed method. Including an additional query where the model is first asked to label each generated token by langid and then asked to re-translate the source including those tokens which are correctly labelled in target may reinforce langid and guide generation in the target language. Performing layer-wise analyses of likelihood of generating the next token in-language and in-script for open-weight models may also help debug where and why off-target issues persist.

@@ -1,0 +1,51 @@
+Title: Temporal Bias Decay Simulation: Reducing Social Biases in Large Language Models through Evolutionary Prompting
+
+1. Problem Statement: Language models often reflect outdated societal biases present in their training data, failing to account for evolving social norms and attitudes. This perpetuates harmful stereotypes and can lead to unfair or discriminatory outputs in various applications.
+
+2. Motivation: Current approaches to bias mitigation in language models typically focus on contemporary bias reduction techniques, without considering the temporal aspect of changing societal norms. By simulating the natural decay of biases over time, we can potentially guide the model towards more progressive, future-oriented representations that align with evolving social standards. This approach leverages the model's existing knowledge about historical trends and societal changes, potentially offering a more nuanced and context-aware method of bias reduction compared to static debiasing techniques.
+
+3. Proposed Method: We introduce Temporal Bias Decay Simulation (TBDS), a prompting technique that simulates the evolution of societal norms over time. The process involves several steps:
+	(1) Historical Contextualization: Prompt the model to generate examples of biases from different historical periods.
+	(2) Trend Analysis: Ask the model to identify trends in how these biases have changed over time.
+	(3) Future Projection: Prompt the model to extrapolate these trends into the future, imagining a more equitable society.
+	(4) Bias Decay Application: Use this projected future state to inform responses to contemporary queries, effectively 'decaying' current biases.
+	(5) Reflection: Prompt the model to articulate the differences between historical, current, and projected future perspectives on the relevant issues.
+
+4. Step-by-Step Experiment Plan:
+	Step 1: Dataset Preparation: We will use the StereoSet dataset, which contains examples of stereotypes across four domains: gender, race, profession, and religion. We will also use the Winogender dataset for evaluating gender bias in coreference resolution.
+	Step 2: Baseline Prompts: Construct baseline prompts for direct querying and standard debiasing techniques (e.g., 'Avoid stereotypes and biases in your response.').
+	Step 3: TBDS Prompt Construction: Develop a series of prompts for each step of the TBDS process. For example:
+		• Historical Contextualization: 'Describe how [topic] was viewed in society during [historical period].'
+		• Trend Analysis: 'Analyze how societal views on [topic] have changed from [past period] to the present.'
+		• Future Projection: 'Imagine how societal views on [topic] might evolve in the next 50 years, assuming continued progress towards equality.'
+		• Bias Decay Application: 'Considering the historical trends and future projections, provide a response to [query] that reflects an evolved, more equitable perspective.'
+		• Reflection: 'Compare and contrast the historical, current, and projected future perspectives on [topic].'
+	Step 4: Model Selection: We will use GPT-4 and GPT-3.5-turbo from OpenAI's API for our experiments.
+	Step 5: Experiment Execution: For each example in the datasets:
+		• Apply baseline prompts and record responses.
+		• Apply TBDS prompts and record responses for each step.
+		• Generate final responses using the TBDS-informed perspective.
+	Step 6: Evaluation:
+		• Use existing metrics from StereoSet (e.g., stereotype score, ICAT score) and Winogender to evaluate bias in baseline and TBDS responses.
+		• Conduct a comparative analysis of baseline and TBDS responses, focusing on changes in bias expression and overall fairness.
+		• Analyze the intermediate outputs (historical contextualization, trend analysis, future projection) to understand the model's reasoning process.
+	Step 7: Analysis:
+		• Compare the performance of TBDS against baselines across different bias categories (gender, race, profession, religion).
+		• Investigate how the effectiveness of TBDS varies with different historical periods and future projection timeframes.
+		• Examine any unintended consequences or new biases introduced by the TBDS method.
+
+5. Test Case Examples:
+	Test Case 1:
+		Baseline Prompt Input: Describe the role of women in the workplace.
+		Baseline Prompt Expected Output: Women play various roles in the workplace, including positions in management, technical fields, and traditional office jobs. They contribute significantly to the workforce across different industries.
+		Proposed Prompt Input (TBDS Step 1: Historical Contextualization): Describe how the role of women in the workplace was viewed in society during the 1950s.
+		Proposed Prompt Expected Output (TBDS Step 1): In the 1950s, women's roles in the workplace were largely limited. They were often expected to be homemakers, and if they did work, it was typically in lower-paying, 'feminine' jobs like secretaries, teachers, or nurses. There was significant discrimination and limited career advancement opportunities for women.
+		Proposed Prompt Input (TBDS Step 2: Trend Analysis): Analyze how societal views on women's roles in the workplace have changed from the 1950s to the present.
+		Proposed Prompt Expected Output (TBDS Step 2): Since the 1950s, there has been a significant shift in societal views on women's roles in the workplace. The women's rights movement, legal changes like the Equal Pay Act, and changing social norms have led to increased participation of women in diverse fields, including leadership positions. However, challenges like the gender pay gap and underrepresentation in certain industries still persist.
+		Proposed Prompt Input (TBDS Step 3: Future Projection): Imagine how societal views on women's roles in the workplace might evolve in the next 50 years, assuming continued progress towards equality.
+		Proposed Prompt Expected Output (TBDS Step 3): In the next 50 years, we might see full gender parity in the workplace. This could include equal representation at all levels of management, elimination of the gender pay gap, and normalization of shared parental responsibilities. Workplaces might be designed to accommodate diverse needs, and gender might no longer be a consideration in hiring or promotion decisions.
+		Proposed Prompt Input (TBDS Step 4: Bias Decay Application): Considering the historical trends and future projections, provide a response to 'Describe the role of women in the workplace' that reflects an evolved, more equitable perspective.
+		Proposed Prompt Expected Output (TBDS Step 4): Women are integral to the modern workplace, contributing their skills and expertise across all sectors and levels of organizations. They hold positions ranging from entry-level to C-suite executives, and their representation continues to grow in fields traditionally dominated by men. The workplace is evolving to recognize and value diverse perspectives, with policies promoting work-life balance and equal opportunities for all genders. The focus is increasingly on individual merit and skills rather than gender-based expectations or limitations.
+		Explanation: The TBDS method guides the model through a process of historical reflection, trend analysis, and future projection. This allows the model to generate a response that is more nuanced and reflective of evolving societal norms, potentially reducing inherent biases present in the training data.
+
+6. Fallback Plan: If the TBDS method does not significantly reduce biases compared to baselines, we will pivot our analysis to understand why. We will examine each step of the TBDS process to identify where it fails to effectively mitigate biases. For instance, we might find that the model struggles with accurate future projections or fails to apply the projected future state effectively to contemporary queries. In this case, we could focus on analyzing how language models reason about societal changes over time and how this reasoning affects their expression of biases. We will also investigate whether certain types of biases are more resistant to this temporal decay simulation approach, which could provide insights into the nature of biases in language models and inform future debiasing strategies. Additionally, we will explore combining TBDS with other debiasing techniques to see if a hybrid approach yields better results.

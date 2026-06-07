@@ -1,0 +1,45 @@
+Title: Modular Calibration for Long-form Answers
+
+1. Problem Statement: Calibrating the confidence of Large Language Models (LLMs) when generating long-form answers, such as essays and code, remains an open challenge in the field of natural language processing.
+
+2. Motivation: While numerous methods have been developed to calibrate the performance of LLMs on multiple-choice questions or open-domain questions with short answers, extending these approaches to tasks requiring lengthy responses presents significant difficulties. For instance, in code generation tasks (e.g., the HumanEval dataset), traditional confidence extraction methods like perplexity may prove inadequate due to the substantial variation in answer length across questions. Verbalized confidence can be affected by instruction tuning artifacts or unclear scope, while the reliability of metrics such as Expected Calibration Error (ECE) and Macro-averaged Calibration Error (MacroCE) may be compromised by differences in task settings. Our aim is to propose a novel pipeline for confidence extraction and calibration of LLMs for long-form answers, drawing inspiration from methods used for short or fixed-set answers. This approach will enable us to monitor the model's long-form answer generation process and apply targeted external augmentation when necessary, thereby enhancing both performance and efficiency.
+
+3. Proposed Method: We introduce Modular Calibration, a process comprising four core steps:
+    (1) Extend: Prompt the model to elaborate on the original question in relation to the answer, identifying which components of the question are addressed in the long-form response.
+    (2) Decompose: Instruct the LLM to break down the extended question and long-form answer into multiple modules.
+    (3) Extract Confidence: Utilize verbalized confidence or perplexity to determine the confidence level for each module.
+    (4) Merge: Based on the relationships between the modular questions/answers and the overall questions/answers, prompt the model to combine the modular confidence scores into an overall score representing the confidence in the long-form answer.
+
+Each of these steps is executed by prompting the same LLM in different ways to elicit the desired response.
+
+4. Step-by-Step Experiment Plan:
+    - Step 1: Gather Datasets: Select datasets featuring long answers with correctness annotations. Potential candidates include GSM8K, Code Gen, and Essay Writing.
+    - Step 2: Construct Prompts: 
+        (a) Establish a baseline using direct prompting, where a query is presented without special techniques.
+        (b) Analyze outputs to refine prompts for the Extend and Decompose steps.
+        (c) For the Confidence step, employ vanilla perplexity or verbalized confidence extraction. If performance is unsatisfactory, explore advanced methods built upon these techniques, such as those presented in recent research (e.g., FaR paper).
+    - Step 3: Select Models: Evaluate GPT-3.5 (Text-Davinci-003) and GPT-4 from the OpenAI API, as well as the open-source LLaMA-3-70B-chat.
+    - Step 4: Get Results: Obtain confidence predictions from the models on the selected datasets using both baseline methods and the proposed Modular Calibration approach.
+    - Step 5: Analyze Results: Compare the calibration performance of LLMs using the new method against the baselines (e.g., the perplexity of the entire long-form answer). Conduct qualitative and quantitative analyses on each component of the Modular Calibration process.
+
+5. Test Case Examples:
+    - Test Case 1: Verbalized Confidence Prompting
+        - Input: <Q> <A> Confidence (0-1)
+        - Output: [Model generates a confidence score between 0 and 1]
+    - Test Case 2: Modular Calibration Step 1 (Extend)
+        - Input: Given the answer, can you extend the question and elaborate on what points are covered in the answer?
+        - Output: The answer covers these points of the question: (1) how fast A runs; (2) how fast B runs; (3) if A is faster than B.
+    - Test Case 3: Modular Calibration Step 2 (Decompose)
+        - Input: Please decompose the above extended question and answers into modules.
+        - Output:
+            1. How fast A runs: [relevant excerpt from the original answer]
+            2. How fast B runs: [relevant excerpt from the original answer]
+            [Additional modules as needed]
+    - Test Case 4: Modular Calibration Step 3 (Extract)
+        - Input: How fast A runs: [relevant excerpt from the original answer] Confidence (0-1)
+        - Output: 1. 0.9; 2. 0.6 [Additional confidence scores for other modules]
+    - Test Case 5: Modular Calibration Step 4 (Merge)
+        - Input: For each of these points related to question X, the confidence is: 0.9, 0.6, ... What is the overall confidence for the whole problem?
+        - Output: [Model generates an overall confidence score]
+
+6. Fallback Plan: If the proposed Modular Calibration method does not demonstrate improvement over the baseline, we will execute each sub-question and module individually to assess whether calibration is enhanced for each component. This approach will facilitate debugging of the proposed method and potentially yield interesting insights into the relationships between performance/calibration of decomposed modules and overall problems. Alternatively, we may analyze the model's ability to effectively decompose questions and answers into appropriate modules. These analyses will inform potential refinements to the method or provide valuable insights into the limitations and capabilities of LLMs in handling complex, long-form responses.

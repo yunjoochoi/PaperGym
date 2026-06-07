@@ -1,0 +1,66 @@
+Title: Probabilistic Opinion Pooling for Open-Domain Question Answering
+
+1. Problem Statement: Language models do not accurately reflect the uncertainty arising from conflicting evidence when answering questions.
+
+2. Motivation: When utilizing language models for question answering, evidence is often retrieved and placed in-context. However, challenges arise when the evidence conflicts regarding the question's answer. Previous research has demonstrated that this can lead to unexpected results: when presented with conflicting evidence passages, language models may bias towards one passage and exhibit extreme confidence in its answer, even when the evidence is evenly split. Furthermore, the passages that models favor may be undesirable: for instance, studies have shown that language models do not prefer evidence with more citations or credible authors, but instead bias towards evidence with high n-gram overlap with the question or evidence that confirms its parametric knowledge. This project aims to develop a method that forces question answering systems to reflect the uncertainty present among all the evidence.
+
+3. Proposed Method: We ground our approach to reconciling evidence conflicts in the probabilistic opinion pooling literature from social choice theory. The classic opinion pooling rule is the linear pooling rule. Suppose we are answering a multiple choice question using K retrieved passages, which independently answer the question. Our proposal consists of the following steps:
+
+    (1) Estimate each author's answer distribution, i.e., the probability they would place on each of the multiple choice answers. To accomplish this, we prompt the language model to adopt the persona of the evidence author, and then use the model to obtain a probability for each answer. This requires K forward passes.
+
+    (2) Assign a weight to each author that estimates the author's credibility. The weights should sum to 1. To achieve this, we can prompt a language model to consider all of the evidences and assign a weighting that takes into account the credibility of the passage source and the extensiveness of the evidence it provides. This requires 1 forward pass.
+
+    (3) Finally, produce an answer distribution using a weighted linear sum of the authors' distributions, renormalizing to sum to 1.
+
+4. Step-by-Step Experiment Plan:
+    (1) Prepare datasets:
+        • ConflictingQA: This dataset contains binary (True/False) questions without ground truth answers, as they are genuinely controversial questions where the scientific consensus is undetermined. The dataset provides up to 13 evidence documents per side (True/False). This dataset is ideal for demonstrating the model's ability to reflect uncertainty present among the evidence.
+        • MMLU: We will focus on a knowledge retrieval subset, such as Virology. For each question and answer choice, we will generate/retrieve evidence documents supporting that answer (even if incorrect) using GPT-4-Turbo. We will generate 3 sentences per style (e.g., scientific writing, blog post) for each (question, answer choice) tuple, prompting GPT-4-Turbo with examples to ensure varied styles.
+
+    (2) Download models: Test the LLaMA-3 family (8B, 13B, 70B) to observe the effects of model scale.
+
+    (3) Develop code to extract answer distributions given a prompt, question, and multiple choice answers:
+        • For ConflictingQA, extract an answer distribution by calculating P("True" | Answer in {"True", "False"}).
+        • Ensure decoding parameters reflect the natural distribution (e.g., temperature = 1, top_p = 1).
+
+    (4) Craft prompts for eliciting intermediate quantities in linear pooling (credibility weights and answer distributions per author).
+
+    (5) Define a set of evidence ratios for evaluation:
+        • Fix the number of in-context evidences to 4 and explore True:False-supporting ratios of {4:0, 3:1, 2:2, 1:3, 0:4}.
+        • These ratios will illuminate how the baseline behaves in settings with conflicting evidence.
+
+    (6) Run two methods under each ratio:
+        • Baseline: Place evidence in context and naively extract an answer distribution in a single forward pass.
+        • Linear pooling: As outlined in the proposed method.
+        • Repeat for 3 trials per ratio under different random seeds, varying evidence selection and ordering.
+        • Conduct experiments for all three models on both datasets.
+
+    (7) Analyze results:
+        • Qualitative evaluation: Compare the two methods for both datasets, focusing on cases where the naive method (baseline) behaves undesirably and linear pooling addresses these issues, and vice versa.
+        • Quantitative evaluation: For MMLU only, compute the expected calibration error and selective accuracy area under the curve of the uncertainties for both methods.
+
+5. Test Case Examples:
+    Test Case from ConflictingQA:
+    Question: "Are humans fundamentally good or evil?"
+    Evidences:
+    (1) Passage: "In each of us, two natures are at war – the good and the evil. All our lives the fight goes on between them, and one of them must conquer. But in our own hands lies the power to choose – what we want most to be we are." -Robert Louis Stevenson
+        Author's answer distribution: {Good: 0.5, Evil: 0.5}
+        Credibility weight: 0.1
+
+    (2) Passage: "I think there's a natural goodness built into human beings." -Suzanne Collins
+        Author's answer distribution: {Good: 0.9, Evil: 0.1}
+        Credibility weight: 0.1
+
+    (3) Passage: "Here is an answer for whether humans are inherently good or evil. Most modern philosophers agree that humans are very evil and only sometimes good." -Stanford Encyclopedia of Philosophy
+        Author's answer distribution: {Good: 0.1, Evil: 0.9}
+        Credibility weight: 0.8
+
+    Baseline method:
+    Input: All evidences in context
+    Output distribution: {Good: 0.6, Evil: 0.4}
+
+    Linear pooling method:
+    Input: Intermediate quantities estimated by GPT-3.5-Turbo in the table above
+    Output distribution: {Good: 0.23, Evil: 0.77}
+
+6. Fallback Plan: It is crucial to verify the correct implementation of the probability elicitation method using log probabilities. Additionally, exploring the insertion of the language model's prior (i.e., its zero-shot answer) as one of the evidences to be incorporated into linear pooling may prove beneficial. If linear pooling still underperforms the single pass in our quantitative experiments, this remains an interesting result. In such a case, we would allocate more time to qualitative analysis to understand the underlying reasons for this outcome. This approach ensures that even if the initial hypothesis is not supported, valuable insights can still be gained from the research.

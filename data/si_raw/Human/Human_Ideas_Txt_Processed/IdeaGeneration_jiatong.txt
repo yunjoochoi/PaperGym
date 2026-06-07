@@ -1,0 +1,67 @@
+Title: Improving Code Models through Multi-Agent Debate
+
+1. Problem Statement: Current code generation models enhance programming productivity but face challenges when integrated directly into projects. Primary issues include: (1) the inability of API-based models to consider the user's machine architecture and environment, leading to errors requiring manual debugging, (2) difficulty in meeting performance requirements such as runtime and memory constraints in a single generation, and (3) generic programming bugs.
+
+2. Motivation: Existing methods for addressing coding errors and test case generation errors often require manual intervention. Prior work that uses test cases to guide generation views test generators as sources of truth, but in practice, test case generators can make more mistakes than code generators. Adapting the generation process through a multi-agent debate system can potentially mitigate these issues and improve the overall quality and reliability of generated code.
+
+3. Proposed Method: We propose a multi-agent debate system for code generation, utilizing two agents (potentially achieved with the same underlying code model): a generate agent responsible for code generation and a test agent responsible for generating test cases and executing the outputs of the generate agent. The core steps include:
+	(1) Sectioning: Partition longer tasks into smaller modules composed of executable functions to ensure proper evaluation.
+	(2) Generate Test Case and Code Completion: Both agents perform generation given a programming prompt.
+	(3) Test Case Execution and Feedback: The test agent executes the generated code and records either execution output or error message.
+	(4) Self-critic from both agents: When test cases are not successful, both agents engage in a second-round conversation, deciding whether to modify their previous generation and providing reasoning.
+	(5) Repeat until two agents agree with each other.
+
+4. Step-by-Step Experiment Plan:
+	(1) Construct Prompt:
+		• Develop baseline and agent conversation templates, ensuring fairness in comparison.
+		• Design test agent template to generate diverse test cases for coverage.
+		• Create JSON-like output format for agent actions and reasoning.
+		• Include in-context examples for models with weaker instruction-following abilities.
+	(2) Gather evaluation benchmark:
+		• Utilize HumanEval for testing efficacy on mitigating generic coding bugs.
+		• Employ LeetCode for testing efficacy on satisfying programming constraints.
+		• Investigate potential benchmarks sensitive to user environment and machine architectures.
+		• Explore long-form code generation benchmarks with scalable evaluation, if available.
+	(3) Results Annotation:
+		• Report correctness of baseline and proposed method on HumanEval and LeetCode.
+		• Record statistics such as:
+			- Round of conversation in which the generate agent succeeds.
+			- Failure analysis (test generator failure or code model incapability).
+
+5. Test Case Examples:
+	Baseline Example:
+		Prompt: Create a function to count the number of unique pairs (i, j) in a given list of words where i < j, and the concatenation of words[i] and words[j] forms a palindrome when either words[i] is reversed or words[j] is reversed. Do not reverse both words in any valid pair. The function should identify unique pairs that form a palindrome when one of the words is reversed. Consider the list to contain only lowercase English letters.
+		Parameters:
+			words (List[str]): List of lowercase English words.
+		Returns:
+			int: Count of unique palindromic pairs.
+		Generate Agent Response:
+			def count_palindromic_pairs(words):
+				def is_palindrome(string):
+					return string == string[::-1]
+				count = 0
+				n = len(words)
+				for i in range(n):
+					for j in range(i + 1, n):
+						if is_palindrome(words[i] + words[j]) or is_palindrome(words[j] + words[i]):
+							count += 1
+				return count
+		Baseline Test Result:
+			Input: ['bat', 'tab', 'ttab', 'bath']
+			Expected Output: 1 ('bat' and 'bath')
+			Model Output: 2
+
+	Debate Process Example (same prompt):
+		Test Agent Response:
+			Input: ['bat', 'tab', 'ttab', 'bath']
+			Expected Output: 1 ('bat' and 'bath')
+		Generate Agent Response:
+			Action: "edit"
+			Code Completion: "..." (correctly reverse)
+			Reasoning: "I did not reverse the words before testing for palindrome"
+		Test Agent Response:
+			Action: "remain"
+			Test case: None
+			Reasoning: "The test case is correct given the prompt. The code you provided failed to reverse the words before testing for palindrome."
+
+6. Fallback Plan: If the proposed method does not significantly improve upon the baseline, we will investigate which steps and which agents tend to fail. We will report the behavior and self-critic ability of test agents, as test case generation is an interesting and useful application in itself. We will analyze whether the agents can achieve agreement with each other quickly and how often the two agents hallucinate together. This analysis will provide insights into the strengths and weaknesses of the multi-agent debate approach and guide future improvements in code generation and testing methodologies.

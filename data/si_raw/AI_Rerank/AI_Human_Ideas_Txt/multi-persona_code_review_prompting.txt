@@ -1,0 +1,120 @@
+Title: Multi-Persona Code Review Prompting: Enhancing Code Generation through Simulated Collaborative Review
+
+1. Problem Statement: Generated code from large language models often lacks robustness, efficiency, and adherence to best practices. This is because LLMs may not consistently consider diverse perspectives during code generation, leading to suboptimal solutions.
+
+2. Motivation: Existing approaches typically focus on single-perspective code generation or simple self-review processes, which may not capture the full spectrum of code quality considerations. By simulating a multi-person code review process, we can encourage the model to consider various aspects of code quality and generate more robust and well-rounded solutions. This approach is inspired by real-world software development practices where multiple reviewers with different expertise contribute to improving code quality.
+
+3. Proposed Method: We propose Multi-Persona Code Review Prompting (MPCRP), a method that simulates a collaborative code review process:
+	(1) Initial Generation: Prompt the model to generate an initial code solution.
+	(2) Persona Assignment: Define multiple 'reviewer personas' with specific areas of focus (e.g., performance expert, security specialist, readability advocate).
+	(3) Multi-Persona Review: For each persona, prompt the model to review the code from that perspective and suggest improvements.
+	(4) Improvement Integration: Prompt the model to act as the 'code owner', considering all reviews and refining the code accordingly.
+	(5) Consensus Check: Prompt the model to verify if all personas are satisfied with the final version.
+
+4. Step-by-Step Experiment Plan:
+	- Step 1: Dataset Preparation: Utilize the APPS dataset and CodeContests for evaluating code generation tasks. These datasets provide a diverse range of programming problems with varying complexity.
+	- Step 2: Baseline Implementation: Implement standard code generation baselines:
+		a) Direct prompting: Simply ask the model to generate code for the given problem.
+		b) Self-review prompting: Ask the model to generate code and then review its own code once.
+	- Step 3: MPCRP Implementation: Implement the Multi-Persona Code Review Prompting method:
+		a) Initial Generation: Prompt the model to generate an initial solution.
+		b) Persona Definition: Create prompts for different reviewer personas (e.g., 'You are a performance expert. Review the following code for performance issues:')
+		c) Multi-Persona Review: For each persona, generate a review of the initial code.
+		d) Improvement Integration: Prompt the model to refine the code based on all reviews.
+		e) Consensus Check: Ask the model if all personas would be satisfied with the final version.
+	- Step 4: Evaluation: Assess the generated code on the following metrics:
+		a) Functional correctness: Utilize the test cases provided in the datasets.
+		b) Efficiency: Measure runtime and memory usage.
+		c) Security: Employ static analysis tools to detect potential vulnerabilities.
+		d) Readability: Utilize established code complexity metrics (e.g., cyclomatic complexity, maintainability index).
+	- Step 5: Ablation Studies: Conduct ablation studies to analyze the impact of different components:
+		a) Vary the number and types of personas used.
+		b) Compare against single-persona review.
+		c) Analyze the effect of the consensus check step.
+	- Step 6: Model Selection: Utilize GPT-4 and GPT-3.5-turbo from OpenAI API for the main experiments. Additionally, test with open-source models like LLaMA-3 for comparison.
+	- Step 7: Analysis: Compare the performance of MPCRP against the baselines across all metrics. Analyze how different personas contribute to different aspects of code quality.
+
+5. Test Case Examples:
+	- Test Case 1:
+		- Baseline Prompt Input (Direct Prompting): Write a Python function to find the nth Fibonacci number efficiently.
+		- Baseline Prompt Expected Output (Direct Prompting): 
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				a, b = 0, 1
+				for _ in range(2, n + 1):
+					a, b = b, a + b
+				return b
+		- Proposed Prompt Input (MPCRP; Step 1: Initial Generation): Write a Python function to find the nth Fibonacci number efficiently.
+		- Proposed Prompt Expected Output (MPCRP; Step 1: Initial Generation): 
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				a, b = 0, 1
+				for _ in range(2, n + 1):
+					a, b = b, a + b
+				return b
+		- Proposed Prompt Input (MPCRP; Step 2: Performance Expert Review): You are a performance expert. Review the following code for performance issues:
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				a, b = 0, 1
+				for _ in range(2, n + 1):
+					a, b = b, a + b
+				return b
+		- Proposed Prompt Expected Output (MPCRP; Step 2: Performance Expert Review): The current implementation is relatively efficient for small to medium values of n. However, for very large values of n, we can improve performance using memoization or matrix exponentiation. Here's a suggestion for memoization:
+			from functools import lru_cache
+			@lru_cache(maxsize=None)
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				return fibonacci(n-1) + fibonacci(n-2)
+		- Proposed Prompt Input (MPCRP; Step 3: Readability Advocate Review): You are a readability advocate. Review the following code for readability and maintainability:
+			from functools import lru_cache
+			@lru_cache(maxsize=None)
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				return fibonacci(n-1) + fibonacci(n-2)
+		- Proposed Prompt Expected Output (MPCRP; Step 3: Readability Advocate Review): The code is concise and uses the lru_cache decorator effectively. However, we can improve readability by adding a docstring and type hints. Here's a suggestion:
+			from functools import lru_cache
+			from typing import int
+			@lru_cache(maxsize=None)
+			def fibonacci(n: int) -> int:
+				"""Calculate the nth Fibonacci number efficiently using memoization.
+				Args:
+					n (int): The position of the Fibonacci number to calculate.
+				Returns:
+					int: The nth Fibonacci number.
+				"""
+				if n <= 1:
+					return n
+				return fibonacci(n-1) + fibonacci(n-2)
+		- Proposed Prompt Input (MPCRP; Step 4: Improvement Integration): Given the following reviews, refine the code to address all concerns:
+			Performance Expert: 'Use memoization for better performance with large n.'
+			Readability Advocate: 'Add docstring and type hints for better readability.'
+			Original code:
+			def fibonacci(n):
+				if n <= 1:
+					return n
+				a, b = 0, 1
+				for _ in range(2, n + 1):
+					a, b = b, a + b
+				return b
+		- Proposed Prompt Expected Output (MPCRP; Step 4: Improvement Integration): 
+			from functools import lru_cache
+			from typing import int
+			@lru_cache(maxsize=None)
+			def fibonacci(n: int) -> int:
+				"""Calculate the nth Fibonacci number efficiently using memoization.
+				Args:
+					n (int): The position of the Fibonacci number to calculate.
+				Returns:
+					int: The nth Fibonacci number.
+				"""
+				if n <= 1:
+					return n
+				return fibonacci(n-1) + fibonacci(n-2)
+		- Explanation: The MPCRP method improves the initial implementation by incorporating feedback from multiple perspectives. The performance expert suggested using memoization for better efficiency with large n, while the readability advocate recommended adding a docstring and type hints. The final version integrates both suggestions, resulting in a more efficient and readable implementation.
+
+6. Fallback Plan: If the proposed MPCRP method does not significantly improve code quality over baselines, we can pivot the project in several ways. We can investigate the effectiveness of different personas, analyzing which contribute most to code improvement and why certain personas might be less effective. We can experiment with different orderings of persona reviews to see if this affects the final code quality. Instead of sequential reviews, we could design a system where personas 'discuss' the code, potentially leading to more nuanced improvements. We can categorize and analyze cases where MPCRP fails to improve code quality, which could provide insights into the limitations of this approach and potential areas for improvement. We could conduct a small-scale study comparing MPCRP results with actual human code reviews, which could provide valuable insights into the strengths and weaknesses of our approach. If certain aspects of MPCRP are more effective than others, we could develop a hybrid approach that combines the most effective elements of MPCRP with other code improvement techniques.
