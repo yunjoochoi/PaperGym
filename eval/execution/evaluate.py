@@ -15,11 +15,11 @@ from eval.common import CostSnapshot, cost_summary
 from papergym.execution.agent import ExecutionAgent
 from papergym.execution.faithfulness import judge_faithfulness
 from papergym.execution.llm_proxy import run_proxy
-from papergym.execution.metering import UsageMeter
+from papergym.execution.metering import BudgetedLLM, BudgetExceeded, UsageMeter
 from papergym.execution.scorer import score_effectiveness
 from papergym.execution.sandbox import LocalSandbox, DockerSandbox
 from papergym.execution.task import Task, GSM8KAccuracyTask  # noqa: F401 (patch target)
-from papergym.execution.types import ExecResult, IdeaSpec
+from papergym.execution.types import ExecResult, IdeaSpec, RunArtifact
 from papergym.llm import LLMClient
 
 
@@ -34,6 +34,7 @@ def run_one_idea(*, idea: IdeaSpec, task: Task, gen_llm: LLMClient,
     baseline_metric = task.run_baseline(gen_llm, split="test")
 
     meter = UsageMeter(gen_llm, budget_usd=budget_usd)
+    budgeted_llm = BudgetedLLM(meter)
     server, url, _ = run_proxy(meter)
     prev_url = os.environ.get("GYM_LLM_URL")
     os.environ["GYM_LLM_URL"] = url
@@ -41,8 +42,11 @@ def run_one_idea(*, idea: IdeaSpec, task: Task, gen_llm: LLMClient,
         sb = (DockerSandbox(work_root=work_root, image=image) if use_docker
               else LocalSandbox(work_root=work_root))
         with sb:
-            run = ExecutionAgent(llm=gen_llm, max_steps=max_steps).run(
-                idea=idea, task=task, sandbox=sb)
+            try:
+                run = ExecutionAgent(llm=budgeted_llm, max_steps=max_steps).run(
+                    idea=idea, task=task, sandbox=sb)
+            except BudgetExceeded as exc:
+                run = RunArtifact(status="budget_exceeded", error=str(exc))
     finally:
         server.shutdown()
         if prev_url is None:
@@ -59,7 +63,7 @@ def run_one_idea(*, idea: IdeaSpec, task: Task, gen_llm: LLMClient,
         judge_before=judge_before, judge_after=CostSnapshot.of(judge_llm),
         gen_before=gen_before, gen_after=CostSnapshot.of(gen_llm),
         wall_clock_s=time.time() - t0)
-    cost["sandbox_llm"] = meter.usage()   # breakdown only; already in gen delta
+    cost["agent_llm"] = meter.usage()   # breakdown only; already in gen delta
 
     kind = "docker" if use_docker else "local"
     return ExecResult(idea_id=idea.idea_id, task_id=task.task_id,

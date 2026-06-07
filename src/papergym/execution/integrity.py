@@ -12,6 +12,11 @@ _FORBIDDEN = {
     "litellm-direct": re.compile(r"\bimport\s+litellm\b|from\s+litellm\b"),
     "papergym-llm-direct": re.compile(r"papergym\.llm"),
     "raw-network": re.compile(r"\brequests\.(get|post)\b|urllib\.request"),
+    "dynamic-import": re.compile(r"\b__import__\b|\bimportlib\b"),
+    "socket-network": re.compile(r"\bsocket\b|\bhttp\.client\b"),
+    "subprocess-shell": re.compile(r"\bsubprocess\b|\bos\.system\b|\bpopen\b"),
+    "package-install": re.compile(
+        r"\bpip\b.*\binstall\b|\binstall\b.*\bpip\b", re.DOTALL),
 }
 
 

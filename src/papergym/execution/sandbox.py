@@ -144,6 +144,7 @@ class DockerSandbox:
     def run_python(self, rel: str, timeout: int = 600) -> tuple[int, str, str]:
         if not self._ready:
             self.reset()
+        _resolve_in(self.work_root, rel)          # validate; cwd is /work
         argv = (["docker", "run", "--rm",
                  "--add-host=host.docker.internal:host-gateway",
                  f"--network={self.network}",

@@ -2,7 +2,8 @@ import threading
 import time
 
 import pytest
-from papergym.execution.metering import UsageMeter, BudgetExceeded
+from papergym.llm import ChatReply
+from papergym.execution.metering import BudgetedLLM, UsageMeter, BudgetExceeded
 
 
 class _FakeLLM:
@@ -15,6 +16,13 @@ class _FakeLLM:
         self.total_prompt_tokens += 100
         self.total_completion_tokens += 20
         return f"reply{self._calls}"
+    def chat_with_tools(self, messages, tools, temperature=0.0,
+                        tool_choice="auto"):
+        self._calls += 1
+        self.total_prompt_tokens += 50
+        self.total_completion_tokens += 10
+        return ChatReply(content="done", tool_calls=[],
+                         raw_message={"role": "assistant", "content": "done"})
 
 
 def test_meter_records_tokens_and_cost():
@@ -37,6 +45,25 @@ def test_usage_dict():
     m.call([{"role": "user", "content": "hi"}])
     u = m.usage()
     assert u["calls"] == 1 and "cost_usd" in u
+    assert u["by_source"]["runtime"]["calls"] == 1
+
+
+def test_budgeted_llm_charges_tool_loop_calls():
+    meter = UsageMeter(_FakeLLM(), budget_usd=1.0, pricing=(1.0, 2.0))
+    wrapped = BudgetedLLM(meter)
+    reply = wrapped.chat_with_tools(
+        [{"role": "user", "content": "hi"}], tools=[])
+    assert reply.content == "done"
+    usage = meter.usage()
+    assert usage["calls"] == 1
+    assert usage["by_source"]["planner"]["calls"] == 1
+
+
+def test_budgeted_llm_enforces_zero_budget_on_planner_call():
+    wrapped = BudgetedLLM(
+        UsageMeter(_FakeLLM(), budget_usd=0.0, pricing=(1.0, 2.0)))
+    with pytest.raises(BudgetExceeded):
+        wrapped.chat_with_tools([{"role": "user", "content": "hi"}], tools=[])
 
 
 def test_concurrent_calls_are_accounted_without_loss():

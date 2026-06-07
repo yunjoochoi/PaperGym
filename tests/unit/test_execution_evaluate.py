@@ -36,7 +36,30 @@ def test_run_one_idea_assembles_execresult(tmp_path):
     assert res.effectiveness == 0.5
     assert res.faithfulness_score == 5
     assert res.leakage_flags == []
-    assert "sandbox_llm" in res.cost
+    assert "agent_llm" in res.cost
     assert res.sandbox == "local"
     assert res.trustworthy is False
+    dummy_server.shutdown.assert_called_once()
+
+
+def test_run_one_idea_marks_planner_budget_exceeded(tmp_path):
+    task = GSM8KAccuracyTask(n_examples=1)
+    task._splits = {"test": [{"id": "0", "question": "q", "answer": "4"}],
+                    "dev": [{"id": "d0", "question": "q", "answer": "2"}]}
+    gen = mock.MagicMock(total_prompt_tokens=0, total_completion_tokens=0)
+    gen.chat.return_value = "4"
+    judge = mock.MagicMock(total_prompt_tokens=0, total_completion_tokens=0)
+    judge.chat.return_value = "not implemented\nScore: 1"
+
+    dummy_server = mock.MagicMock()
+    with mock.patch("eval.execution.evaluate.run_proxy",
+                    return_value=(dummy_server, "http://x", None)):
+        res = run_one_idea(idea=_idea(), task=task, gen_llm=gen,
+                           judge_llm=judge, work_root=tmp_path / "run",
+                           budget_usd=0.0)
+
+    assert res.run.status == "budget_exceeded"
+    assert "budget" in res.run.error
+    assert res.method_metric is None
+    assert res.cost["agent_llm"]["calls"] == 0
     dummy_server.shutdown.assert_called_once()

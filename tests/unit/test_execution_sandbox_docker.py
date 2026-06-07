@@ -45,3 +45,11 @@ def test_docker_adds_host_gateway_and_rewrites_proxy_host(tmp_path, monkeypatch)
     assert "--add-host=host.docker.internal:host-gateway" in argv
     assert "host.docker.internal:9000" in joined
     assert "127.0.0.1:9000" not in joined
+
+
+def test_exec_dockerfile_does_not_install_public_dataset_stack():
+    dockerfile = (Path(__file__).resolve().parents[2]
+                  / "docker" / "Dockerfile.exec").read_text()
+    assert "--no-deps -e ." in dockerfile
+    assert "pip install --no-cache-dir datasets" not in dockerfile
+    assert "apt-get install" not in dockerfile

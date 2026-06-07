@@ -15,6 +15,7 @@ def score_effectiveness(task: Task, run: RunArtifact, baseline_metric: float,
     code trips the leakage guard, the run is marked suspect: metrics are None
     (a leaked 100% is NOT a real score)."""
     flags = scan_for_leakage(run.code)
+    flags.extend(task.validate_predictions(run.predictions, split=split))
     if flags or not run.predictions:
         return None, None, flags
     method_metric = task.score(run.predictions, split=split)

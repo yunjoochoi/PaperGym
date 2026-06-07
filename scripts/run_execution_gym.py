@@ -10,14 +10,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from eval.execution.evaluate import run_one_idea
-from papergym.execution.task import TASKS, GSM8KAccuracyTask
+from papergym.execution.task import TASKS, GeneratedArithmeticTask  # noqa: F401
 from papergym.execution.types import IdeaSpec
 from papergym.llm import LLMClient
 
 load_dotenv(override=True)
 
 # topic -> default Task for the MVP (extend as more Tasks land in the registry).
-TOPIC_TASK = {"Math": "gsm8k_accuracy"}
+TOPIC_TASK = {"Math": "generated_math_accuracy"}
 
 
 def _summarise(results: list) -> dict:

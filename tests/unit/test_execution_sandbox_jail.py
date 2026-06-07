@@ -18,6 +18,13 @@ def test_local_rejects_absolute_path(tmp_path):
             sb.write_file("/tmp/x.txt", "x")
 
 
+def test_docker_rejects_parent_traversal_on_run(tmp_path):
+    sb = DockerSandbox(work_root=tmp_path / "run", image="img")
+    sb.reset()
+    with pytest.raises(SandboxPathError):
+        sb.run_python("../m.py")
+
+
 def test_local_allows_in_workspace(tmp_path):
     with LocalSandbox(work_root=tmp_path / "run") as sb:
         sb.write_file("sub/m.py", "print('ok')")

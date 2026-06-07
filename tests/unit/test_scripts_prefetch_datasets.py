@@ -15,7 +15,8 @@ def test_prefetch_warms_each_task_dataset(monkeypatch, capsys):
 
 
 def test_prefetch_defaults_to_all_registered_tasks(monkeypatch, capsys):
-    monkeypatch.setattr(pf.TASKS["gsm8k_accuracy"], "materialize",
-                        classmethod(lambda cls, **k: {"test": 1, "dev": 1}))
+    for task_cls in pf.TASKS.values():
+        monkeypatch.setattr(task_cls, "materialize",
+                            classmethod(lambda cls, **k: {"test": 1, "dev": 1}))
     pf.main([])  # no --tasks -> all registered
     assert "materialized gsm8k_accuracy" in capsys.readouterr().out

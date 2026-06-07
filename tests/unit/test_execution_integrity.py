@@ -14,3 +14,15 @@ def test_clean_code_has_no_flags():
     code = ("from papergym.execution.gym_client import metered_llm_call\n"
             "metered_llm_call([{'role':'user','content':'hi'}])\n")
     assert scan_for_leakage(code) == []
+
+
+def test_flags_dynamic_import_network_and_shell_escape():
+    code = ("mod = __import__('datasets')\n"
+            "import socket\n"
+            "import subprocess\n"
+            "subprocess.run(['python','-m','pip','install','datasets'])\n")
+    flags = scan_for_leakage(code)
+    assert any("dynamic-import" in f for f in flags)
+    assert any("socket-network" in f for f in flags)
+    assert any("subprocess-shell" in f for f in flags)
+    assert any("package-install" in f for f in flags)

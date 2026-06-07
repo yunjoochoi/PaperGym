@@ -31,3 +31,13 @@ def test_leaked_code_marked_suspect():
                       predictions=[{"id": "0", "pred": "4"}])
     method_m, eff, flags = score_effectiveness(t, run, baseline_metric=0.5)
     assert method_m is None and eff is None and flags
+
+
+def test_duplicate_submission_is_unscored():
+    run = RunArtifact(status="natural_end",
+                      predictions=[{"id": "0", "pred": "4"},
+                                   {"id": "0", "pred": "4"},
+                                   {"id": "1", "pred": "8"}])
+    method_m, eff, flags = score_effectiveness(_task(), run, baseline_metric=0.5)
+    assert method_m is None and eff is None
+    assert "duplicate_prediction_id:0" in flags

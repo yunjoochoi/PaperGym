@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import random
 import re
 from pathlib import Path
 from typing import Optional
@@ -57,9 +58,53 @@ class Task:
         gold = {ex["id"]: ex["answer"] for ex in self.examples(split)}
         if not gold:
             return 0.0
-        hits = sum(1 for p in predictions
-                   if gold.get(p["id"]) == self.parse_pred(str(p["pred"])))
+        # Score each expected id at most once. Formal submission validation
+        # lives in validate_predictions(); this guard keeps direct calls from
+        # inflating accuracy with duplicate rows.
+        pred_by_id = {}
+        for p in predictions or []:
+            if not isinstance(p, dict):
+                continue
+            pid = str(p.get("id", ""))
+            if pid not in pred_by_id:
+                pred_by_id[pid] = p.get("pred", "")
+        hits = sum(
+            1 for pid, answer in gold.items()
+            if answer == self.parse_pred(str(pred_by_id.get(pid, "")))
+        )
         return hits / len(gold)
+
+    def validate_predictions(self, predictions: list,
+                             split: str = "test") -> list[str]:
+        """Return submission-format flags. Empty means scorable."""
+        expected_ids = [str(ex["id"]) for ex in self.examples(split)]
+        expected = set(expected_ids)
+        flags: list[str] = []
+        if not isinstance(predictions, list):
+            return ["predictions_not_list"]
+
+        seen: set[str] = set()
+        for i, p in enumerate(predictions):
+            if not isinstance(p, dict):
+                flags.append(f"prediction_{i}_not_object")
+                continue
+            if "id" not in p:
+                flags.append(f"prediction_{i}_missing_id")
+                continue
+            if "pred" not in p:
+                flags.append(f"prediction_{i}_missing_pred")
+            pid = str(p.get("id", ""))
+            if pid in seen:
+                flags.append(f"duplicate_prediction_id:{pid}")
+            seen.add(pid)
+            if pid not in expected:
+                flags.append(f"unknown_prediction_id:{pid}")
+
+        missing = expected - seen
+        if missing:
+            preview = ",".join(sorted(missing)[:10])
+            flags.append(f"missing_prediction_ids:{preview}")
+        return flags
 
     # ---- baseline ----
     def baseline_prompt(self, ex: dict) -> str:
@@ -119,4 +164,54 @@ class GSM8KAccuracyTask(Task):
         return {"test": len(test), "dev": len(dev)}
 
 
-TASKS = {GSM8KAccuracyTask.task_id: GSM8KAccuracyTask}
+class GeneratedArithmeticTask(Task):
+    """Synthetic GSM-style arithmetic word problems with host-generated
+    labels. Used for trustworthy smoke benchmarks because answers are not
+    recoverable from a public dataset lookup."""
+    task_id = "generated_math_accuracy"
+    topic = "Math"
+
+    def parse_pred(self, raw: str) -> str:
+        if not raw:
+            return ""
+        nums = _INT_RE.findall(raw)
+        return nums[-1].replace(",", "") if nums else ""
+
+    def baseline_prompt(self, ex: dict) -> str:
+        return (f"Solve this problem. Think step by step, then give the final "
+                f"answer as a single number on the last line.\n\n{ex['question']}")
+
+    @classmethod
+    def materialize(cls, data_root: Path = DEFAULT_DATA_ROOT,
+                    n_test: int = 50, n_dev: int = 50,
+                    seed: int = 0) -> dict:
+        rng = random.Random(seed)
+        out = data_root / cls.task_id
+        out.mkdir(parents=True, exist_ok=True)
+
+        def _make(rid: str) -> dict:
+            apples = rng.randint(3, 40)
+            buys = rng.randint(2, 30)
+            gives = rng.randint(1, min(apples + buys - 1, 25))
+            boxes = rng.randint(2, 12)
+            per_box = rng.randint(2, 9)
+            answer = apples + buys - gives + boxes * per_box
+            q = (
+                f"Mina has {apples} stickers. She buys {buys} more, gives "
+                f"{gives} to a friend, then opens {boxes} packs with "
+                f"{per_box} stickers each. How many stickers does Mina have?"
+            )
+            return {"id": rid, "question": q, "answer": str(answer)}
+
+        test = [_make(str(i)) for i in range(n_test)]
+        dev = [_make(f"d{i}") for i in range(n_dev)]
+        for name, rows in (("test", test), ("dev", dev)):
+            (out / f"{name}.jsonl").write_text(
+                "\n".join(json.dumps(r) for r in rows) + "\n")
+        return {"test": len(test), "dev": len(dev)}
+
+
+TASKS = {
+    GSM8KAccuracyTask.task_id: GSM8KAccuracyTask,
+    GeneratedArithmeticTask.task_id: GeneratedArithmeticTask,
+}
