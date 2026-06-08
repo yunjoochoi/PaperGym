@@ -9,10 +9,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from eval.execution.evaluate import run_one_idea
-from papergym.execution.task import TASKS, GeneratedArithmeticTask  # noqa: F401
-from papergym.execution.types import IdeaSpec
-from papergym.llm import LLMClient
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from eval.execution.evaluate import run_one_idea  # noqa: E402
+from papergym.execution.task import TASKS, GeneratedArithmeticTask  # noqa: F401,E402
+from papergym.execution.types import IdeaSpec  # noqa: E402
+from papergym.llm import LLMClient  # noqa: E402
 
 load_dotenv(override=True)
 
