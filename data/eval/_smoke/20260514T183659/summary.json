@@ -1,0 +1,75 @@
+{
+  "A": {
+    "papers_evaluated": 2,
+    "unit": "paper-level mean (one observation per paper)",
+    "axes": {
+      "grounding": {
+        "n": 2,
+        "mean": 5,
+        "median": 5.0,
+        "stdev": 0.0,
+        "p25": 5.0,
+        "p75": 5.0,
+        "hist": {
+          "5": 2
+        }
+      },
+      "specificity": {
+        "n": 2,
+        "mean": 4.5,
+        "median": 4.5,
+        "stdev": 0.707,
+        "p25": 3.75,
+        "p75": 5.25,
+        "hist": {
+          "4": 1,
+          "5": 1
+        }
+      }
+    }
+  },
+  "C": {
+    "papers_evaluated": 2,
+    "unit": "paper-level mean (one observation per paper)",
+    "axes": {
+      "grounding": {
+        "n": 2,
+        "mean": 4.833,
+        "median": 4.833333333333334,
+        "stdev": 0.236,
+        "p25": 4.583,
+        "p75": 5.083,
+        "hist": {
+          "4.67": 1,
+          "5": 1
+        }
+      },
+      "specificity": {
+        "n": 2,
+        "mean": 4.833,
+        "median": 4.833333333333334,
+        "stdev": 0.236,
+        "p25": 4.583,
+        "p75": 5.083,
+        "hist": {
+          "4.67": 1,
+          "5": 1
+        }
+      }
+    }
+  },
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 0,
+      "completion": 0
+    },
+    "judge_tokens": {
+      "prompt": 278328,
+      "completion": 6217
+    },
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.9282,
+    "total_cost_usd": 0.9282,
+    "wall_clock_s": 193.31
+  }
+}

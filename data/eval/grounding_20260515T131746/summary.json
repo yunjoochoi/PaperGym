@@ -1,0 +1,42 @@
+{
+  "C": {
+    "n": 195,
+    "mean": 2.769,
+    "median": 3,
+    "stdev": 0.446,
+    "hist": {
+      "1": 2,
+      "2": 41,
+      "3": 152
+    },
+    "fraction_full": 0.779,
+    "fraction_no": 0.01
+  },
+  "D": {
+    "n": 196,
+    "mean": 2.643,
+    "median": 3.0,
+    "stdev": 0.55,
+    "hist": {
+      "1": 7,
+      "2": 56,
+      "3": 133
+    },
+    "fraction_full": 0.679,
+    "fraction_no": 0.036
+  },
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 0,
+      "completion": 0
+    },
+    "judge_tokens": {
+      "prompt": 613344,
+      "completion": 58193
+    },
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 2.7129,
+    "total_cost_usd": 2.7129,
+    "wall_clock_s": 1681.22
+  }
+}

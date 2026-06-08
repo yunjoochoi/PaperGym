@@ -1,0 +1,34 @@
+{
+  "A": {
+    "n": 139,
+    "true_mean": 4.849,
+    "shuffled_mean": 1,
+    "drop_mean": 3.849,
+    "drop_stdev": 0.398,
+    "shuffled_lt_true_count": 139,
+    "shuffled_lt_true_pct": 100.0
+  },
+  "C": {
+    "n": 134,
+    "true_mean": 4.858,
+    "shuffled_mean": 1,
+    "drop_mean": 3.858,
+    "drop_stdev": 0.41,
+    "shuffled_lt_true_count": 134,
+    "shuffled_lt_true_pct": 100.0
+  },
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 0,
+      "completion": 0
+    },
+    "judge_tokens": {
+      "prompt": 5460942,
+      "completion": 45018
+    },
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 17.0581,
+    "total_cost_usd": 17.0581,
+    "wall_clock_s": 1957.81
+  }
+}

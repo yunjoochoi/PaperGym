@@ -1,0 +1,114 @@
+{
+  "pairwise": {
+    "C-vs-A__novelty": {
+      "n": 30,
+      "C_win": 17,
+      "A_win": 13,
+      "tie": 0,
+      "C_win_rate": 0.567,
+      "A_win_rate": 0.433,
+      "tie_rate": 0.0
+    },
+    "C-vs-A__validity": {
+      "n": 30,
+      "C_win": 5,
+      "A_win": 11,
+      "tie": 14,
+      "C_win_rate": 0.167,
+      "A_win_rate": 0.367,
+      "tie_rate": 0.467
+    },
+    "C-vs-D__novelty": {
+      "n": 30,
+      "C_win": 17,
+      "D_win": 13,
+      "tie": 0,
+      "C_win_rate": 0.567,
+      "D_win_rate": 0.433,
+      "tie_rate": 0.0
+    },
+    "C-vs-D__validity": {
+      "n": 30,
+      "C_win": 12,
+      "D_win": 10,
+      "tie": 8,
+      "C_win_rate": 0.4,
+      "D_win_rate": 0.333,
+      "tie_rate": 0.267
+    },
+    "C-vs-B__novelty": {
+      "n": 30,
+      "C_win": 19,
+      "B_win": 11,
+      "tie": 0,
+      "C_win_rate": 0.633,
+      "B_win_rate": 0.367,
+      "tie_rate": 0.0
+    },
+    "C-vs-B__validity": {
+      "n": 30,
+      "C_win": 12,
+      "B_win": 8,
+      "tie": 10,
+      "C_win_rate": 0.4,
+      "B_win_rate": 0.267,
+      "tie_rate": 0.333
+    }
+  },
+  "specificity": {
+    "A": {
+      "n": 30,
+      "mean": 4.5,
+      "median": 4.5,
+      "stdev": 0.509,
+      "hist": {
+        "4": 15,
+        "5": 15
+      }
+    },
+    "B": {
+      "n": 30,
+      "mean": 4.3,
+      "median": 4.0,
+      "stdev": 0.466,
+      "hist": {
+        "4": 21,
+        "5": 9
+      }
+    },
+    "C": {
+      "n": 30,
+      "mean": 4.4,
+      "median": 4.0,
+      "stdev": 0.498,
+      "hist": {
+        "4": 18,
+        "5": 12
+      }
+    },
+    "D": {
+      "n": 30,
+      "mean": 4.233,
+      "median": 4.0,
+      "stdev": 0.43,
+      "hist": {
+        "4": 23,
+        "5": 7
+      }
+    }
+  },
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 0,
+      "completion": 0
+    },
+    "judge_tokens": {
+      "prompt": 561749,
+      "completion": 113719
+    },
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 3.391,
+    "total_cost_usd": 3.391,
+    "wall_clock_s": 2624.11
+  }
+}

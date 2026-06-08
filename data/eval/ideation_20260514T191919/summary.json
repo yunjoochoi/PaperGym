@@ -1,0 +1,89 @@
+{
+  "A": {
+    "novelty": {
+      "n": 3,
+      "mean": 3.667,
+      "median": 4,
+      "stdev": 0.577,
+      "p25": 3.0,
+      "p75": 4.0,
+      "hist": {
+        "3": 1,
+        "4": 2
+      }
+    },
+    "validity": {
+      "n": 3,
+      "mean": 5,
+      "median": 5,
+      "stdev": 0.0,
+      "p25": 5.0,
+      "p75": 5.0,
+      "hist": {
+        "5": 3
+      }
+    },
+    "coherence": {
+      "n": 3,
+      "mean": 3.333,
+      "median": 3,
+      "stdev": 0.577,
+      "p25": 3.0,
+      "p75": 4.0,
+      "hist": {
+        "3": 2,
+        "4": 1
+      }
+    }
+  },
+  "C": {
+    "novelty": {
+      "n": 3,
+      "mean": 4,
+      "median": 4,
+      "stdev": 0.0,
+      "p25": 4.0,
+      "p75": 4.0,
+      "hist": {
+        "4": 3
+      }
+    },
+    "validity": {
+      "n": 3,
+      "mean": 5,
+      "median": 5,
+      "stdev": 0.0,
+      "p25": 5.0,
+      "p75": 5.0,
+      "hist": {
+        "5": 3
+      }
+    },
+    "coherence": {
+      "n": 3,
+      "mean": 3.333,
+      "median": 3,
+      "stdev": 0.577,
+      "p25": 3.0,
+      "p75": 4.0,
+      "hist": {
+        "3": 2,
+        "4": 1
+      }
+    }
+  },
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 21049,
+      "completion": 34947
+    },
+    "judge_tokens": {
+      "prompt": 523134,
+      "completion": 8237
+    },
+    "gen_cost_usd": 0.3758,
+    "judge_cost_usd": 1.693,
+    "total_cost_usd": 2.0687,
+    "wall_clock_s": 1433.79
+  }
+}

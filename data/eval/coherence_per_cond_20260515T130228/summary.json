@@ -1,0 +1,56 @@
+{
+  "A": {
+    "n": 30,
+    "mean": 3.633,
+    "median": 4.0,
+    "stdev": 0.49,
+    "hist": {
+      "3": 11,
+      "4": 19
+    }
+  },
+  "B": {
+    "n": 30,
+    "mean": 3.3,
+    "median": 3.0,
+    "stdev": 0.466,
+    "hist": {
+      "3": 21,
+      "4": 9
+    }
+  },
+  "C": {
+    "n": 30,
+    "mean": 3.467,
+    "median": 3.0,
+    "stdev": 0.507,
+    "hist": {
+      "3": 16,
+      "4": 14
+    }
+  },
+  "D": {
+    "n": 30,
+    "mean": 3.367,
+    "median": 3.0,
+    "stdev": 0.49,
+    "hist": {
+      "3": 19,
+      "4": 11
+    }
+  },
+  "cost_total": {
+    "gen_tokens": {
+      "prompt": 0,
+      "completion": 0
+    },
+    "judge_tokens": {
+      "prompt": 172553,
+      "completion": 30594
+    },
+    "gen_cost_usd": 0.0,
+    "judge_cost_usd": 0.9766,
+    "total_cost_usd": 0.9766,
+    "wall_clock_s": 914.23
+  }
+}
